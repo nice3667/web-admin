@@ -1,93 +1,46 @@
-<h1 align="center">Laravel Vue Admin Panel</h1>
-<h3 align="center">A Single page Vue admin panel for Laravel projects.</h3>
-<p align="center">
-<a href="https://packagist.org/packages/balajidharma/laravel-vue-admin-panel"><img src="https://poser.pugx.org/balajidharma/laravel-vue-admin-panel/downloads" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/balajidharma/laravel-vue-admin-panel"><img src="https://poser.pugx.org/balajidharma/laravel-vue-admin-panel/v/stable" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/balajidharma/laravel-vue-admin-panel"><img src="https://poser.pugx.org/balajidharma/laravel-vue-admin-panel/license" alt="License"></a>
-</p>
+# Laravel Vue Admin Panel
 
-[![Laravel VUE admin panel preview](https://user-images.githubusercontent.com/6037466/184547401-1c481008-e013-4ba0-b9a8-3eaf3ff7b9a1.png)](https://github.com/balajidharma/laravel-vue-admin-panel)
+โปรเจกต์นี้เป็นแผงควบคุมผู้ดูแลระบบที่พัฒนาโดยใช้ Laravel + Vue.js เหมาะสำหรับการเริ่มต้นระบบ CRM หรือระบบจัดการภายในองค์กร โดยไม่จำเป็นต้องติดตั้ง Docker
 
-## Built with
-- [Laravel 12](https://github.com/laravel/framework)
-- [spatie/laravel-permission](https://github.com/spatie/laravel-permission)
-- [balajidharma/laravel-menu](https://github.com/balajidharma/laravel-menu)
-- [Vue 3](https://vuejs.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Inertiajs](https://inertiajs.com/)
-- [Admin One - Admin Dashboard](https://github.com/justboil/admin-one-vue-tailwind)
+## ✅ สิ่งที่ต้องมีก่อนเริ่ม
 
-## Installation
+-   PHP >= 8.x
+-   Composer
+-   Node.js และ npm
+-   MySQL หรือ MariaDB
 
-### With Docker Desktop
-- To get started, you need to install [Docker Desktop](https://www.docker.com/products/docker-desktop).
-- You may run the following command in your terminal
-- Windows open WSL2 Linux terminal. [Docker Desktop WSL 2 backend](https://docs.docker.com/desktop/windows/wsl/)
-- `docker run --rm -v "$(pwd)":/opt -w /opt laravelsail/php83-composer:latest bash -c "composer create-project balajidharma/laravel-vue-admin-panel admin-app && cd admin-app && php artisan sail:install --with=mysql,redis,meilisearch,mailpit,selenium"`
-- `cd admin-app`
-- `./vendor/bin/sail pull mysql redis meilisearch mailpit selenium`
-- `./vendor/bin/sail build`
-- `./vendor/bin/sail up`
-- `./vendor/bin/sail npm install`
-- `./vendor/bin/sail npm run dev`
-- `./vendor/bin/sail artisan vendor:publish --tag=admin-core`
-- `./vendor/bin/sail artisan migrate --seed --seeder=AdminCoreSeeder`
-- `./vendor/bin/sail artisan storage:link`
-- Now open http://localhost/
+## ⚙️ วิธีติดตั้งโปรเจกต์
 
-### Without Docker Desktop
-- To get started, you need to install [PHP Composer](https://getcomposer.org/).
-- `composer create-project balajidharma/laravel-vue-admin-panel admin-app`
-- `cd admin-app`
-- Create a new MYSQL database and update database details in `.env` file
-- `php artisan vendor:publish --tag=admin-core`
-- `php artisan migrate --seed --seeder=AdminCoreSeeder`
-- `php artisan storage:link`
-- `npm install`
-- `npm run dev`
-- `php artisan serve`
-- Now open http://localhost:8000/
+```bash
+# 1. ติดตั้งโปรเจกต์ด้วย Composer
+composer create-project balajidharma/laravel-vue-admin-panel admin-app
 
-###### Super Admin Login
-- Email - superadmin@example.com
-- Password - password
+# 2. เข้าสู่โฟลเดอร์โปรเจกต์
+cd admin-app
 
-#### Admin Configuration:
+# 3. สร้างฐานข้อมูลใหม่ใน MySQL เช่นชื่อว่า admin_app
 
-To change the Admin Prefix, change `prefix` on `config/admin.php` or add the `ADMIN_PREFIX` on env 
+# 4. แก้ไขไฟล์ .env ให้เชื่อมต่อฐานข้อมูล
+# เปิด .env แล้วตั้งค่าดังนี้:
+DB_DATABASE=admin_app
+DB_USERNAME=your_mysql_username
+DB_PASSWORD=your_mysql_password
 
-```php
-'prefix' => env('ADMIN_PREFIX', 'admin'),
-```
-
-## Also Try
-- [Build a Vue admin panel from scratch](https://blog.devgenius.io/laravel-creates-a-vue-admin-panel-from-scratch-part-1-installation-and-authentication-56c451d4d697)
-- [Basic Laravel Admin Panel - Build with Blade template](https://github.com/balajidharma/basic-laravel-admin-panel)
-
-## Update guide
-Encountering errors post `composer update`? Reset the database and re-publish vendor assets to resolve issues.
-
-```
-php artisan vendor:publish --tag=admin-core  --force
-
+# 5. รันคำสั่ง publish และ seed ข้อมูลเบื้องต้น
+php artisan vendor:publish --tag=admin-core
 php artisan migrate --seed --seeder=AdminCoreSeeder
+
+# 6. สร้าง symbolic link สำหรับ storage
+php artisan storage:link
+
+# 7. ติดตั้ง front-end dependencies
+npm install
+npm run dev
+
+# 8. เริ่มเซิร์ฟเวอร์ Laravel
+php artisan serve
 ```
 
-## Screenshots
-<p align="center">
-	<img src="https://user-images.githubusercontent.com/6037466/184546912-efd044ad-cb66-4057-9eee-e9c53447763b.png" >
-	<br/><br/>
-	<img src="https://user-images.githubusercontent.com/6037466/184546928-0de1d84a-4dd9-4f7b-a3ac-b848209d0aef.png" >
-	<br/><br/>
-	<img src="https://user-images.githubusercontent.com/6037466/184547401-1c481008-e013-4ba0-b9a8-3eaf3ff7b9a1.png" >
-    <br/><br/>
-	<img src="https://user-images.githubusercontent.com/6037466/184547433-25f6a5a6-4e53-4448-948a-82f18a58d84c.png">
-	<br/><br/>
-	<img src="https://user-images.githubusercontent.com/6037466/184547446-d482df44-0835-4a37-8482-83d5279269fb.png">
-	<br/><br/>
-	<img src="https://user-images.githubusercontent.com/6037466/184570672-6413384d-a5c4-461b-9c8e-d97ede29a21f.png">
-</p>
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+<!-- ข้อมูลเข้าสู่ระบบ (Super Admin) -->
+<!-- superadmin@example.com -->
+<!-- password -->
