@@ -19,6 +19,7 @@ php artisan storage:link
 
 # ติดตั้ง front-end dependencies
 
+.
 npm install
 npm run dev
 

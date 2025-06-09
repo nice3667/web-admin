@@ -75,12 +75,4 @@ function destroy(id) {
       </BaseButtons>
     </td>
   </tr>
-  <template v-for="item in item.children">
-    <CategoryItemList
-      :item="item"
-      :categoryType="categoryType"
-      :can="can"
-      :level="level + 1"
-    />
-  </template>
 </template>
