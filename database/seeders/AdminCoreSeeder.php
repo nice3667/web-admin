@@ -146,6 +146,7 @@ class AdminCoreSeeder extends Seeder
                 'weight' => 0,
                 'icon' => 'M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z',
             ],
+
             [
                 'name' => 'Roles',
                 'uri' => '/<admin>/role',
@@ -159,49 +160,75 @@ class AdminCoreSeeder extends Seeder
                 'enabled' => 1,
                 'weight' => 3,
                 'icon' => 'M16 17V19H2V17S2 13 9 13 16 17 16 17M12.5 7.5A3.5 3.5 0 1 0 9 11A3.5 3.5 0 0 0 12.5 7.5M15.94 13A5.32 5.32 0 0 1 18 17V19H22V17S22 13.37 15.94 13M15 4A3.39 3.39 0 0 0 13.07 4.59A5 5 0 0 1 13.07 10.41A3.39 3.39 0 0 0 15 11A3.5 3.5 0 0 0 15 4Z',
-            ]
-            ,
-            [
-                'name' => 'Customer',
-                'uri' => '/<admin>/customer',
-                'enabled' => 1,
-                'weight' => 3,
-                'icon' => 'M16 17V19H2V17S2 13 9 13 16 17 16 17M12.5 7.5A3.5 3.5 0 1 0 9 11A3.5 3.5 0 0 0 12.5 7.5M15.94 13A5.32 5.32 0 0 1 18 17V19H22V17S22 13.37 15.94 13M15 4A3.39 3.39 0 0 0 13.07 4.59A5 5 0 0 1 13.07 10.41A3.39 3.39 0 0 0 15 11A3.5 3.5 0 0 0 15 4Z'
             ],
-
-
-            [
-                'name' => 'Report',
-                'uri' => '/<admin>/report',
-                'enabled' => 1,
-                'weight' => 4,
-                'icon' => 'M19 3H14L12 1H5C3.9 1 3 1.9 3 3V21C3 22.1 3.9 23 5 23H19C20.1 23 21 22.1 21 21V7L19 3ZM14 3.5L19.5 9H14V3.5ZM12 19H8V17H12V19ZM16 15H8V13H16V15ZM16 11H8V9H16V11Z',
-            ],
-            [
-                'name' => 'Rebate',
-                'uri' => '/<admin>/rebate',
-                'enabled' => 1,
-                'weight' => 5,
-                'icon' => 'M12,4a8,8 0 1,0 0,16a8,8 0 1,0 0,-16zM12,18a6,6 0 1,1 0,-12a6,6 0 1,1 0,12z',
-            ],
-            [
-                'name' => 'Promotion',
-                'uri' => '/<admin>/promotion',
-                'enabled' => 1,
-                'weight' => 6,
-                'icon' => 'M20.5 11.36L12.63 3.5c-.38-.38-.89-.59-1.42-.59H4c-1.1 0-2 .9-2 2v7.19c0 .53.21 1.04.59 1.42l7.87 7.87c.39.39.9.6 1.42.6s1.03-.21 1.42-.59l7.19-7.19c.78-.78.78-2.05 0-2.83M14.5 9A1.5 1.5 0 1 1 13 7.5A1.5 1.5 0 0 1 14.5 9Z',
-            ],
-            [
-                'name' => 'Support',
-                'uri' => '/<admin>/support',
-                'enabled' => 1,
-                'weight' => 6,
-                'icon' => 'M12 1A9 9 0 0 0 3 10V16C3 17.11 3.89 18 5 18H8V11C8 9.89 8.89 9 10 9H14C15.11 9 16 9.89 16 11V18H19C20.11 18 21 17.11 21 16V10A9 9 0 0 0 12 1M7 16H5V10H7V16M19 16H17V10H19V16Z',
-            ]
-
-
         ];
 
+        // Create menu items
+        foreach ($menu_items as $item) {
+            $menu->menuItems()->updateOrCreate(
+                ['name' => $item['name']],
+                $item
+            );
+        }
+
+        // Create Report parent menu item
+        $reportMenu = $menu->menuItems()->updateOrCreate(
+            ['name' => 'Report'],
+            [
+                'name' => 'Report',
+                'uri' => '<nolink>',
+                'enabled' => 1,
+                'weight' => 4,
+                'icon' => 'M19 3H14L12 1H5C3.9 1 3 1.9 3 3V21C3 22.1 3.9 23 5 23H19C20.1 23 21 22.1 21 21V7L19 3ZM14 3.5L19.5 9H14V3.5ZM12 19H8V17H12V19ZM16 15H8V13H16V15ZM16 11H8V9H16V11Z'
+            ]
+        );
+
+        // Create Report child menu items
+        $reportChildItems = [
+            [
+                'name' => 'Clients',
+                'uri' => '/<admin>/report/clients',
+                'enabled' => 1,
+                'weight' => 1,
+                'parent_id' => $reportMenu->id
+            ],
+            [
+                'name' => 'Client account',
+                'uri' => '/<admin>/report/client-account',
+                'enabled' => 1,
+                'weight' => 2,
+                'parent_id' => $reportMenu->id
+            ],
+            [
+                'name' => 'Reward history',
+                'uri' => '/<admin>/report/reward-history',
+                'enabled' => 1,
+                'weight' => 3,
+                'parent_id' => $reportMenu->id
+            ],
+            [
+                'name' => 'Client transactions',
+                'uri' => '/<admin>/report/client-transaction',
+                'enabled' => 1,
+                    'weight' => 4,
+                'parent_id' => $reportMenu->id
+            ],
+            [
+                'name' => 'Transactions pending payment',
+                'uri' => '/<admin>/report/transactions-pending-payment',
+                'enabled' => 1,
+                'weight' => 5,
+                'parent_id' => $reportMenu->id
+            ]
+        ];
+
+        // Create child menu items
+        foreach ($reportChildItems as $item) {
+            $menu->menuItems()->updateOrCreate(
+                ['name' => $item['name']],
+                $item
+            );
+        }
 
         $category_types = [
             [

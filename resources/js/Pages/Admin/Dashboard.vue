@@ -45,6 +45,7 @@ const transactionBarItems = computed(() => mainStore.history);
 </script>
 
 <template>
+  <LayoutSidebar></LayoutSidebar>
   <LayoutAuthenticated>
     <Head title="Dashboard" />
     <SectionMain>
