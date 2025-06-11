@@ -25,6 +25,8 @@ import CardBoxClient from "@/Components/CardBoxClient.vue";
 import LayoutAuthenticated from "@/Layouts/Admin/LayoutAuthenticated.vue";
 import SectionTitleLineWithButton from "@/Components/SectionTitleLineWithButton.vue";
 import SectionBannerStarOnGitHub from "@/Components/SectionBannerStarOnGitHub.vue";
+import { mdiCash, mdiCurrencyUsd } from "@mdi/js";
+
 const chartData = ref(null);
 const fillChartData = () => {
   chartData.value = chartConfig.sampleChartData();
@@ -46,16 +48,15 @@ const transactionBarItems = computed(() => mainStore.history);
   <LayoutAuthenticated>
     <Head title="Dashboard" />
     <SectionMain>
-      <div class="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-1">
         <CardBoxWidget
-          trend="12%"
-          trend-type="up"
           color="text-emerald-500"
-          :icon="mdiAccountMultiple"
-          :number="512"
-          label="Clients"
+          :icon="mdiCash"
+          :number="38.34"
+          label="จำนวนเงินทั้งหมด"
         />
-        <CardBoxWidget
+
+        <!-- <CardBoxWidget
           trend="12%"
           trend-type="down"
           color="text-blue-500"
@@ -72,7 +73,7 @@ const transactionBarItems = computed(() => mainStore.history);
           :number="256"
           suffix="%"
           label="Performance"
-        />
+        /> -->
       </div>
 
       <div class="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-2">
@@ -100,13 +101,13 @@ const transactionBarItems = computed(() => mainStore.history);
         </div>
       </div>
 
-      <NotificationBar color="info" :icon="mdiMonitorCellphone">
+      <!-- <NotificationBar color="info" :icon="mdiMonitorCellphone">
         <b>Responsive table.</b> Collapses on mobile
-      </NotificationBar>
+      </NotificationBar> -->
 
-      <CardBox :icon="mdiMonitorCellphone" title="Responsive table" has-table>
+      <!-- <CardBox :icon="mdiMonitorCellphone" title="Responsive table" has-table>
         <TableSampleClients />
-      </CardBox>
+      </CardBox> -->
     </SectionMain>
   </LayoutAuthenticated>
 </template>
