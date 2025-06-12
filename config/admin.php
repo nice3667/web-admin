@@ -11,7 +11,7 @@ return [
     | You can override the value by setting new prefix instead of admin.
     |
     */
-    'prefix' => env('ADMIN_PREFIX', 'admin'),
+    'prefix' => 'admin',
 
     /*
     |--------------------------------------------------------------------------
@@ -22,7 +22,7 @@ return [
     |
     */
     'paginate' => [
-        'per_page' => 10,
+        'per_page' => 20,
         'each_side' => 2,
     ],
 
@@ -36,7 +36,8 @@ return [
     |
     */
     'roles' => [
-        'super_admin' => env('APP_ROLE_SUPER_ADMIN', 'super-admin'),
+        'super_admin' => 'super-admin',
+        'admin' => 'admin',
     ],
 
     /*

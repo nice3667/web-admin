@@ -39,6 +39,7 @@ class CreateMenuTables extends Migration
             $table->integer('weight')->default(0);
             $table->boolean('enabled')->default(1);
             $table->text('icon')->nullable();
+            $table->string('permission')->nullable();
             $table->timestamps();
         });
     }

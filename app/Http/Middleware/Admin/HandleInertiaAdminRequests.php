@@ -6,6 +6,7 @@ use BalajiDharma\LaravelMenu\Models\Menu;
 use Diglactic\Breadcrumbs\Breadcrumbs;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Illuminate\Support\Facades\Auth;
 
 class HandleInertiaAdminRequests extends Middleware
 {
@@ -31,10 +32,24 @@ class HandleInertiaAdminRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $menu = Menu::getMenuTree('admin', false, true);
+        $user = Auth::user();
+
+        // Filter menu items based on user role
+        $filteredMenu = array_filter($menu, function($item) use ($user) {
+            // If no permission is required, show the item
+            if (!isset($item['permission'])) {
+                return true;
+            }
+
+            // If permission is required, check if user has the role
+            return $user->hasRole($item['permission']);
+        });
+
         return [
             ...parent::share($request),
             'navigation' => [
-                'menu' => Menu::getMenuTree('admin', false, true),
+                'menu' => array_values($filteredMenu),
                 'breadcrumbs' => $this->getBreadcrumbs($request),
             ],
         ];
