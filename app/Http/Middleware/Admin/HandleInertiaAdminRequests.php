@@ -7,6 +7,7 @@ use Diglactic\Breadcrumbs\Breadcrumbs;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 class HandleInertiaAdminRequests extends Middleware
 {
@@ -32,34 +33,48 @@ class HandleInertiaAdminRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $menu = Menu::getMenuTree('admin', false, true);
+        $menu = Menu::where('machine_name', 'admin')->first();
+        $menuItems = $menu ? Menu::getMenuTree('admin', true) : [];
         $user = Auth::user();
 
         // Filter menu items based on user role
-        $filteredMenu = array_filter($menu, function($item) use ($user) {
+        $filteredMenu = collect($menuItems)->filter(function($item) use ($user) {
             // If no permission is required, show the item
-            if (!isset($item['permission'])) {
+            if (!isset($item->permission)) {
                 return true;
             }
 
             // If permission is required, check if user has the role
-            return $user->hasRole($item['permission']);
+            return $user->hasRole($item->permission);
         });
 
-        return [
-            ...parent::share($request),
+        return array_merge(parent::share($request), [
+            'auth' => [
+                'user' => $request->user(),
+            ],
+            'menu' => $filteredMenu->values(),
             'navigation' => [
-                'menu' => array_values($filteredMenu),
                 'breadcrumbs' => $this->getBreadcrumbs($request),
             ],
-        ];
+        ]);
     }
 
     protected function getBreadcrumbs(Request $request)
     {
-        if($request->isMethod('get'))
-        {
-            return Breadcrumbs::generate();
+        if (!$request->isMethod('get')) {
+            return [];
         }
+
+        try {
+            $routeName = Route::currentRouteName();
+            if ($routeName) {
+                return Breadcrumbs::generate($routeName);
+            }
+        } catch (\Exception $e) {
+            // Return empty array if breadcrumb not found
+            return [];
+        }
+
+        return [];
     }
 }

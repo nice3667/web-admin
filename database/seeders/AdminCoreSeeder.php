@@ -181,7 +181,7 @@ class AdminCoreSeeder extends Seeder
                 'uri' => '<nolink>',
                 'enabled' => 1,
                 'weight' => 4,
-                'icon' => 'M19 3H14L12 1H5C3.9 1 3 1.9 3 3V21C3 22.1 3.9 23 5 23H19C20.1 23 21 22.1 21 21V7L19 3ZM14 3.5L19.5 9H14V3.5ZM12 19H8V17H12V19ZM16 15H8V13H16V15ZM16 11H8V9H16V11Z'
+                'icon' => 'M9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4zm2.5 2.1h-15V5h15v14.1zm0-16.1h-15c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z'
             ]
         );
 
@@ -189,35 +189,35 @@ class AdminCoreSeeder extends Seeder
         $reportChildItems = [
             [
                 'name' => 'Clients',
-                'uri' => '/<admin>/report/clients',
+                'uri' => '/admin/reports/clients',
                 'enabled' => 1,
                 'weight' => 1,
                 'parent_id' => $reportMenu->id
             ],
             [
                 'name' => 'Client account',
-                'uri' => '/<admin>/report/client-account',
+                'uri' => '/admin/reports/client-account',
                 'enabled' => 1,
                 'weight' => 2,
                 'parent_id' => $reportMenu->id
             ],
             [
                 'name' => 'Reward history',
-                'uri' => '/<admin>/report/reward-history',
+                'uri' => '/admin/reports/reward-history',
                 'enabled' => 1,
                 'weight' => 3,
                 'parent_id' => $reportMenu->id
             ],
             [
                 'name' => 'Client transactions',
-                'uri' => '/<admin>/report/client-transaction',
+                'uri' => '/admin/reports/client-transaction',
                 'enabled' => 1,
-                    'weight' => 4,
+                'weight' => 4,
                 'parent_id' => $reportMenu->id
             ],
             [
                 'name' => 'Transactions pending payment',
-                'uri' => '/<admin>/report/transactions-pending-payment',
+                'uri' => '/admin/reports/transactions-pending',
                 'enabled' => 1,
                 'weight' => 5,
                 'parent_id' => $reportMenu->id
@@ -226,6 +226,108 @@ class AdminCoreSeeder extends Seeder
 
         // Create child menu items
         foreach ($reportChildItems as $item) {
+            $menu->menuItems()->updateOrCreate(
+                ['name' => $item['name']],
+                $item
+            );
+        }
+
+        // Create Rebates menu item
+        $menu->menuItems()->updateOrCreate(
+            ['name' => 'Rebates'],
+            [
+                'name' => 'Rebates',
+                'uri' => '/<admin>/rebates',
+                'enabled' => 1,
+                'weight' => 5,
+                'icon' => 'M12,8H4A2,2 0 0,0 2,10V14A2,2 0 0,0 4,16H5V20A1,1 0 0,0 6,21H8A1,1 0 0,0 9,20V16H12L17,20V4L12,8M21.5,12C21.5,13.71 20.54,15.26 19,16V8C20.53,8.75 21.5,10.3 21.5,12Z'
+            ]
+        );
+
+        // Create Promo menu item
+        $promoMenu = $menu->menuItems()->updateOrCreate(
+            ['name' => 'Promo'],
+            [
+                'name' => 'Promo',
+                'uri' => '<nolink>',
+                'enabled' => 1,
+                'weight' => 6,
+                'icon' => 'M20 2H4C2.89 2 2 2.89 2 4V20C2 21.11 2.89 22 4 22H20C21.11 22 22 21.11 22 20V4C22 2.89 21.11 2 20 2M20 20H4V4H20V20M18 11H6V9H18V11M18 15H6V13H18V15M18 7H6V5H18V7Z'
+            ]
+        );
+
+        // Create Promo child menu items
+        $promoChildItems = [
+            [
+                'name' => 'Active Promotions',
+                'uri' => '/<admin>/promo/active',
+                'enabled' => 1,
+                'weight' => 1,
+                'parent_id' => $promoMenu->id
+            ],
+            [
+                'name' => 'Promotion History',
+                'uri' => '/<admin>/promo/history',
+                'enabled' => 1,
+                'weight' => 2,
+                'parent_id' => $promoMenu->id
+            ],
+            [
+                'name' => 'Create Promotion',
+                'uri' => '/<admin>/promo/create',
+                'enabled' => 1,
+                'weight' => 3,
+                'parent_id' => $promoMenu->id
+            ]
+        ];
+
+        // Create Promo child menu items
+        foreach ($promoChildItems as $item) {
+            $menu->menuItems()->updateOrCreate(
+                ['name' => $item['name']],
+                $item
+            );
+        }
+
+        // Create Support menu item
+        $supportMenu = $menu->menuItems()->updateOrCreate(
+            ['name' => 'Support'],
+            [
+                'name' => 'Support',
+                'uri' => '<nolink>',
+                'enabled' => 1,
+                'weight' => 7,
+                'icon' => 'M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M20,16H6L4,18V4H20V16M6,12H8V14H6V12M6,8H8V10H6V8M10,8H18V10H10V8M10,12H15V14H10V12Z'
+            ]
+        );
+
+        // Create Support child menu items
+        $supportChildItems = [
+            [
+                'name' => 'Tickets',
+                'uri' => '/<admin>/support/tickets',
+                'enabled' => 1,
+                'weight' => 1,
+                'parent_id' => $supportMenu->id
+            ],
+            [
+                'name' => 'Live Chat',
+                'uri' => '/<admin>/support/chat',
+                'enabled' => 1,
+                'weight' => 2,
+                'parent_id' => $supportMenu->id
+            ],
+            [
+                'name' => 'FAQ Management',
+                'uri' => '/<admin>/support/faq',
+                'enabled' => 1,
+                'weight' => 3,
+                'parent_id' => $supportMenu->id
+            ]
+        ];
+
+        // Create Support child menu items
+        foreach ($supportChildItems as $item) {
             $menu->menuItems()->updateOrCreate(
                 ['name' => $item['name']],
                 $item

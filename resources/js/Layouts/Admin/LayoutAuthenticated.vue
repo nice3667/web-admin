@@ -20,7 +20,7 @@ const isAsideMobileExpanded = ref(false);
 const isAsideLgActive = ref(false);
 
 let menuAside = reactive({});
-menuAside = computed(() => usePage().props.navigation.menu);
+menuAside = computed(() => usePage().props.menu);
 
 const menuClick = (event, item) => {
   if (item.isToggleLightDark) {

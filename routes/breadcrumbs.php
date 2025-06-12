@@ -4,9 +4,49 @@ use Diglactic\Breadcrumbs\Breadcrumbs;
 use Diglactic\Breadcrumbs\Generator as BreadcrumbTrail;
 use Illuminate\Support\Facades\Route;
 
-// admin dashboard
+// Dashboard
+Breadcrumbs::for('dashboard', function (BreadcrumbTrail $trail) {
+    $trail->push('Dashboard', route('dashboard'));
+});
+
+// Admin Dashboard
 Breadcrumbs::for('admin.dashboard', function (BreadcrumbTrail $trail) {
-    $trail->push('Dashboard', route('admin.dashboard'));
+    $trail->push('Admin Dashboard', route('admin.dashboard'));
+});
+
+// Admin > Reports > Clients
+Breadcrumbs::for('admin.reports.clients', function (BreadcrumbTrail $trail) {
+    $trail->parent('admin.dashboard');
+    $trail->push('Reports');
+    $trail->push('Clients', route('admin.reports.clients'));
+});
+
+// Admin > Reports > Client Account
+Breadcrumbs::for('admin.reports.client-account', function (BreadcrumbTrail $trail) {
+    $trail->parent('admin.dashboard');
+    $trail->push('Reports');
+    $trail->push('Client Account', route('admin.reports.client-account'));
+});
+
+// Admin > Reports > Reward History
+Breadcrumbs::for('admin.reports.reward-history', function (BreadcrumbTrail $trail) {
+    $trail->parent('admin.dashboard');
+    $trail->push('Reports');
+    $trail->push('Reward History', route('admin.reports.reward-history'));
+});
+
+// Admin > Reports > Client Transactions
+Breadcrumbs::for('admin.reports.client-transaction', function (BreadcrumbTrail $trail) {
+    $trail->parent('admin.dashboard');
+    $trail->push('Reports');
+    $trail->push('Client Transactions', route('admin.reports.client-transaction'));
+});
+
+// Admin > Reports > Transactions Pending
+Breadcrumbs::for('admin.reports.transactions-pending', function (BreadcrumbTrail $trail) {
+    $trail->parent('admin.dashboard');
+    $trail->push('Reports');
+    $trail->push('Transactions Pending', route('admin.reports.transactions-pending'));
 });
 
 Breadcrumbs::macro('resource', function (string $name, string $title, ?string $parentName = null) {
