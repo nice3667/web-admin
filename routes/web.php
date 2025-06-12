@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\ExnessController;
 
 
 Route::get('/', function () {
@@ -47,5 +48,7 @@ Route::middleware(['web', 'auth', 'verified', \App\Http\Middleware\HasAccessAdmi
         return Inertia::render('Admin/Report/TransactionsPending');
     })->name('admin.reports.transactions-pending');
 });
+
+Route::get('/exness/test', [ExnessController::class, 'test']);
 
 require __DIR__.'/auth.php';
