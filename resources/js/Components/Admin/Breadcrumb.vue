@@ -9,7 +9,7 @@ breadcrumbs = computed(() => usePage().props.navigation.breadcrumbs)
 </script>
 
 <template>
-   <nav aria-label="Breadcrumb" class="flex px-6 xl:max-w-6xl xl:mx-auto">
+   <nav aria-label="Breadcrumb" class="flex px-6 xl:mx-auto">
     <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
       <li
         v-for="(item, index) in breadcrumbs"
