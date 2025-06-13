@@ -34,27 +34,33 @@ onMounted(async () => {
       console.log('ข้อมูล V1:', v1Data)
       console.log('ข้อมูล V2:', v2Data)
       
-      // สร้าง map ของ client_status จาก V2 โดยใช้ 8 ตัวแรกของ client_uid
-      const v2StatusMap = {}
+      // สร้าง map ของ client_status และ rebate_amount_usd จาก V2 โดยใช้ 8 ตัวแรกของ client_uid
+      const v2Map = {}
       if (Array.isArray(v2Data)) {
         v2Data.forEach(client => {
           if (client.client_uid) {
             const shortUid = client.client_uid.substring(0, 8)
-            v2StatusMap[shortUid] = client.client_status ? client.client_status.toUpperCase() : 'UNKNOWN'
-            console.log(`V2 Mapping: ${shortUid} => ${v2StatusMap[shortUid]}`)
+            v2Map[shortUid] = {
+              client_status: client.client_status ? client.client_status.toUpperCase() : 'UNKNOWN',
+              rebate_amount_usd: client.rebate_amount_usd !== undefined ? client.rebate_amount_usd : '-'
+            }
+            console.log(`V2 Mapping: ${shortUid} =>`, v2Map[shortUid])
           }
         })
       }
-      console.log('V2 Status Map:', v2StatusMap)
+      console.log('V2 Map:', v2Map)
       
-      // รวมข้อมูล V1 กับ client_status จาก V2
+      // รวมข้อมูล V1 กับ client_status และ rebate_amount_usd จาก V2
       if (Array.isArray(v1Data)) {
         clients.value = v1Data.map(client => {
-          const status = v2StatusMap[client.client_uid] || 'UNKNOWN'
-          console.log(`Mapping client_uid ${client.client_uid} to status: ${status}`)
+          const v2 = v2Map[client.client_uid] || {}
+          const status = v2.client_status || 'UNKNOWN'
+          const rebate = v2.rebate_amount_usd !== undefined ? v2.rebate_amount_usd : '-'
+          console.log(`Mapping client_uid ${client.client_uid} to status: ${status}, rebate: ${rebate}`)
           return {
             ...client,
-            client_status: status
+            client_status: status,
+            rebate_amount_usd: rebate
           }
         })
         console.log('ข้อมูลลูกค้าที่รวมแล้ว:', clients.value)
@@ -100,19 +106,19 @@ const filteredClients = computed(() => {
   let result = clients.value || []
   console.log('ข้อมูลก่อนกรอง:', result)
 
-  // ค้นหา
+  // ค้นหา (เฉพาะ client_uid)
   if (filters.value.search) {
     const searchLower = filters.value.search.toLowerCase()
-    result = result.filter(client => 
-      (client.client_uid?.toLowerCase().includes(searchLower) || 
-       client.id?.toString().includes(searchLower))
+    result = result.filter(client =>
+      client.client_uid?.toLowerCase().includes(searchLower)
     )
   }
 
   // กรองตามสถานะ
   if (filters.value.status !== 'all') {
-    result = result.filter(client => 
-      client.client_status === filters.value.status
+    const statusFilter = filters.value.status.toUpperCase().trim()
+    result = result.filter(client =>
+      (client.client_status || '').toUpperCase().trim() === statusFilter
     )
   }
 
@@ -169,11 +175,11 @@ const getStatusText = (status) => {
 
 <template>
   <LayoutAuthenticated>
-    <Head title="รายงานบัญชีลูกค้า" />
+    <Head title="ลูกค้า" />
     <SectionMain>
       <SectionTitleLineWithButton
         :icon="mdiAccountGroup"
-        title="รายงานบัญชีลูกค้า"
+        title="ลูกค้า"
         main
       >
       </SectionTitleLineWithButton>
@@ -277,73 +283,32 @@ const getStatusText = (status) => {
           <thead>
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ID
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Client UID
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Country
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Currency
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Registration Date
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Volume (Lots)
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Volume (USD)
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Rewards (USD)
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Rebate Amount (USD)
               </th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200 dark:bg-slate-800 dark:divide-gray-700">
-            <template v-if="filteredClients.length > 0">
-              <tr v-for="client in filteredClients" :key="client.id || client.client_uid">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900 dark:text-gray-100">{{ client.id || '-' }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900 dark:text-gray-100">{{ client.client_uid || '-' }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span :class="getStatusColor(client.client_status)">
-                    {{ getStatusText(client.client_status) }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900 dark:text-gray-100">{{ client.country || '-' }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900 dark:text-gray-100">{{ client.currency || '-' }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900 dark:text-gray-100">{{ client.reg_date || '-' }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900 dark:text-gray-100">{{ parseFloat(client.volume_lots || 0).toFixed(2) }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900 dark:text-gray-100">{{ parseFloat(client.volume_mln_usd || 0).toFixed(4) }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-green-600 dark:text-green-400">
-                    {{ parseFloat(client.reward_usd || 0).toFixed(4) }}
-                  </div>
-                </td>
-              </tr>
-            </template>
-            <tr v-else>
-              <td colspan="9" class="px-6 py-4 text-center text-gray-500">
-                ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา
+            <tr v-for="client in filteredClients" :key="client.client_uid">
+              <td class="px-6 py-4 whitespace-nowrap">{{ client.client_uid }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span :class="getStatusColor(client.client_status)">
+                  {{ getStatusText(client.client_status) }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-green-600 font-bold">
+                {{ client.reward_usd || '0.00' }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-blue-600 font-bold">
+                {{ client.rebate_amount_usd !== undefined ? client.rebate_amount_usd : '-' }}
               </td>
             </tr>
           </tbody>
