@@ -64,7 +64,7 @@ defineProps({
       />
     </BaseLevel>
     <BaseLevel mobile>
-      <div>
+      <div class="flex flex-col items-center justify-center text-center w-full">
         <h3 class="text-lg leading-tight text-gray-500 dark:text-slate-400">
           {{ label }}
         </h3>
