@@ -23,7 +23,6 @@ import NotificationBar from '@/Components/NotificationBar.vue'
 import BaseButton from '@/Components/BaseButton.vue'
 import BaseButtons from '@/Components/BaseButtons.vue'
 import { ref, onMounted, computed } from 'vue'
-import axios from 'axios'
 import FormControl from '@/Components/FormControl.vue'
 
 const loading = ref(true)
@@ -189,11 +188,42 @@ const fetchAccounts = async () => {
   try {
     loading.value = true
     error.value = null
-    const response = await axios.get('/api/exness/clients')
-    // Convert the object to an array if it's not already
-    const data = response.data.data.data || {}
-    accounts.value = Object.values(data)
-    console.log('Fetched accounts:', accounts.value) // Debug log
+    const response = await fetch('http://127.0.0.1:8000/api/exness/clients')
+    if (!response.ok) throw new Error('Network response was not ok')
+    const json = await response.json()
+    // ตรวจสอบโครงสร้างข้อมูลแบบ Clients.vue
+    if (json && json.data_v1 && json.data_v2) {
+      const v1Data = json.data_v1
+      const v2Data = json.data_v2
+      // สร้าง map ของ client_status และ rebate_amount_usd จาก V2 โดยใช้ 8 ตัวแรกของ client_uid
+      const v2Map = {}
+      if (Array.isArray(v2Data)) {
+        v2Data.forEach(client => {
+          if (client.client_uid) {
+            const shortUid = client.client_uid.substring(0, 8)
+            v2Map[shortUid] = {
+              client_status: client.client_status ? client.client_status.toUpperCase() : 'UNKNOWN',
+              rebate_amount_usd: client.rebate_amount_usd !== undefined ? client.rebate_amount_usd : '-'
+            }
+          }
+        })
+      }
+      // รวมข้อมูล V1 กับ client_status และ rebate_amount_usd จาก V2
+      if (Array.isArray(v1Data)) {
+        accounts.value = v1Data.map(client => {
+          const v2 = v2Map[client.client_uid] || {}
+          return {
+            ...client,
+            client_status: v2.client_status || 'UNKNOWN',
+            rebate_amount_usd: v2.rebate_amount_usd !== undefined ? v2.rebate_amount_usd : '-'
+          }
+        })
+      } else {
+        error.value = 'รูปแบบข้อมูลไม่ถูกต้อง'
+      }
+    } else {
+      error.value = 'ไม่พบข้อมูลลูกค้า'
+    }
   } catch (err) {
     console.error('Error fetching accounts:', err)
     error.value = 'ไม่สามารถดึงข้อมูลบัญชีได้ กรุณาลองใหม่อีกครั้ง'
@@ -229,21 +259,18 @@ onMounted(() => {
       <!-- Statistics Widgets -->
       <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
         <CardBoxWidget
-          :icon="mdiAccountStar"
           :number="stats.level1_clients"
           label="จำนวนลูกค้าระดับ 1"
           color="text-purple-500"
           class="transform hover:scale-105 transition-transform duration-200"
         />
         <CardBoxWidget
-          :icon="mdiAccountMultiple"
           :number="stats.total_accounts"
           label="จำนวนบัญชีทั้งหมด"
           color="text-blue-500"
           class="transform hover:scale-105 transition-transform duration-200"
         />
         <CardBoxWidget
-          :icon="mdiCash"
           :number="stats.total_volume_lots"
           label="Volume (lots)"
           :suffix="'lots'"
@@ -251,7 +278,6 @@ onMounted(() => {
           class="transform hover:scale-105 transition-transform duration-200"
         />
         <CardBoxWidget
-          :icon="mdiCurrencyUsd"
           :number="stats.total_volume_usd"
           label="Volume (USD)"
           prefix="$"
@@ -259,14 +285,12 @@ onMounted(() => {
           class="transform hover:scale-105 transition-transform duration-200"
         />
         <CardBoxWidget
-          :icon="mdiTrendingUp"
           :number="stats.total_profit"
           label="Reward (USD)"
           prefix="$"
           color="text-emerald-500"
           class="transform hover:scale-105 transition-transform duration-200"
         />
-        
       </div>
 
       <!-- Search Button -->
@@ -288,76 +312,58 @@ onMounted(() => {
 
       <!-- Table Section -->
       <CardBox class="mb-6 overflow-hidden" has-table>
-        <div v-if="loading" class="flex justify-center items-center p-8">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          <span class="ml-4 text-lg text-gray-600">กำลังโหลดข้อมูล...</span>
+        <div v-if="loading" class="p-4 text-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p class="mt-2 text-gray-600">กำลังโหลดข้อมูล...</p>
         </div>
-
-        <div v-else-if="error" class="p-8 text-center">
-          <div class="text-red-600 text-lg">{{ error }}</div>
+        <div v-else-if="error" class="p-4 text-center text-red-600">{{ error }}</div>
+        <div v-else-if="!accounts.length" class="p-4 text-center text-gray-600">
+          <p>ไม่พบข้อมูล</p>
+          <p class="text-sm mt-2">จำนวนข้อมูล: {{ accounts.length }}</p>
+          <p class="text-sm">ข้อมูลที่กรองแล้ว: {{ paginatedAccounts.length }}</p>
         </div>
-
-        <div v-else>
-          <table class="w-full">
+        <div v-else class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead>
-              <tr class="bg-gray-100 dark:bg-slate-800">
-                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Partner Account</th>
-                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Client UID</th>
-                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">วันที่ลงทะเบียน</th>
-                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ประเทศ</th>
-                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">สถานะ</th>
-                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Volume (Lots)</th>
-                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reward (USD)</th>
-                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KYC</th>
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">partner_account_name</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">partner_account</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">country</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">client_uid</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">client_account</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">client_account_type</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">reg_date</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">volume_mln_usd</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">volume_lots</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">currency</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">comment</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <template v-if="paginatedAccounts.length > 0">
-                <tr v-for="account in paginatedAccounts" :key="account.client_uid" class="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors duration-200">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ account.partner_account }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ account.client_uid }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ formatDate(account.reg_date) }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ account.client_country }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span
-                      class="px-3 py-1 rounded-full text-xs font-semibold"
-                      :class="{
-                        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': account.client_status === 'active',
-                        'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200': account.client_status === 'inactive',
-                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200': account.client_status === 'pending'
-                      }"
-                    >
-                      {{ account.client_status }}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ formatNumber(account.volume_lots) }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{ formatCurrency(account.reward_usd) }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span
-                      class="px-3 py-1 rounded-full text-xs font-semibold"
-                      :class="{
-                        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': account.kyc_passed,
-                        'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200': !account.kyc_passed
-                      }"
-                    >
-                      {{ account.kyc_passed ? 'ผ่าน' : 'ไม่ผ่าน' }}
-                    </span>
-                  </td>
-                </tr>
-              </template>
-              <template v-else>
-                <tr>
-                  <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">
-                    <div class="flex flex-col items-center justify-center py-8">
-                      <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <p class="text-lg font-medium text-gray-900">ไม่พบข้อมูลที่ค้นหา</p>
-                      <p class="text-sm text-gray-500 mt-1">ลองปรับเงื่อนไขการค้นหาใหม่</p>
-                    </div>
-                  </td>
-                </tr>
-              </template>
+            <tbody class="bg-white divide-y divide-gray-200 dark:bg-slate-800 dark:divide-gray-700">
+              <tr v-for="account in paginatedAccounts" :key="account.client_uid">
+                <td class="px-6 py-4 whitespace-nowrap">{{ account.partner_account_name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ account.partner_account }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ account.country }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ account.client_uid }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ account.client_account }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ account.client_account_type }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ formatDate(account.reg_date) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ formatNumber(account.volume_mln_usd) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ formatNumber(account.volume_lots) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ account.currency }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ account.comment }}</td>
+              </tr>
+              <tr v-if="paginatedAccounts.length === 0">
+                <td colspan="11" class="px-6 py-4 text-center text-sm text-gray-500">
+                  <div class="flex flex-col items-center justify-center py-8">
+                    <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p class="text-lg font-medium text-gray-900">ไม่พบข้อมูลที่ค้นหา</p>
+                    <p class="text-sm text-gray-500 mt-1">ลองปรับเงื่อนไขการค้นหาใหม่</p>
+                  </div>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -446,27 +452,4 @@ onMounted(() => {
       </CardBoxModal>
     </SectionMain>
   </LayoutAuthenticated>
-</template>
-
-<style scoped>
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th, td {
-  padding: 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-th {
-  background-color: #f9fafb;
-  font-weight: 600;
-  color: #374151;
-}
-
-tr:hover {
-  background-color: #f9fafb;
-}
-</style> 
+</template> 
