@@ -28,12 +28,52 @@ import SectionBannerStarOnGitHub from "@/Components/SectionBannerStarOnGitHub.vu
 import { mdiCash, mdiCurrencyUsd } from "@mdi/js";
 
 const chartData = ref(null);
+const totalAmount = ref(0);
+const loading = ref(true);
+
 const fillChartData = () => {
   chartData.value = chartConfig.sampleChartData();
 };
+
+const fetchWalletAccounts = async () => {
+  try {
+    loading.value = true;
+    const response = await fetch('/api/wallet/accounts', {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+    }
+
+    const json = await response.json();
+    console.log('API Response:', json);
+
+    if (json.success && json.data && json.data.accounts) {
+      totalAmount.value = json.data.accounts.reduce((sum, account) => {
+        if (account.currency === 'USD' && typeof account.balance === 'number') {
+          return sum + account.balance;
+        }
+        return sum;
+      }, 0);
+    }
+  } catch (err) {
+    console.error('Error fetching wallet accounts:', err);
+    totalAmount.value = 0;
+  } finally {
+    loading.value = false;
+  }
+};
+
 onMounted(() => {
   fillChartData();
+  fetchWalletAccounts();
 });
+
 const mainStore = useMainStore();
 
 /* Fetch sample data */
@@ -53,8 +93,9 @@ const transactionBarItems = computed(() => mainStore.history);
         <CardBoxWidget
           color="text-emerald-500"
           :icon="mdiCash"
-          :number="38.34"
-          label="จำนวนเงินทั้งหมด"
+          :number="totalAmount"
+          prefix="$"
+          label="จำนวนเงินทั้งหมด (USD)"
         />
 
         <!-- <CardBoxWidget

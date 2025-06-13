@@ -54,5 +54,6 @@ Route::get('/exness/test', [ExnessController::class, 'getClients']);
 Route::get('/api/exness/clients', [ExnessController::class, 'getClients']);
 Route::get('/api/exness/clients/v1', [ExnessController::class, 'clientsV1']);
 Route::get('/api/exness/clients/v2', [ExnessController::class, 'clientsV2']);
+Route::get('/api/wallet/accounts', [ExnessController::class, 'getWalletAccounts'])->middleware(['auth', 'verified']);
 
 require __DIR__.'/auth.php';

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Client;
 use GuzzleHttp\Promise;
 
@@ -360,6 +361,53 @@ class ExnessController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getWalletAccounts(Request $request)
+    {
+        try {
+            // กำหนด JWT Token แบบ hardcode (ในสถานการณ์จริงควรเก็บใน .env)
+            $token = "eyJhbGciOiJSUzI1NiIsImtpZCI6InVzZXIiLCJ0eXAiOiJKV1QifQ.eyJqdGkiOiJjODE2MjM5NjJhZWY0NzI4YmM2MDIzMDI5NzE2ZTM4NyIsImV4cCI6MTc0OTg0OTA1MCwiaXNzIjoiQXV0aGVudGljYXRpb24iLCJpYXQiOjE3NDk4Mjc0NTAsInN1YiI6IjE5YzRhYTZhYzA0YTQxOTNhZGMxNWQzYjEyMWIyN2U5IiwiYXVkIjpbInBhcnRuZXJzaGlwIl0sImFkZGl0aW9uYWxfcGFyYW1zIjp7IndsX2lkIjoiODcxMWI4YWEtY2M2OC00MTNhLTgwMzQtYzI3MTZhMmNlMTRhIn19.ELYxuXEgUP8msMNO-ypeKdmYvtvAFpO-9O7rCtMBaKKUMUP6oWsFKijd7V1fviCIj4vjxgHx9nWkuayfFD-d4I2Rml8hS1zJVvA_KEUA_bTjLpGl5DmFdCkuZ00h-VNjcvnvDuoVi3VA5OxCXDQGx3KTtwco5MMXufbYolRDnbh5lRNReiw2553VqyFhByMfr8KLjTkm59GInNeqQAYBX16KdjCfkB9cpGrjZhsQiO2XX4CJQj8cRd5vel0akRhZMiLsr4sjCSND3BLa0KE4o4noWXzU7MWY5KZfWLZSpf51gPfktOQ742dwjeUZSky64AjmJRNVKx40wnyH6Tsod5ZXLBXPtC-JlaTHvO5eVoWRJJUvdBVScg1SXk5YpkAXPfRYeB-jtzt--vJ-BI5Oqb4Yg3qnlY4XbPF9v8G4FzHBz80WXYhMttBE8UShM1n05cIZD0Oq0Ab4nPMRDXv-eXUv_99_F4NirLWe-VWaEpEcTMcGULriIroQrqCqFrcLQw6_vs3ZA4zn9rIPAhKo2CvmD-ezQjqCtrjZOwVOJEDnGYtk1NloMPWiTlSf6-ThrDhcAqqxQuQJqf3EF6XgTOI-MgO0N_NGY3Lsfq3A8MxA4BwxSrM9IGLJAQPre2AYr0YlQ_oMWfoYeWNmXgwbs0JN8BIlaZj0T7VqYMDLxBA";
+
+            $client = new Client([
+                'headers' => [
+                    'Authorization' => 'JWT ' . $token,
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ],
+                'verify' => false
+            ]);
+
+            try {
+                $response = $client->get('https://my.exnessaffiliates.com/api/wallet/accounts/');
+                $data = json_decode($response->getBody(), true);
+
+                \Log::info('Wallet Accounts API Response:', ['data' => $data]);
+
+                return response()->json([
+                    'success' => true,
+                    'data' => $data
+                ]);
+
+            } catch (\Exception $e) {
+                \Log::error('Wallet Accounts API Request Error:', [
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                return response()->json([
+                    'error' => 'เกิดข้อผิดพลาดในการเรียก Wallet Accounts API: ' . $e->getMessage()
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Wallet Accounts General Error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
