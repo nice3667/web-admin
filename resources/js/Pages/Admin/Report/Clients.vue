@@ -116,10 +116,11 @@ const filteredClients = computed(() => {
 
   // กรองตามสถานะ
   if (filters.value.status !== 'all') {
-    const statusFilter = filters.value.status.toUpperCase().trim()
-    result = result.filter(client =>
-      (client.client_status || '').toUpperCase().trim() === statusFilter
-    )
+    const statusFilter = filters.value.status.toUpperCase()
+    result = result.filter(client => {
+      const clientStatus = (client.client_status || '').toUpperCase()
+      return clientStatus === statusFilter
+    })
   }
 
   // กรองตามช่วงวันที่
@@ -209,13 +210,13 @@ const getStatusText = (status) => {
         <CardBox>
           <div class="flex flex-col">
             <span class="text-gray-500 dark:text-gray-400">Volume (USD)</span>
-            <span class="text-2xl font-bold text-yellow-600">{{ stats.due_today }}</span>
+            <span class="text-2xl font-bold ">{{ stats.due_today }}</span>
           </div>
         </CardBox>
         <CardBox>
           <div class="flex flex-col">
             <span class="text-gray-500 dark:text-gray-400">Reward (USD)</span>
-            <span class="text-2xl font-bold text-red-600">{{ stats.overdue }}</span>
+            <span class="text-2xl font-bold ">{{ stats.overdue }}</span>
           </div>
         </CardBox>
         
@@ -243,21 +244,7 @@ const getStatusText = (status) => {
               <option value="ACTIVE">ACTIVE</option>
             </select>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Registration Date Range</label>
-            <div class="flex space-x-2">
-              <input
-                v-model="filters.date_range.start"
-                type="date"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-800"
-              >
-              <input
-                v-model="filters.date_range.end"
-                type="date"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-800"
-              >
-            </div>
-          </div>
+          
           <div class="flex items-end">
             <BaseButton
               color="warning"
@@ -282,16 +269,16 @@ const getStatusText = (status) => {
         <table v-else class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead>
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-sm font-bold text-gray-500 uppercase tracking-wider">
                 Client UID
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-sm font-bold text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-sm font-bold text-gray-500 uppercase tracking-wider">
                 Rewards (USD)
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-sm font-bold text-gray-500 uppercase tracking-wider">
                 Rebate Amount (USD)
               </th>
             </tr>
