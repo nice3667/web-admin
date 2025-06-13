@@ -52,5 +52,7 @@ Route::middleware(['web', 'auth', 'verified', \App\Http\Middleware\HasAccessAdmi
 // Route::get('/exness/test', [ExnessController::class, 'test']);
 Route::get('/exness/test', [ExnessController::class, 'getClients']);
 Route::get('/api/exness/clients', [ExnessController::class, 'getClients']);
+Route::get('/api/exness/clients/v1', [ExnessController::class, 'clientsV1']);
+Route::get('/api/exness/clients/v2', [ExnessController::class, 'clientsV2']);
 
 require __DIR__.'/auth.php';

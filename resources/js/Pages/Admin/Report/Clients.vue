@@ -23,44 +23,39 @@ onMounted(async () => {
   loading.value = true
   error.value = ''
   try {
+    console.log('เริ่มดึงข้อมูล...')
     const response = await axios.get('/api/exness/clients')
-    // Convert the object to an array if it's not already
-    const data = response.data.data.data || {}
-    clients.value = Object.values(data)
-    console.log('Fetched clients:', clients.value) // Debug log
+    console.log('ข้อมูลที่ได้รับจาก API:', response.data)
+    
+    // ตรวจสอบโครงสร้างข้อมูล
+    if (response.data && response.data.data) {
+      const clientData = response.data.data
+      console.log('ข้อมูลลูกค้า:', clientData)
+      
+      if (Array.isArray(clientData)) {
+        clients.value = clientData
+        console.log('จำนวนลูกค้าที่พบ:', clients.value.length)
+      } else if (typeof clientData === 'object') {
+        // ถ้าเป็น object ให้แปลงเป็น array
+        const clientsArray = Object.values(clientData)
+        clients.value = clientsArray
+        console.log('จำนวนลูกค้าที่พบ:', clients.value.length)
+      } else {
+        console.error('รูปแบบข้อมูลไม่ถูกต้อง:', clientData)
+        error.value = 'รูปแบบข้อมูลไม่ถูกต้อง'
+      }
+    } else {
+      console.error('ไม่พบข้อมูลใน response:', response.data)
+      error.value = 'ไม่พบข้อมูลลูกค้า'
+    }
   } catch (err) {
-    console.error('Error fetching clients:', err)
+    console.error('เกิดข้อผิดพลาดในการดึงข้อมูล:', err)
     error.value = 'ไม่สามารถดึงข้อมูลลูกค้าได้ กรุณาลองใหม่อีกครั้ง'
   } finally {
     loading.value = false
   }
 })
 
-const pendingTransactions = ref([
-  {
-    id: 1,
-    client_name: 'John Doe',
-    transaction_id: 'TRX001',
-    type: 'Withdrawal',
-    amount: 1000.00,
-    currency: 'USD',
-    payment_method: 'Bank Transfer',
-    requested_date: '2024-03-20',
-    due_date: '2024-03-22'
-  },
-  {
-    id: 2,
-    client_name: 'Jane Smith',
-    transaction_id: 'TRX002',
-    type: 'Deposit',
-    amount: 2000.00,
-    currency: 'USD',
-    payment_method: 'Bank Transfer',
-    requested_date: '2024-03-20',
-    due_date: '2024-03-22'
-  }
-  // Add more sample data as needed
-])
 
 const filters = ref({
   search: '',
@@ -84,23 +79,25 @@ const resetFilters = () => {
 
 const filteredClients = computed(() => {
   let result = clients.value || []
+  console.log('ข้อมูลก่อนกรอง:', result)
 
-  // Search filter
+  // ค้นหา
   if (filters.value.search) {
     const searchLower = filters.value.search.toLowerCase()
     result = result.filter(client => 
-      client.partner_account?.toLowerCase().includes(searchLower)
+      (client.client_uid?.toLowerCase().includes(searchLower) || 
+       client.id?.toString().includes(searchLower))
     )
   }
 
-  // Status filter
+  // กรองตามสถานะ
   if (filters.value.status !== 'all') {
     result = result.filter(client => 
       client.client_status === filters.value.status
     )
   }
 
-  // Date range filter
+  // กรองตามช่วงวันที่
   if (filters.value.date_range.start || filters.value.date_range.end) {
     result = result.filter(client => {
       const regDate = new Date(client.reg_date)
@@ -113,21 +110,24 @@ const filteredClients = computed(() => {
     })
   }
 
+  console.log('ข้อมูลหลังกรอง:', result)
   return result
 })
 
 const stats = computed(() => {
-  const clientsArray = clients.value || [];
-  const totalAccounts = clientsArray.length;
-  const totalVolumeLots = clientsArray.reduce((sum, client) => sum + (parseFloat(client.volume_lots) || 0), 0);
-  const totalVolumeUsd = clientsArray.reduce((sum, client) => sum + (parseFloat(client.volume_mln_usd) || 0), 0);
-  const totalReward = clientsArray.reduce((sum, client) => sum + (parseFloat(client.reward_usd) || 0), 0);
+  const clientsArray = clients.value || []
+  console.log('ข้อมูลสำหรับคำนวณสถิติ:', clientsArray)
+  
+  const totalAccounts = clientsArray.length
+  const totalVolumeLots = clientsArray.reduce((sum, client) => sum + (parseFloat(client.volume_lots) || 0), 0)
+  const totalVolumeUsd = clientsArray.reduce((sum, client) => sum + (parseFloat(client.volume_mln_usd) || 0), 0)
+  const totalReward = clientsArray.reduce((sum, client) => sum + (parseFloat(client.reward_usd) || 0), 0)
 
   return {
     total_pending: totalAccounts,
     total_amount: totalVolumeLots,
     due_today: totalVolumeUsd.toFixed(4),
-    overdue: Math.ceil(totalReward)
+    overdue: totalReward.toFixed(4)
   }
 })
 </script>
@@ -235,30 +235,88 @@ const stats = computed(() => {
         <div v-else-if="error" class="p-4 text-center text-red-600">{{ error }}</div>
         <div v-else-if="!clients.length" class="p-4 text-center text-gray-600">
           <p>ไม่พบข้อมูล</p>
+          <p class="text-sm mt-2">จำนวนข้อมูล: {{ clients.length }}</p>
+          <p class="text-sm">ข้อมูลที่กรองแล้ว: {{ filteredClients.length }}</p>
         </div>
-        <table v-else>
+        <table v-else class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead>
             <tr>
-              <th>Partner Account</th>
-              <th>Client UID</th>
-              <th>วันที่ลงทะเบียน</th>
-              <th>ประเทศ</th>
-              <th>สถานะ</th>
-              <th>Volume (Lots)</th>
-              <th>Reward (USD)</th>
-              <th>KYC</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                ID
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Client UID
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Country
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Currency
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Registration Date
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Volume (Lots)
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Volume (USD)
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Rewards (USD)
+              </th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="client in filteredClients" :key="client.client_uid">
-              <td data-label="Partner Account">{{ client.partner_account }}</td>
-              <td data-label="Client UID">{{ client.client_uid }}</td>
-              <td data-label="วันที่ลงทะเบียน">{{ client.reg_date }}</td>
-              <td data-label="ประเทศ">{{ client.client_country }}</td>
-              <td data-label="สถานะ">{{ client.client_status }}</td>
-              <td data-label="Volume (Lots)">{{ client.volume_lots }}</td>
-              <td data-label="Reward (USD)">{{ client.reward_usd }}</td>
-              <td data-label="KYC">{{ client.kyc_passed ? 'ผ่าน' : 'ไม่ผ่าน' }}</td>
+          <tbody class="bg-white divide-y divide-gray-200 dark:bg-slate-800 dark:divide-gray-700">
+            <template v-if="filteredClients.length > 0">
+              <tr v-for="client in filteredClients" :key="client.id || client.client_uid">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900 dark:text-gray-100">{{ client.id || '-' }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900 dark:text-gray-100">{{ client.client_uid || '-' }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span
+                    :class="{
+                      'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+                      'bg-green-100 text-green-800': client.client_status === 'ACTIVE',
+                      'bg-red-100 text-red-800': client.client_status === 'INACTIVE',
+                      'bg-gray-100 text-gray-800': !client.client_status || client.client_status === 'UNKNOWN'
+                    }"
+                  >
+                    {{ client.client_status || 'UNKNOWN' }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900 dark:text-gray-100">{{ client.country || '-' }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900 dark:text-gray-100">{{ client.currency || '-' }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900 dark:text-gray-100">{{ client.reg_date || '-' }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900 dark:text-gray-100">{{ parseFloat(client.volume_lots || 0).toFixed(2) }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900 dark:text-gray-100">{{ parseFloat(client.volume_mln_usd || 0).toFixed(4) }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-green-600 dark:text-green-400">
+                    {{ parseFloat(client.reward_usd || 0).toFixed(4) }}
+                  </div>
+                </td>
+              </tr>
+            </template>
+            <tr v-else>
+              <td colspan="9" class="px-6 py-4 text-center text-gray-500">
+                ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา
+              </td>
             </tr>
           </tbody>
         </table>
