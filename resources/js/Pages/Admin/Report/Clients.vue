@@ -1,313 +1,194 @@
 <script setup>
 import { Head } from "@inertiajs/vue3"
 import {
-  mdiAccountMultiple,
+  mdiClockOutline,
   mdiAlertBoxOutline,
-  mdiCash,
-  mdiCurrencyUsd,
-  mdiGift,
+  mdiAccountGroup
 } from "@mdi/js"
 import LayoutAuthenticated from "@/Layouts/Admin/LayoutAuthenticated.vue"
 import SectionMain from "@/Components/SectionMain.vue"
 import SectionTitleLineWithButton from "@/Components/SectionTitleLineWithButton.vue"
 import CardBox from "@/Components/CardBox.vue"
-import CardBoxWidget from "@/Components/CardBoxWidget.vue"
 import NotificationBar from "@/Components/NotificationBar.vue"
 import BaseButton from "@/Components/BaseButton.vue"
 import BaseButtons from "@/Components/BaseButtons.vue"
-import { ref, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import axios from 'axios'
 
-const stats = ref({
-  total_clients: 150,
-  total_volume_lots: 1250.5,
-  total_volume_usd: 1250000,
-  total_rewards: 25000
+const clients = ref([])
+const loading = ref(false)
+const error = ref('')
+
+onMounted(async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const response = await axios.get('/api/exness/clients')
+    // Convert the object to an array if it's not already
+    const data = response.data.data.data || {}
+    clients.value = Object.values(data)
+    console.log('Fetched clients:', clients.value) // Debug log
+  } catch (err) {
+    console.error('Error fetching clients:', err)
+    error.value = 'ไม่สามารถดึงข้อมูลลูกค้าได้ กรุณาลองใหม่อีกครั้ง'
+  } finally {
+    loading.value = false
+  }
 })
 
-const clients = ref([
+const pendingTransactions = ref([
   {
     id: 1,
-    name: 'Somchai Jaidee',
-    email: 'somchai@example.com',
-    phone: '+66812345678',
-    status: 'Active',
-    progress: 100,
-    rewards: 2500,
-    comment: 'Top performer',
-    rebates: '0.8 pips'
+    client_name: 'John Doe',
+    transaction_id: 'TRX001',
+    type: 'Withdrawal',
+    amount: 1000.00,
+    currency: 'USD',
+    payment_method: 'Bank Transfer',
+    requested_date: '2024-03-20',
+    due_date: '2024-03-22'
   },
   {
     id: 2,
-    name: 'Somsri Rakdee',
-    email: 'somsri@example.com',
-    phone: '+66823456789',
-    status: 'Active',
-    progress: 100,
-    rewards: 3200,
-    comment: 'Consistent trader',
-    rebates: '0.7 pips'
-  },
-  {
-    id: 3,
-    name: 'Wichai Sangdee',
-    email: 'wichai@example.com',
-    phone: '+66834567890',
-    status: 'Inactive',
-    progress: 50,
-    rewards: 800,
-    comment: 'Needs improvement',
-    rebates: '0.5 pips'
-  },
-  {
-    id: 4,
-    name: 'Pranee Suksai',
-    email: 'pranee@example.com',
-    phone: '+66845678901',
-    status: 'Active',
-    progress: 100,
-    rewards: 1900,
-    comment: 'Good progress',
-    rebates: '0.6 pips'
-  },
-  {
-    id: 5,
-    name: 'Sompong Chailee',
-    email: 'sompong@example.com',
-    phone: '+66856789012',
-    status: 'Active',
-    progress: 100,
-    rewards: 4200,
-    comment: 'Excellent results',
-    rebates: '0.9 pips'
-  },
-  {
-    id: 6,
-    name: 'Ratree Meesuk',
-    email: 'ratree@example.com',
-    phone: '+66867890123',
-    status: 'Inactive',
-    progress: 0,
-    rewards: 500,
-    comment: 'Limited activity',
-    rebates: '0.4 pips'
-  },
-  {
-    id: 7,
-    name: 'Mongkol Deejai',
-    email: 'mongkol@example.com',
-    phone: '+66878901234',
-    status: 'Active',
-    progress: 100,
-    rewards: 2800,
-    comment: 'Strong performance',
-    rebates: '0.7 pips'
-  },
-  {
-    id: 8,
-    name: 'Sunee Wandee',
-    email: 'sunee@example.com',
-    phone: '+66889012345',
-    status: 'Active',
-    progress: 50,
-    rewards: 2300,
-    comment: 'Steady growth',
-    rebates: '0.6 pips'
-  },
-  {
-    id: 9,
-    name: 'Pichai Rukdee',
-    email: 'pichai@example.com',
-    phone: '+66890123456',
-    status: 'Active',
-    progress: 50,
-    rewards: 1700,
-    comment: 'Good potential',
-    rebates: '0.5 pips'
-  },
-  {
-    id: 10,
-    name: 'Malee Sombat',
-    email: 'malee@example.com',
-    phone: '+66901234567',
-    status: 'Inactive',
-    progress: 0,
-    rewards: 600,
-    comment: 'Requires attention',
-    rebates: '0.4 pips'
-  },
-  {
-    id: 11,
-    name: 'Somchai Jaidee',
-    email: 'somchai@example.com',
-    phone: '+66812345678',
-    status: 'Inactive',
-    progress: 0,
-    rewards: 600,
-    comment: 'Requires attention',
-    rebates: '0.4 pips'
-  },
-  {
-    id: 12,
-    name: 'Somchai Jaidee',
-    email: 'somchai@example.com',
-    phone: '+66812345678',
-    status: 'Inactive',
-    progress: 0,
-    rewards: 600,
-    comment: 'Requires attention',
-    rebates: '0.4 pips'
-  },
-  {
-    id: 13,
-    name: 'Somchai Jaidee',
-    email: 'somchai@example.com',
-    phone: '+66812345678',
-    status: 'Inactive',
-    progress: 0,
-    rewards: 600,
-    comment: 'Requires attention',
-    rebates: '0.4 pips'
-  },
-  {
-    id: 14,
-    name: 'Somchai Jaidee',
-    email: 'maleei@example.com',
-    phone: '+66812345678',
-    status: 'Inactive',
-    progress: 0,
-    rewards: 600,
-    comment: 'Requires attention',
-    rebates: '0.4 pips'
-  },
-  {
-    id: 15,
-    name: 'Somchai Jaidee',
-    email: 'maleei@example.com',
-    phone: '+66812345678',
-    status: 'Inactive',
-    progress: 0,
-    rewards: 600,
-    comment: 'Requires attention',
-    rebates: '0.4 pips'
+    client_name: 'Jane Smith',
+    transaction_id: 'TRX002',
+    type: 'Deposit',
+    amount: 2000.00,
+    currency: 'USD',
+    payment_method: 'Bank Transfer',
+    requested_date: '2024-03-20',
+    due_date: '2024-03-22'
   }
+  // Add more sample data as needed
 ])
 
 const filters = ref({
   search: '',
   status: 'all',
-  date_from: '',
-  date_to: ''
+  date_range: {
+    start: '',
+    end: ''
+  }
 })
 
-// Update the filteredClients computed property to search by ID
+const resetFilters = () => {
+  filters.value = {
+    search: '',
+    status: 'all',
+    date_range: {
+      start: '',
+      end: ''
+    }
+  }
+}
+
 const filteredClients = computed(() => {
-  let filtered = [...clients.value]
-  
-  // Apply search filter by Client ID
+  let result = clients.value || []
+
+  // Search filter
   if (filters.value.search) {
-    filtered = filtered.filter(client => 
-      client.id.toString().includes(filters.value.search)
+    const searchLower = filters.value.search.toLowerCase()
+    result = result.filter(client => 
+      client.partner_account?.toLowerCase().includes(searchLower)
     )
   }
-  
-  // Apply status filter
+
+  // Status filter
   if (filters.value.status !== 'all') {
-    filtered = filtered.filter(client => 
-      client.status.toLowerCase() === filters.value.status.toLowerCase()
+    result = result.filter(client => 
+      client.client_status === filters.value.status
     )
   }
-  
-  return filtered
+
+  // Date range filter
+  if (filters.value.date_range.start || filters.value.date_range.end) {
+    result = result.filter(client => {
+      const regDate = new Date(client.reg_date)
+      const start = filters.value.date_range.start ? new Date(filters.value.date_range.start) : null
+      const end = filters.value.date_range.end ? new Date(filters.value.date_range.end) : null
+
+      if (start && regDate < start) return false
+      if (end && regDate > end) return false
+      return true
+    })
+  }
+
+  return result
 })
 
-// Add pagination state
-const currentPage = ref(1)
-const itemsPerPage = 10
+const stats = computed(() => {
+  const clientsArray = clients.value || [];
+  const totalAccounts = clientsArray.length;
+  const totalVolumeLots = clientsArray.reduce((sum, client) => sum + (parseFloat(client.volume_lots) || 0), 0);
+  const totalVolumeUsd = clientsArray.reduce((sum, client) => sum + (parseFloat(client.volume_mln_usd) || 0), 0);
+  const totalReward = clientsArray.reduce((sum, client) => sum + (parseFloat(client.reward_usd) || 0), 0);
 
-// Add computed property for paginated clients
-const paginatedClients = computed(() => {
-  const startIndex = (currentPage.value - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  return filteredClients.value.slice(startIndex, endIndex)
+  return {
+    total_pending: totalAccounts,
+    total_amount: totalVolumeLots,
+    due_today: totalVolumeUsd.toFixed(4),
+    overdue: Math.ceil(totalReward)
+  }
 })
-
-// Add computed property for total pages
-const totalPages = computed(() => {
-  return Math.ceil(filteredClients.value.length / itemsPerPage)
-})
-
-// Add method to change page
-const changePage = (page) => {
-  currentPage.value = page
-}
-
-// Add a method to get progress color based on level
-const getProgressColor = (progress) => {
-  if (progress === 100) return 'bg-green-600'
-  if (progress === 50) return 'bg-yellow-600'
-  return 'bg-red-600'
-}
 </script>
 
 <template>
   <LayoutAuthenticated>
-    <Head title="Client Reports" />
+    <Head title="รายงานบัญชีลูกค้า" />
     <SectionMain>
       <SectionTitleLineWithButton
-        :icon="mdiAccountMultiple"
-        title="Client Reports"
+        :icon="mdiAccountGroup"
+        title="รายงานบัญชีลูกค้า"
         main
       >
       </SectionTitleLineWithButton>
 
       <NotificationBar
-        v-if="$page.props.flash.message"
-        color="success"
+        v-if="error"
+        color="danger"
         :icon="mdiAlertBoxOutline"
       >
-        {{ $page.props.flash.message }}
+        {{ error }}
       </NotificationBar>
 
-      <!-- Statistics Widgets -->
+      <!-- Statistics Cards -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <CardBoxWidget
-          :icon="mdiAccountMultiple"
-          :number="stats.total_clients"
-          label="Total Clients"
-          color="text-blue-500"
-        />
-        <CardBoxWidget
-          :icon="mdiCash"
-          :number="stats.total_volume_lots"
-          label="Volume (lots)"
-          :suffix="'lots'"
-          color="text-green-500"
-        />
-        <CardBoxWidget
-          :icon="mdiCurrencyUsd"
-          :number="stats.total_volume_usd"
-          label="Volume (Min. USD)"
-          prefix="$"
-          color="text-yellow-500"
-        />
-        <CardBoxWidget
-          :icon="mdiGift"
-          :number="stats.total_rewards"
-          label="Rewards"
-          prefix="$"
-          color="text-purple-500"
-        />
+        <CardBox>
+          <div class="flex flex-col">
+            <span class="text-gray-500 dark:text-gray-400">Total Partner Account</span>
+            <span class="text-2xl font-bold">{{ stats.total_pending }}</span>
+          </div>
+        </CardBox>
+        <CardBox>
+          <div class="flex flex-col">
+            <span class="text-gray-500 dark:text-gray-400">Volume (lots)</span>
+            <span class="text-2xl font-bold">{{ stats.total_amount.toFixed(2) }}</span>
+          </div>
+        </CardBox>
+        <CardBox>
+          <div class="flex flex-col">
+            <span class="text-gray-500 dark:text-gray-400">Volume (USD)</span>
+            <span class="text-2xl font-bold text-yellow-600">{{ stats.due_today }}</span>
+          </div>
+        </CardBox>
+        <CardBox>
+          <div class="flex flex-col">
+            <span class="text-gray-500 dark:text-gray-400">Reward (USD)</span>
+            <span class="text-2xl font-bold text-red-600">{{ stats.overdue }}</span>
+          </div>
+        </CardBox>
+        
       </div>
 
       <CardBox class="mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ค้นหา Client ID</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search Account</label>
             <input
               v-model="filters.search"
               type="text"
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-800"
-              placeholder="ระบุ Client ID..."
+              placeholder="Search Partner Account"
             >
           </div>
           <div>
@@ -317,124 +198,70 @@ const getProgressColor = (progress) => {
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-800"
             >
               <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="INACTIVE">INACTIVE</option>
+              <option value="ACTIVE">ACTIVE</option>
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">From Date</label>
-            <input
-              v-model="filters.date_from"
-              type="date"
-              class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-800"
-            >
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Registration Date Range</label>
+            <div class="flex space-x-2">
+              <input
+                v-model="filters.date_range.start"
+                type="date"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-800"
+              >
+              <input
+                v-model="filters.date_range.end"
+                type="date"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-800"
+              >
+            </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">To Date</label>
-            <input
-              v-model="filters.date_to"
-              type="date"
-              class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-800"
-            >
+          <div class="flex items-end">
+            <BaseButton
+              color="warning"
+              label="Reset"
+              @click="resetFilters"
+            />
           </div>
-          <div class="md:col-span-1 flex items-end justify-end">
-  <BaseButtons>
-    <BaseButton
-      color="warning"
-      label="Reset"
-      @click="filters = { search: '', status: 'all', date_from: '', date_to: '' }"
-    />
-  </BaseButtons>
-</div>
-
         </div>
-       
       </CardBox>
 
       <CardBox class="mb-6" has-table>
-        <table>
+        <div v-if="loading" class="p-4 text-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p class="mt-2 text-gray-600">กำลังโหลดข้อมูล...</p>
+        </div>
+        <div v-else-if="error" class="p-4 text-center text-red-600">{{ error }}</div>
+        <div v-else-if="!clients.length" class="p-4 text-center text-gray-600">
+          <p>ไม่พบข้อมูล</p>
+        </div>
+        <table v-else>
           <thead>
             <tr>
-              <th>Client ID</th>
-              <th>Status</th>
-              <th>Client Progress</th>
-              <th>Rewards</th>
-              <th>Comment</th>
-              <th>Rebates</th>
-              <th>Actions</th>
+              <th>Partner Account</th>
+              <th>Client UID</th>
+              <th>วันที่ลงทะเบียน</th>
+              <th>ประเทศ</th>
+              <th>สถานะ</th>
+              <th>Volume (Lots)</th>
+              <th>Reward (USD)</th>
+              <th>KYC</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="client in paginatedClients" :key="client.id">
-              <td data-label="Client ID">{{ client.id }}</td>
-              <td data-label="Status">
-                <span
-                  class="px-2 py-1 rounded-full text-xs"
-                  :class="{
-                    'bg-green-100 text-green-800': client.status === 'Active',
-                    'bg-red-100 text-red-800': client.status === 'Inactive'
-                  }"
-                >
-                  {{ client.status }}
-                </span>
-              </td>
-              <td data-label="Client Progress">
-                <div class="flex items-center">
-                  <div class="w-full bg-gray-200 rounded-full h-2.5 mr-2">
-                    <div 
-                      class="h-2.5 rounded-full" 
-                      :class="getProgressColor(client.progress)"
-                      :style="{ width: client.progress + '%' }"
-                    ></div>
-                  </div>
-                  <span class="text-sm">{{ client.progress }}%</span>
-                </div>
-              </td>
-              <td data-label="Rewards">${{ client.rewards }}</td>
-              <td data-label="Comment">{{ client.comment }}</td>
-              <td data-label="Rebates">{{ client.rebates }}</td>
-              <td class="before:hidden lg:w-1">
-                <BaseButtons type="justify-start lg:justify-end" no-wrap>
-                  <BaseButton
-                    color="info"
-                    label="View"
-                  />
-                  <BaseButton
-                    color="danger"
-                    label="Delete"
-                  />
-                </BaseButtons>
-              </td>
+            <tr v-for="client in filteredClients" :key="client.client_uid">
+              <td data-label="Partner Account">{{ client.partner_account }}</td>
+              <td data-label="Client UID">{{ client.client_uid }}</td>
+              <td data-label="วันที่ลงทะเบียน">{{ client.reg_date }}</td>
+              <td data-label="ประเทศ">{{ client.client_country }}</td>
+              <td data-label="สถานะ">{{ client.client_status }}</td>
+              <td data-label="Volume (Lots)">{{ client.volume_lots }}</td>
+              <td data-label="Reward (USD)">{{ client.reward_usd }}</td>
+              <td data-label="KYC">{{ client.kyc_passed ? 'ผ่าน' : 'ไม่ผ่าน' }}</td>
             </tr>
           </tbody>
         </table>
-        <!-- Add pagination controls -->
-        <div class="mt-6 flex justify-between items-center">
-          <div class="text-gray-600 dark:text-gray-400 p-3">
-              Showing {{ ((currentPage - 1) * itemsPerPage) + 1 }} to {{ Math.min(currentPage * itemsPerPage, filteredClients.length) }} of {{ filteredClients.length }} entries
-          </div>
-          <div class="flex space-x-2 p-3">
-            <BaseButton
-              :color="currentPage === 1 ? 'gray' : 'info'"
-              :disabled="currentPage === 1"
-              label="Previous"
-              @click="changePage(currentPage - 1)"
-            />
-            <template v-for="page in totalPages" :key="page">
-              <BaseButton
-                :color="currentPage === page ? 'info' : 'white'"
-                :label="page.toString()"
-                @click="changePage(page)"
-              />
-            </template>
-            <BaseButton
-              :color="currentPage === totalPages ? 'gray' : 'info'"
-              :disabled="currentPage === totalPages"
-              label="Next"
-              @click="changePage(currentPage + 1)"
-            />
-          </div>
-        </div>
       </CardBox>
     </SectionMain>
   </LayoutAuthenticated>

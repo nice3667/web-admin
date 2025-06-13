@@ -15,7 +15,7 @@ import {
 export default [
     {
         icon: mdiMenu,
-        label: "Sample menu",
+        label: "Update  ",
         menu: [
             {
                 icon: mdiClockOutline,

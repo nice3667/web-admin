@@ -49,6 +49,8 @@ Route::middleware(['web', 'auth', 'verified', \App\Http\Middleware\HasAccessAdmi
     })->name('admin.reports.transactions-pending');
 });
 
-Route::get('/exness/test', [ExnessController::class, 'test']);
+// Route::get('/exness/test', [ExnessController::class, 'test']);
+Route::get('/exness/test', [ExnessController::class, 'getClients']);
+Route::get('/api/exness/clients', [ExnessController::class, 'getClients']);
 
 require __DIR__.'/auth.php';
