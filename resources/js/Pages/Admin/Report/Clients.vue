@@ -28,20 +28,39 @@ onMounted(async () => {
     console.log('ข้อมูลที่ได้รับจาก API:', response.data)
     
     // ตรวจสอบโครงสร้างข้อมูล
-    if (response.data && response.data.data) {
-      const clientData = response.data.data
-      console.log('ข้อมูลลูกค้า:', clientData)
+    if (response.data && response.data.data_v1 && response.data.data_v2) {
+      const v1Data = response.data.data_v1
+      const v2Data = response.data.data_v2
+      console.log('ข้อมูล V1:', v1Data)
+      console.log('ข้อมูล V2:', v2Data)
       
-      if (Array.isArray(clientData)) {
-        clients.value = clientData
-        console.log('จำนวนลูกค้าที่พบ:', clients.value.length)
-      } else if (typeof clientData === 'object') {
-        // ถ้าเป็น object ให้แปลงเป็น array
-        const clientsArray = Object.values(clientData)
-        clients.value = clientsArray
+      // สร้าง map ของ client_status จาก V2 โดยใช้ 8 ตัวแรกของ client_uid
+      const v2StatusMap = {}
+      if (Array.isArray(v2Data)) {
+        v2Data.forEach(client => {
+          if (client.client_uid) {
+            const shortUid = client.client_uid.substring(0, 8)
+            v2StatusMap[shortUid] = client.client_status ? client.client_status.toUpperCase() : 'UNKNOWN'
+            console.log(`V2 Mapping: ${shortUid} => ${v2StatusMap[shortUid]}`)
+          }
+        })
+      }
+      console.log('V2 Status Map:', v2StatusMap)
+      
+      // รวมข้อมูล V1 กับ client_status จาก V2
+      if (Array.isArray(v1Data)) {
+        clients.value = v1Data.map(client => {
+          const status = v2StatusMap[client.client_uid] || 'UNKNOWN'
+          console.log(`Mapping client_uid ${client.client_uid} to status: ${status}`)
+          return {
+            ...client,
+            client_status: status
+          }
+        })
+        console.log('ข้อมูลลูกค้าที่รวมแล้ว:', clients.value)
         console.log('จำนวนลูกค้าที่พบ:', clients.value.length)
       } else {
-        console.error('รูปแบบข้อมูลไม่ถูกต้อง:', clientData)
+        console.error('รูปแบบข้อมูล V1 ไม่ถูกต้อง:', v1Data)
         error.value = 'รูปแบบข้อมูลไม่ถูกต้อง'
       }
     } else {
@@ -130,6 +149,22 @@ const stats = computed(() => {
     overdue: totalReward.toFixed(4)
   }
 })
+
+// แก้ไขส่วนแสดงผล Status ในตาราง
+const getStatusColor = (status) => {
+  switch (status?.toUpperCase()) {
+    case 'ACTIVE':
+      return 'text-green-600'
+    case 'INACTIVE':
+      return 'text-red-600'
+    default:
+      return 'text-gray-600'
+  }
+}
+
+const getStatusText = (status) => {
+  return status?.toUpperCase() || 'UNKNOWN'
+}
 </script>
 
 <template>
@@ -280,15 +315,8 @@ const stats = computed(() => {
                   <div class="text-sm text-gray-900 dark:text-gray-100">{{ client.client_uid || '-' }}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span
-                    :class="{
-                      'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
-                      'bg-green-100 text-green-800': client.client_status === 'ACTIVE',
-                      'bg-red-100 text-red-800': client.client_status === 'INACTIVE',
-                      'bg-gray-100 text-gray-800': !client.client_status || client.client_status === 'UNKNOWN'
-                    }"
-                  >
-                    {{ client.client_status || 'UNKNOWN' }}
+                  <span :class="getStatusColor(client.client_status)">
+                    {{ getStatusText(client.client_status) }}
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">

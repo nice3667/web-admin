@@ -107,14 +107,13 @@ class ExnessController extends Controller
                     }
                 }
 
-                // รวมข้อมูลจากทั้งสอง API
-                $combined = array_merge($v1Clients, $v2Clients);
-
-                \Log::info('Combined Clients:', ['clients' => $combined]);
+                \Log::info('V1 Clients:', ['clients' => $v1Clients]);
+                \Log::info('V2 Clients:', ['clients' => $v2Clients]);
 
                 // ส่งข้อมูลกลับในรูปแบบที่ต้องการ
                 return response()->json([
-                    'data' => $combined
+                    'data_v1' => $v1Clients,
+                    'data_v2' => $v2Clients
                 ]);
 
             } catch (\Exception $e) {
