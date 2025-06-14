@@ -192,7 +192,7 @@ const getStatusText = (status) => {
 
 <template>
   <LayoutAuthenticated>
-    <Head title="ลูกค้า" />
+    <Head title="ลูกค้านี่ไฮ" />
     <SectionMain>
       <SectionTitleLineWithButton
         :icon="mdiAccountGroup"
