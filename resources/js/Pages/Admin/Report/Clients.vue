@@ -196,7 +196,7 @@ const getStatusText = (status) => {
     <SectionMain>
       <SectionTitleLineWithButton
         :icon="mdiAccountGroup"
-        title="ลูกค้า"
+        title="ลูกค้านี่ไฮ"
         main
       >
       </SectionTitleLineWithButton>
