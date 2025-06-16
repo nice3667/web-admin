@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ExnessController;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\ClientController;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,4 +47,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/exness/wallets', [ExnessController::class, 'getWallets']);
     Route::get('/wallet/accounts', [ExnessController::class, 'getWalletAccounts']);
     Route::post('/exness/credentials', [ExnessController::class, 'saveCredentials']);
+    Route::get('/clients', [ClientController::class, 'index']);
 });

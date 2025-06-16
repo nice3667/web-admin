@@ -82,6 +82,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Exness credentials management
     Route::get('/exness/credentials', [ExnessController::class, 'credentials'])->name('exness.credentials');
     Route::post('/exness/credentials', [ExnessController::class, 'updateCredentials'])->name('exness.credentials.update');
+
+    Route::get('/admin/dashboard', function () {
+        return Inertia::render('Admin/Dashboard');
+    })->name('admin.dashboard');
+
+    Route::get('/admin/reports/clients', function () {
+        return Inertia::render('Admin/Report/Clients');
+    })->name('admin.reports.clients');
 });
 
 // Admin Routes
