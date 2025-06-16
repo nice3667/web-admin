@@ -2,8 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use BalajiDharma\LaravelMenu\Models\Menu;
-use Diglactic\Breadcrumbs\Breadcrumbs;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -31,14 +29,24 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        return [
-            ...parent::share($request),
+        return array_merge(parent::share($request), [
             'auth' => [
                 'user' => $request->user(),
             ],
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),
-            ]
-        ];
+                'error' => fn () => $request->session()->get('error'),
+                'success' => fn () => $request->session()->get('success'),
+            ],
+            'config' => [
+                'api_domain' => session('api_domain', $request->getSchemeAndHttpHost()),
+                'app_url' => config('app.url', $request->getSchemeAndHttpHost()),
+            ],
+            'exness' => [
+                'has_token' => session()->has('exness_token'),
+                'has_credentials' => session()->has('exness_credentials'),
+                'status' => session()->has('exness_token') ? 'connected' : 'disconnected',
+            ],
+        ]);
     }
 }

@@ -38,28 +38,55 @@ const fillChartData = () => {
 const fetchWalletAccounts = async () => {
   try {
     loading.value = true;
+    // Use CSRF token for session-based auth
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
     const response = await fetch('/api/wallet/accounts', {
+      method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrfToken || '',
+        'X-Requested-With': 'XMLHttpRequest'
       },
-      credentials: 'include'
+      credentials: 'same-origin'
     });
 
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
+
     if (!response.ok) {
-      throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+      const errorText = await response.text();
+      console.error('Response error:', errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
     const json = await response.json();
     console.log('API Response:', json);
 
-    if (json.success && json.data && json.data.accounts) {
-      totalAmount.value = json.data.accounts.reduce((sum, account) => {
+    // Handle the new response format from ExnessController
+    if (json.combined_wallets && Array.isArray(json.combined_wallets)) {
+      totalAmount.value = json.combined_wallets.reduce((sum, account) => {
         if (account.currency === 'USD' && typeof account.balance === 'number') {
           return sum + account.balance;
         }
         return sum;
       }, 0);
+    } else if (json.v1_data?.data || json.v2_data?.data) {
+      // Fallback to process v1 or v2 data directly
+      let accounts = [];
+      if (json.v1_data?.data) accounts = accounts.concat(json.v1_data.data);
+      if (json.v2_data?.data) accounts = accounts.concat(json.v2_data.data);
+      
+      totalAmount.value = accounts.reduce((sum, account) => {
+        if (account.currency === 'USD' && typeof account.balance === 'number') {
+          return sum + account.balance;
+        }
+        return sum;
+      }, 0);
+    } else {
+      console.warn('No wallet data found in response:', json);
+      totalAmount.value = 0;
     }
   } catch (err) {
     console.error('Error fetching wallet accounts:', err);

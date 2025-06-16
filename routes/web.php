@@ -5,11 +5,58 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\ExnessController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
+// Debug route for session checking
+Route::get('/debug/session', function () {
+    return response()->json([
+        'authenticated' => Auth::check(),
+        'user_id' => Auth::id(),
+        'user_email' => Auth::user()?->email,
+        'session_id' => session()->getId(),
+        'has_exness_token' => session()->has('exness_token'),
+        'has_credentials' => session()->has('exness_credentials'),
+        'token_length' => session()->has('exness_token') ? strlen(session('exness_token')) : 0,
+        'session_data' => [
+            'exness_token' => session()->has('exness_token') ? 'exists' : 'missing',
+            'exness_credentials' => session()->has('exness_credentials') ? 'exists' : 'missing',
+            'api_domain' => session('api_domain', 'not_set'),
+            'token_created_at' => session('token_created_at', 'not_set')
+        ]
+    ]);
+})->middleware(['auth']);
+
+// Test Exness API with specific credentials
+Route::get('/debug/test-exness/{email}/{password}', function ($email, $password) {
+    try {
+        $response = Http::timeout(30)->withHeaders([
+            'Content-Type' => 'application/json',
+        ])->post('https://my.exnessaffiliates.com/api/v2/auth/', [
+            'login' => $email,
+            'password' => $password
+        ]);
+
+        return response()->json([
+            'email' => $email,
+            'status' => $response->status(),
+            'successful' => $response->successful(),
+            'response' => $response->json(),
+            'has_token' => isset($response->json()['token']),
+            'token_length' => isset($response->json()['token']) ? strlen($response->json()['token']) : 0
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'email' => $email
+        ]);
+    }
+})->middleware(['auth']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
@@ -25,11 +72,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Admin/Exness/TestToken');
     })->name('exness.test-token');
 
-    // Add Exness API routes
+    // Exness API routes
     Route::get('/api/exness/token', [ExnessController::class, 'getToken']);
     Route::get('/api/exness/clients', [ExnessController::class, 'getClients']);
     Route::get('/api/exness/wallets', [ExnessController::class, 'getWallets']);
+    Route::get('/api/wallet/accounts', [ExnessController::class, 'getWalletAccounts']);
     Route::post('/api/exness/credentials', [ExnessController::class, 'saveCredentials']);
+    
+    // Exness credentials management
+    Route::get('/exness/credentials', [ExnessController::class, 'credentials'])->name('exness.credentials');
+    Route::post('/exness/credentials', [ExnessController::class, 'updateCredentials'])->name('exness.credentials.update');
 });
 
 // Admin Routes
@@ -63,10 +115,8 @@ Route::middleware(['web', 'auth', 'verified', \App\Http\Middleware\HasAccessAdmi
 // Route::get('/exness/test', [ExnessController::class, 'test']);
 Route::get('/exness/test', [ExnessController::class, 'getClients']);
 Route::get('/api/exness/clients', [ExnessController::class, 'getClients']);
-Route::get('/api/exness/clients/v1', [ExnessController::class, 'clientsV1']);
-Route::get('/api/exness/clients/v2', [ExnessController::class, 'clientsV2']);
-Route::get('/api/wallet/accounts', [ExnessController::class, 'getWalletAccounts'])->middleware(['auth', 'verified']);
-Route::get('/exness/credentials', [ExnessController::class, 'credentials'])->name('exness.credentials');
-Route::post('/exness/credentials', [ExnessController::class, 'updateCredentials'])->name('exness.credentials.update');
+// Legacy routes - kept for backward compatibility
+Route::get('/api/exness/clients/v1', [ExnessController::class, 'getClients']);
+Route::get('/api/exness/clients/v2', [ExnessController::class, 'getWallets']);
 
 require __DIR__.'/auth.php';
