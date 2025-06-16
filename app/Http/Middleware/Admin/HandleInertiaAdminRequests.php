@@ -35,18 +35,9 @@ class HandleInertiaAdminRequests extends Middleware
     {
         $menu = Menu::where('machine_name', 'admin')->first();
         $menuItems = $menu ? Menu::getMenuTree('admin', true) : [];
-        $user = Auth::user();
 
-        // Filter menu items based on user role
-        $filteredMenu = collect($menuItems)->filter(function($item) use ($user) {
-            // If no permission is required, show the item
-            if (!isset($item->permission)) {
-                return true;
-            }
-
-            // If permission is required, check if user has the role
-            return $user->hasRole($item->permission);
-        });
+        // Show all menu items to all users
+        $filteredMenu = collect($menuItems);
 
         return array_merge(parent::share($request), [
             'auth' => [

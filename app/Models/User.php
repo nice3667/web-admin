@@ -23,6 +23,8 @@ class User extends Authenticatable
         'email',
         'username',
         'password',
+        'exness_email',
+        'exness_password_encrypted',
     ];
 
     /**

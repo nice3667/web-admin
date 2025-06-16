@@ -14,7 +14,8 @@ class HasAccessAdmin
      */
     public function handle($request, Closure $next)
     {
-        if (Auth::user()->can(config('admin.permission.access_admin'))) {
+        // Allow all authenticated users to access admin area
+        if (Auth::check()) {
             return $next($request);
         }
 

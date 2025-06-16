@@ -2,134 +2,82 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use GuzzleHttp\Client;
-use GuzzleHttp\Promise;
+use Illuminate\Support\Facades\Validator;
+use Inertia\Inertia;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Crypt;
 
 class ExnessController extends Controller
 {
-    // ฟังก์ชัน login และดึงข้อมูลลูกค้า
-    public function test(Request $request)
+    public function credentials()
     {
-        // *** ใส่อีเมลและรหัสผ่านของคุณตรงนี้ หรือรับจาก $request ***
-        $loginData = [
-            'login' => 'Janischa.trade@gmail.com',   // ต้องใช้ key 'login' ไม่ใช่ 'email'
-            'password' => 'Janis@2025',
-        ];
-
-        // 1. ขอ JWT Token
-        $res = Http::withHeaders([
-            'Content-Type' => 'application/json',
-        ])->post("https://my.exnessaffiliates.com/api/v2/auth/", $loginData);
-
-        $token = $res->json()['token'] ?? null;
-
-        if (!$token) {
-            return response()->json(['error' => 'ไม่สามารถรับ token ได้'], 500);
-        }
-
-        // 2. ดึงข้อมูลลูกค้า
-        $res2 = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Authorization' => 'JWT ' . $token,
-        ])->get("https://my.exnessaffiliates.com/api/reports/clients/");
-
-        if ($res2->failed()) {
-            return response()->json(['error' => 'ไม่สามารถดึงข้อมูลลูกค้าได้'], 500);
-        }
-
-        return response()->json($res2->json());
+        $user = Auth::user();
+        return Inertia::render('Admin/Exness/Credentials', [
+            'user' => $user
+        ]);
     }
 
-    public function getClients(Request $request)
+    public function updateCredentials(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'exness_email' => 'required|email',
+            'exness_password' => 'required|min:6',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $user = Auth::user();
+        $user->exness_email = $request->exness_email;
+        $user->exness_password_encrypted = Crypt::encryptString($request->exness_password);
+        $user->save();
+
+        return back()->with('success', 'อัปเดตข้อมูล Exness สำเร็จ');
+    }
+
+    public function getToken()
     {
         try {
-            // *** ใส่อีเมลและรหัสผ่านของคุณตรงนี้ หรือรับจาก $request ***
-            $loginData = [
-                'login' => 'Janischa.trade@gmail.com',   // ต้องใช้ key 'login' ไม่ใช่ 'email'
-                'password' => 'Janis@2025',
-            ];
-
-            // 1. ขอ JWT Token
-            $res = Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post("https://my.exnessaffiliates.com/api/v2/auth/", $loginData);
-
-            $token = $res->json()['token'] ?? null;
-
-            if (!$token) {
-                return response()->json(['error' => 'ไม่สามารถรับ token ได้'], 500);
+            $user = Auth::user();
+            
+            if (!$user->exness_email || !$user->exness_password_encrypted) {
+                return response()->json([
+                    'error' => 'กรุณาตั้งค่า Exness credentials ก่อน'
+                ], 400);
             }
 
-            // 2. ดึงข้อมูลลูกค้าจากทั้ง 2 API พร้อมกันด้วย GuzzleHttp
-            $client = new Client([
-                'headers' => [
-                    'Authorization' => 'JWT ' . $token,
-                    'Accept' => 'application/json',
-                    'Content-Type' => 'application/json',
-                ],
-                'verify' => false
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            ])->post('https://api.exness.com/v1/auth/token', [
+                'email' => $user->exness_email,
+                'password' => Crypt::decryptString($user->exness_password_encrypted)
             ]);
 
-            try {
-                // ดึงข้อมูลจากทั้งสอง API พร้อมกัน
-                $promises = [
-                    'v1' => $client->getAsync('https://my.exnessaffiliates.com/api/reports/clients/?limit=100'),
-                    'v2' => $client->getAsync('https://my.exnessaffiliates.com/api/v2/reports/clients/?limit=100')
-                ];
-
-                // รอให้ทั้งสอง request เสร็จสิ้น
-                $responses = Promise\Utils::unwrap($promises);
-
-                // แปลงข้อมูลจาก V1 API
-                $v1Data = json_decode($responses['v1']->getBody(), true);
-                \Log::info('V1 API Response:', ['data' => $v1Data]);
-
-                // แปลงข้อมูลจาก V2 API
-                $v2Data = json_decode($responses['v2']->getBody(), true);
-                \Log::info('V2 API Response:', ['data' => $v2Data]);
-
-                // เพิ่ม source label ให้กับข้อมูลแต่ละเส้น
-                $v1Clients = [];
-                if (isset($v1Data['data']) && is_array($v1Data['data'])) {
-                    foreach ($v1Data['data'] as $client) {
-                        $client['source'] = 'v1';
-                        $v1Clients[] = $client;
-                    }
-                }
-
-                $v2Clients = [];
-                if (isset($v2Data['data']) && is_array($v2Data['data'])) {
-                    foreach ($v2Data['data'] as $client) {
-                        $client['source'] = 'v2';
-                        $v2Clients[] = $client;
-                    }
-                }
-
-                \Log::info('V1 Clients:', ['clients' => $v1Clients]);
-                \Log::info('V2 Clients:', ['clients' => $v2Clients]);
-
-                // ส่งข้อมูลกลับในรูปแบบที่ต้องการ
+            if ($response->successful()) {
+                $data = $response->json();
                 return response()->json([
-                    'data_v1' => $v1Clients,
-                    'data_v2' => $v2Clients
+                    'token' => $data['token'],
+                    'user' => $data['user']
                 ]);
-
-            } catch (\Exception $e) {
-                \Log::error('API Request Error:', [
-                    'message' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]);
-                return response()->json([
-                    'error' => 'เกิดข้อผิดพลาดในการเรียก API: ' . $e->getMessage()
-                ], 500);
             }
 
-        } catch (\Exception $e) {
             return response()->json([
-                'error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+                'error' => 'ไม่สามารถดึง Token ได้',
+                'message' => $response->json()['message'] ?? 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+            ], $response->status());
+
+        } catch (\Exception $e) {
+            Log::error('Exness Token Error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'เกิดข้อผิดพลาดในการดึง Token',
+                'message' => $e->getMessage()
             ], 500);
         }
     }
@@ -137,276 +85,204 @@ class ExnessController extends Controller
     public function clients()
     {
         try {
-            $token = $this->getToken();
-            if (!$token) {
-                \Log::error('No token available');
-                return response()->json(['error' => 'Failed to get token'], 500);
+            $user = Auth::user();
+            
+            if (!$user->exness_email || !$user->exness_password_encrypted) {
+                return response()->json([
+                    'error' => 'กรุณาตั้งค่า Exness credentials ก่อน'
+                ], 400);
             }
 
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, 'https://my.exnessaffiliates.com/api/v2/reports/clients/');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Accept: application/json',
-                'Content-Type: application/json',
-                'Authorization: JWT ' . $token
-            ]);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            \Log::info('API Response:', [
-                'status' => $httpCode,
-                'body' => $response
+            $tokenResponse = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            ])->post('https://api.exness.com/v1/auth/token', [
+                'email' => $user->exness_email,
+                'password' => Crypt::decryptString($user->exness_password_encrypted)
             ]);
 
-            if ($httpCode === 200) {
-                return response()->json(json_decode($response, true));
+            if (!$tokenResponse->successful()) {
+                return response()->json([
+                    'error' => 'ไม่สามารถดึง Token ได้',
+                    'message' => $tokenResponse->json()['message'] ?? 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+                ], $tokenResponse->status());
             }
 
-            \Log::error('Exness API Error:', [
-                'status' => $httpCode,
-                'body' => $response
-            ]);
+            $token = $tokenResponse->json()['token'];
 
-            return response()->json(['error' => 'Failed to fetch clients data'], 500);
+            $clientsResponse = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+                'Accept' => 'application/json'
+            ])->get('https://api.exness.com/v1/clients');
+
+            if ($clientsResponse->successful()) {
+                return response()->json([
+                    'clients' => $clientsResponse->json()
+                ]);
+            }
+
+            return response()->json([
+                'error' => 'ไม่สามารถดึงข้อมูลลูกค้าได้',
+                'message' => $clientsResponse->json()['message'] ?? 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+            ], $clientsResponse->status());
+
         } catch (\Exception $e) {
-            \Log::error('Exness API Exception:', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
-
-    private function getToken()
-    {
-        try {
-            // First, get the CSRF token
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, 'https://my.exnessaffiliates.com/');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            ]);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($ch, CURLOPT_COOKIEJAR, 'cookie.txt');
-            curl_setopt($ch, CURLOPT_COOKIEFILE, 'cookie.txt');
-
-            $response = curl_exec($ch);
-            curl_close($ch);
-
-            // Now try to get the token
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, 'https://my.exnessaffiliates.com/api/v2/auth/token/');
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
-                'username' => 'Janischa.trade@gmail.com',
-                'password' => 'Janis@2025'
-            ]));
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Accept: application/json',
-                'Content-Type: application/x-www-form-urlencoded',
-                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                'Origin: https://my.exnessaffiliates.com',
-                'Referer: https://my.exnessaffiliates.com/'
-            ]);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($ch, CURLOPT_COOKIEJAR, 'cookie.txt');
-            curl_setopt($ch, CURLOPT_COOKIEFILE, 'cookie.txt');
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-            \Log::info('Token Request Details:', [
-                'url' => 'https://my.exnessaffiliates.com/api/v2/auth/token/',
-                'headers' => [
-                    'Accept: application/json',
-                    'Content-Type: application/x-www-form-urlencoded',
-                    'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                    'Origin: https://my.exnessaffiliates.com',
-                    'Referer: https://my.exnessaffiliates.com/'
-                ],
-                'body' => [
-                    'username' => 'Janischa.trade@gmail.com',
-                    'password' => 'Janis@2025'
-                ],
-                'curl_info' => curl_getinfo($ch)
-            ]);
-
-            \Log::info('Token Response:', [
-                'status' => $httpCode,
-                'body' => $response
-            ]);
-
-            curl_close($ch);
-
-            if ($httpCode === 200) {
-                $data = json_decode($response, true);
-                return $data['token'] ?? null;
-            }
-
-            \Log::error('Failed to get token:', [
-                'status' => $httpCode,
-                'body' => $response
-            ]);
-
-            return null;
-        } catch (\Exception $e) {
-            \Log::error('Token Exception:', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return null;
-        }
-    }
-
-    public function clientsV1()
-    {
-        try {
-            $token = $this->getToken();
-            if (!$token) {
-                \Log::error('No token available for V1 API');
-                return response()->json(['error' => 'Failed to get token'], 500);
-            }
-
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, 'https://my.exnessaffiliates.com/api/v2/reports/clients/');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Accept: application/json',
-                'Content-Type: application/json',
-                'Authorization: JWT ' . $token
-            ]);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            \Log::info('V1 API Response:', [
-                'status' => $httpCode,
-                'body' => $response
-            ]);
-
-            if ($httpCode === 200) {
-                return response()->json(json_decode($response, true));
-            }
-
-            \Log::error('Exness API V1 Error:', [
-                'status' => $httpCode,
-                'body' => $response
-            ]);
-
-            return response()->json(['error' => 'Failed to fetch clients data'], 500);
-        } catch (\Exception $e) {
-            \Log::error('Exness API V1 Exception:', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return response()->json(['error' => $e->getMessage()], 500);
+            Log::error('Exness Clients Error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูลลูกค้า',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 
     public function clientsV2()
     {
         try {
-            $token = $this->getToken();
-            if (!$token) {
-                \Log::error('No token available for V2 API');
-                return response()->json(['error' => 'Failed to get token'], 500);
+            $user = Auth::user();
+            
+            if (!$user->exness_email || !$user->exness_password_encrypted) {
+                return response()->json([
+                    'error' => 'กรุณาตั้งค่า Exness credentials ก่อน'
+                ], 400);
             }
 
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, 'https://my.exnessaffiliates.com/api/reports/clients/');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Accept: application/json',
-                'Content-Type: application/json',
-                'Authorization: JWT ' . $token
-            ]);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            \Log::info('V2 API Response:', [
-                'status' => $httpCode,
-                'body' => $response
+            $tokenResponse = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            ])->post('https://api.exness.com/v1/auth/token', [
+                'email' => $user->exness_email,
+                'password' => Crypt::decryptString($user->exness_password_encrypted)
             ]);
 
-            if ($httpCode === 200) {
-                return response()->json(json_decode($response, true));
+            if (!$tokenResponse->successful()) {
+                return response()->json([
+                    'error' => 'ไม่สามารถดึง Token ได้',
+                    'message' => $tokenResponse->json()['message'] ?? 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+                ], $tokenResponse->status());
             }
 
-            \Log::error('Exness API V2 Error:', [
-                'status' => $httpCode,
-                'body' => $response
-            ]);
+            $token = $tokenResponse->json()['token'];
 
-            return response()->json(['error' => 'Failed to fetch clients data'], 500);
+            $clientsResponse = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+                'Accept' => 'application/json'
+            ])->get('https://api.exness.com/v1/clients');
+
+            if ($clientsResponse->successful()) {
+                $clients = $clientsResponse->json();
+                
+                // ดึงข้อมูล wallet accounts สำหรับแต่ละ client
+                $clientsWithWallets = [];
+                foreach ($clients as $client) {
+                    $walletResponse = Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $token,
+                        'Accept' => 'application/json'
+                    ])->get("https://api.exness.com/v1/clients/{$client['id']}/wallets");
+
+                    if ($walletResponse->successful()) {
+                        $client['wallets'] = $walletResponse->json();
+                    } else {
+                        $client['wallets'] = [];
+                        Log::error("Failed to fetch wallets for client {$client['id']}: " . $walletResponse->body());
+                    }
+                    
+                    $clientsWithWallets[] = $client;
+                }
+
+                return response()->json([
+                    'clients' => $clientsWithWallets
+                ]);
+            }
+
+            return response()->json([
+                'error' => 'ไม่สามารถดึงข้อมูลลูกค้าได้',
+                'message' => $clientsResponse->json()['message'] ?? 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+            ], $clientsResponse->status());
+
         } catch (\Exception $e) {
-            \Log::error('Exness API V2 Exception:', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return response()->json(['error' => $e->getMessage()], 500);
+            Log::error('Exness Clients V2 Error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูลลูกค้า',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 
-    public function getWalletAccounts(Request $request)
+    public function getWalletAccounts()
     {
         try {
-            // กำหนด JWT Token แบบ hardcode (ในสถานการณ์จริงควรเก็บใน .env)
-            $token = "eyJhbGciOiJSUzI1NiIsImtpZCI6InVzZXIiLCJ0eXAiOiJKV1QifQ.eyJqdGkiOiJjODE2MjM5NjJhZWY0NzI4YmM2MDIzMDI5NzE2ZTM4NyIsImV4cCI6MTc0OTg0OTA1MCwiaXNzIjoiQXV0aGVudGljYXRpb24iLCJpYXQiOjE3NDk4Mjc0NTAsInN1YiI6IjE5YzRhYTZhYzA0YTQxOTNhZGMxNWQzYjEyMWIyN2U5IiwiYXVkIjpbInBhcnRuZXJzaGlwIl0sImFkZGl0aW9uYWxfcGFyYW1zIjp7IndsX2lkIjoiODcxMWI4YWEtY2M2OC00MTNhLTgwMzQtYzI3MTZhMmNlMTRhIn19.ELYxuXEgUP8msMNO-ypeKdmYvtvAFpO-9O7rCtMBaKKUMUP6oWsFKijd7V1fviCIj4vjxgHx9nWkuayfFD-d4I2Rml8hS1zJVvA_KEUA_bTjLpGl5DmFdCkuZ00h-VNjcvnvDuoVi3VA5OxCXDQGx3KTtwco5MMXufbYolRDnbh5lRNReiw2553VqyFhByMfr8KLjTkm59GInNeqQAYBX16KdjCfkB9cpGrjZhsQiO2XX4CJQj8cRd5vel0akRhZMiLsr4sjCSND3BLa0KE4o4noWXzU7MWY5KZfWLZSpf51gPfktOQ742dwjeUZSky64AjmJRNVKx40wnyH6Tsod5ZXLBXPtC-JlaTHvO5eVoWRJJUvdBVScg1SXk5YpkAXPfRYeB-jtzt--vJ-BI5Oqb4Yg3qnlY4XbPF9v8G4FzHBz80WXYhMttBE8UShM1n05cIZD0Oq0Ab4nPMRDXv-eXUv_99_F4NirLWe-VWaEpEcTMcGULriIroQrqCqFrcLQw6_vs3ZA4zn9rIPAhKo2CvmD-ezQjqCtrjZOwVOJEDnGYtk1NloMPWiTlSf6-ThrDhcAqqxQuQJqf3EF6XgTOI-MgO0N_NGY3Lsfq3A8MxA4BwxSrM9IGLJAQPre2AYr0YlQ_oMWfoYeWNmXgwbs0JN8BIlaZj0T7VqYMDLxBA";
-
-            $client = new Client([
-                'headers' => [
-                    'Authorization' => 'JWT ' . $token,
-                    'Accept' => 'application/json',
-                    'Content-Type' => 'application/json',
-                ],
-                'verify' => false
-            ]);
-
-            try {
-                $response = $client->get('https://my.exnessaffiliates.com/api/wallet/accounts/');
-                $data = json_decode($response->getBody(), true);
-
-                \Log::info('Wallet Accounts API Response:', ['data' => $data]);
-
+            $user = Auth::user();
+            
+            if (!$user->exness_email || !$user->exness_password_encrypted) {
                 return response()->json([
-                    'success' => true,
-                    'data' => $data
-                ]);
-
-            } catch (\Exception $e) {
-                \Log::error('Wallet Accounts API Request Error:', [
-                    'message' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]);
-                return response()->json([
-                    'error' => 'เกิดข้อผิดพลาดในการเรียก Wallet Accounts API: ' . $e->getMessage()
-                ], 500);
+                    'error' => 'กรุณาตั้งค่า Exness credentials ก่อน'
+                ], 400);
             }
 
-        } catch (\Exception $e) {
-            \Log::error('Wallet Accounts General Error:', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+            $tokenResponse = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            ])->post('https://api.exness.com/v1/auth/token', [
+                'email' => $user->exness_email,
+                'password' => Crypt::decryptString($user->exness_password_encrypted)
             ]);
+
+            if (!$tokenResponse->successful()) {
+                return response()->json([
+                    'error' => 'ไม่สามารถดึง Token ได้',
+                    'message' => $tokenResponse->json()['message'] ?? 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+                ], $tokenResponse->status());
+            }
+
+            $token = $tokenResponse->json()['token'];
+
+            $clientsResponse = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+                'Accept' => 'application/json'
+            ])->get('https://api.exness.com/v1/clients');
+
+            if (!$clientsResponse->successful()) {
+                return response()->json([
+                    'error' => 'ไม่สามารถดึงข้อมูลลูกค้าได้',
+                    'message' => $clientsResponse->json()['message'] ?? 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+                ], $clientsResponse->status());
+            }
+
+            $clients = $clientsResponse->json();
+            $allWallets = [];
+
+            foreach ($clients as $client) {
+                $walletResponse = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $token,
+                    'Accept' => 'application/json'
+                ])->get("https://api.exness.com/v1/clients/{$client['id']}/wallets");
+
+                if ($walletResponse->successful()) {
+                    $wallets = $walletResponse->json();
+                    foreach ($wallets as $wallet) {
+                        $allWallets[] = [
+                            'client_id' => $client['id'],
+                            'client_name' => $client['name'],
+                            'wallet_id' => $wallet['id'],
+                            'wallet_name' => $wallet['name'],
+                            'balance' => $wallet['balance'] ?? 0,
+                            'currency' => $wallet['currency'] ?? 'USD'
+                        ];
+                    }
+                } else {
+                    Log::error("Failed to fetch wallets for client {$client['id']}: " . $walletResponse->body());
+                }
+            }
+
             return response()->json([
-                'error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+                'wallets' => $allWallets
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Exness Wallet Accounts Error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูลบัญชี',
+                'message' => $e->getMessage()
             ], 500);
         }
     }

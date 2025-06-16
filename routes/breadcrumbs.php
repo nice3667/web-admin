@@ -62,8 +62,7 @@ Breadcrumbs::macro('resource', function (string $name, string $title, ?string $p
         });
     
         Breadcrumbs::for("{$name}.show", function (BreadcrumbTrail $trail, $model, $item) use ($name) {
-            $trail->parent("{$name}.index", $model, $item);
-            \Log::info("{$name}.show");
+            $trail->parent("{$name}.index", $model);
             if (Route::has("{$name}.show")) {
                 $trail->push($item->name ?? $model, route("{$name}.show", [$model, $item]));
             } else {
@@ -89,7 +88,7 @@ Breadcrumbs::macro('resource', function (string $name, string $title, ?string $p
     
         Breadcrumbs::for("{$name}.show", function (BreadcrumbTrail $trail, $model) use ($name) {
             $trail->parent("{$name}.index");
-            if (Route::has("$name.show")) {
+            if (Route::has("{$name}.show")) {
                 $trail->push($model->name ?? $model, route("{$name}.show", $model));
             } else {
                 $trail->push($model->name ?? $model);

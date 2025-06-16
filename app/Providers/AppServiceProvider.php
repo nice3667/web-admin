@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\ExnessAuthService;
+use App\Services\ExnessClientService;
+use App\Services\ExnessWalletService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,9 +14,11 @@ class AppServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function register()
+    public function register(): void
     {
-        //
+        $this->app->singleton(ExnessAuthService::class);
+        $this->app->singleton(ExnessClientService::class);
+        $this->app->singleton(ExnessWalletService::class);
     }
 
     /**
@@ -21,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot()
+    public function boot(): void
     {
         //
     }
