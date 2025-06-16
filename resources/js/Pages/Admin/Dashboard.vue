@@ -11,6 +11,7 @@ import {
   mdiReload,
   mdiGithub,
   mdiChartPie,
+  mdiAlertBoxOutline,
 } from "@mdi/js";
 import * as chartConfig from "@/Components/Charts/chart.config.js";
 import LineChart from "@/Components/Charts/LineChart.vue";
@@ -30,6 +31,7 @@ import { mdiCash, mdiCurrencyUsd } from "@mdi/js";
 const chartData = ref(null);
 const totalAmount = ref(0);
 const loading = ref(true);
+const exnessError = ref('');
 
 const fillChartData = () => {
   chartData.value = chartConfig.sampleChartData();
@@ -58,6 +60,16 @@ const fetchWalletAccounts = async () => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Response error:', errorText);
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error) {
+          exnessError.value = errorJson.error;
+        }
+      } catch (e) {
+        exnessError.value = 'ไม่สามารถดึงข้อมูลได้ กรุณาตรวจสอบบัญชี Exness ของคุณ';
+      }
+      
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
@@ -91,6 +103,9 @@ const fetchWalletAccounts = async () => {
   } catch (err) {
     console.error('Error fetching wallet accounts:', err);
     totalAmount.value = 0;
+    if (!exnessError.value) {
+      exnessError.value = 'ไม่สามารถดึงข้อมูลได้ กรุณาตรวจสอบการเชื่อมต่อ';
+    }
   } finally {
     loading.value = false;
   }
@@ -116,6 +131,13 @@ const transactionBarItems = computed(() => mainStore.history);
   <LayoutAuthenticated>
     <Head title="Dashboard" />
     <SectionMain>
+      <!-- Exness Error Notification -->
+      <NotificationBar v-if="exnessError" color="danger" :icon="mdiAlertBoxOutline">
+        <strong>ข้อผิดพลาด Exness:</strong> {{ exnessError }}
+        <br>
+        <small>กรุณาตรวจสอบว่าคุณมีบัญชี Exness และใช้ email/password เดียวกันกับบัญชี Exness ของคุณ</small>
+      </NotificationBar>
+      
       <div class="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-1">
         <CardBoxWidget
           color="text-emerald-500"

@@ -4,18 +4,24 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\ExnessSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Config;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class AuthenticatedSessionController extends Controller
 {
+    private ExnessSyncService $exnessSyncService;
+
+    public function __construct(ExnessSyncService $exnessSyncService)
+    {
+        $this->exnessSyncService = $exnessSyncService;
+    }
     /**
      * Display the login view.
      */
@@ -39,115 +45,54 @@ class AuthenticatedSessionController extends Controller
 
         Log::info('Laravel authentication successful');
 
-        // Always try to get Exness token
+        $user = Auth::user();
+
+        // Sync Exness data for this user
         try {
-            Log::info('Attempting to get Exness token');
+            Log::info('Starting Exness data sync for user', ['user_id' => $user->id]);
             
-            // Primary attempt with user's credentials
-            $response = Http::timeout(30)->withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post('https://my.exnessaffiliates.com/api/v2/auth/', [
-                'login' => $request->email,
-                'password' => $request->password
-            ]);
+            $syncResult = $this->exnessSyncService->syncUserDataOnLogin(
+                $user, 
+                $request->email, 
+                $request->password
+            );
 
-            Log::info('Exness API response for user credentials', [
-                'email' => $request->email,
-                'status' => $response->status(),
-                'successful' => $response->successful()
-            ]);
-
-            $token = null;
-            $usedCredentials = [
-                'email' => $request->email,
-                'password' => $request->password
-            ];
-
-            if ($response->successful()) {
-                $tokenData = $response->json();
-                $token = $tokenData['token'] ?? null;
-                
-                if ($token) {
-                    Log::info('Exness token obtained with user credentials');
-                }
-            }
-
-            // Fallback: If user's credentials don't work, try default working credentials
-            if (!$token) {
-                Log::warning('User Exness credentials failed, trying fallback credentials');
-                
-                $fallbackResponse = Http::timeout(30)->withHeaders([
-                    'Content-Type' => 'application/json',
-                ])->post('https://my.exnessaffiliates.com/api/v2/auth/', [
-                    'login' => 'kantapong0592@gmail.com',
-                    'password' => 'Kantapong.0592z'
-                ]);
-
-                Log::info('Fallback Exness API response', [
-                    'status' => $fallbackResponse->status(),
-                    'successful' => $fallbackResponse->successful()
-                ]);
-
-                if ($fallbackResponse->successful()) {
-                    $fallbackTokenData = $fallbackResponse->json();
-                    $token = $fallbackTokenData['token'] ?? null;
-                    
-                    if ($token) {
-                        // Use fallback credentials for API calls
-                        $usedCredentials = [
-                            'email' => 'kantapong0592@gmail.com',
-                            'password' => 'Kantapong.0592z'
-                        ];
-                        Log::info('Exness token obtained with fallback credentials', [
-                            'user_email' => $request->email,
-                            'fallback_used' => true
-                        ]);
-                    }
-                }
-            }
-            
-            if ($token) {
-                // Store token and credentials in session
+            if ($syncResult) {
                 session([
-                    'exness_token' => $token,
-                    'exness_credentials' => $usedCredentials,
-                    'api_domain' => request()->getSchemeAndHttpHost(),
-                    'token_created_at' => now()->toISOString(),
-                    'fallback_used' => $usedCredentials['email'] !== $request->email
+                    'exness_sync_status' => 'success',
+                    'exness_sync_message' => 'ข้อมูล Exness ถูกซิงค์เรียบร้อยแล้ว'
                 ]);
-
-                Log::info('Exness token stored successfully', [
-                    'user_email' => $request->email,
-                    'exness_email' => $usedCredentials['email'],
-                    'token_length' => strlen($token),
-                    'fallback_used' => $usedCredentials['email'] !== $request->email,
-                    'api_domain' => request()->getSchemeAndHttpHost()
-                ]);
+                Log::info('Exness sync successful for user', ['user_id' => $user->id]);
             } else {
-                Log::error('Failed to get Exness token with both user and fallback credentials', [
-                    'user_email' => $request->email,
-                    'user_response_status' => $response->status(),
-                    'fallback_response_status' => isset($fallbackResponse) ? $fallbackResponse->status() : 'not_attempted'
+                session([
+                    'exness_sync_status' => 'failed',
+                    'exness_sync_message' => 'ไม่สามารถซิงค์ข้อมูล Exness ได้ กรุณาตรวจสอบบัญชี Exness ของคุณ'
                 ]);
+                Log::warning('Exness sync failed for user', ['user_id' => $user->id]);
             }
+
         } catch (\Exception $e) {
-            Log::error('Error getting Exness token during login', [
+            Log::error('Error during Exness sync in login', [
+                'user_id' => $user->id,
                 'error' => $e->getMessage(),
-                'email' => $request->email,
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
+            ]);
+            
+            session([
+                'exness_sync_status' => 'error',
+                'exness_sync_message' => 'เกิดข้อผิดพลาดในการซิงค์ข้อมูล Exness'
             ]);
         }
 
         // Force config update for API URL
         Config::set('app.url', request()->getSchemeAndHttpHost());
 
-        Log::info('Login completed, redirecting to dashboard');
+        Log::info('Login completed, redirecting to dashboard', ['user_id' => $user->id]);
         
         return redirect()->route('admin.dashboard')->with([
             'api_domain' => request()->getSchemeAndHttpHost(),
-            'message' => 'Successfully logged in',
-            'exness_status' => session()->has('exness_token') ? 'connected' : 'not_connected'
+            'message' => 'Successfully logged in'
         ]);
     }
 
@@ -156,15 +101,12 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        Log::info('User logging out');
+        Log::info('User logging out', ['user_id' => Auth::id()]);
         
-        // Clear all Exness related session data
-        session()->forget([
-            'exness_token', 
-            'exness_credentials', 
-            'api_domain',
-            'token_created_at'
-        ]);
+        // Clear Exness cache for this user
+        if (Auth::check()) {
+            $this->exnessSyncService->clearUserCache(Auth::id());
+        }
         
         Auth::guard('web')->logout();
 

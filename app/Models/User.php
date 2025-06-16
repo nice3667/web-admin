@@ -102,4 +102,40 @@ class User extends Authenticatable
 
         return $username;
     }
+
+    /**
+     * Get the exness user record associated with the user.
+     */
+    public function exnessUser()
+    {
+        return $this->hasOne(ExnessUser::class);
+    }
+
+    /**
+     * Get the exness clients through the exness user.
+     */
+    public function exnessClients()
+    {
+        return $this->hasManyThrough(ExnessClient::class, ExnessUser::class);
+    }
+
+    /**
+     * Check if user has valid Exness credentials.
+     */
+    public function hasValidExnessCredentials()
+    {
+        return $this->exnessUser && $this->exnessUser->is_active;
+    }
+
+    /**
+     * Get Exness statistics for this user.
+     */
+    public function getExnessStats()
+    {
+        if (!$this->hasValidExnessCredentials()) {
+            return null;
+        }
+
+        return ExnessClient::getStatsForUser($this->id);
+    }
 }
