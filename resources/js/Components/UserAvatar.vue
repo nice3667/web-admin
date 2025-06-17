@@ -4,7 +4,7 @@ import { computed } from 'vue'
 const props = defineProps({
   username: {
     type: String,
-    required: true
+    default: 'user'
   },
   avatar: {
     type: String,
@@ -16,11 +16,12 @@ const props = defineProps({
   }
 })
 
-const avatar = computed(
-  () => props.avatar ?? `https://api.dicebear.com/7.x/${props.api}/svg?seed=${props.username.replace(/[^a-z0-9]+/i, '-')}`
-)
+const avatar = computed(() => {
+  const safeUsername = props.username || 'user'
+  return props.avatar ?? `https://api.dicebear.com/7.x/${props.api}/svg?seed=${safeUsername.replace(/[^a-z0-9]+/i, '-')}`
+})
 
-const username = computed(() => props.username)
+const username = computed(() => props.username || 'User')
 </script>
 
 <template>

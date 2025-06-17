@@ -103,7 +103,7 @@ class AuthenticatedSessionController extends Controller
                 ];
             }
 
-            dd($authData);
+            // dd($authData);
 
             if ($response->successful()) {
                 $tokenData = $response->json();

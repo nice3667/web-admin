@@ -13,6 +13,7 @@ const showingNavigationDropdown = ref(false);
 <template>
     <div>
         <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
+            <!-- First Navigation Bar -->
             <nav class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
                 <!-- Primary Navigation Menu -->
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,6 +26,11 @@ const showingNavigationDropdown = ref(false);
                                         class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200"
                                     />
                                 </Link>
+                            </div>
+
+                            <!-- Text on the left -->
+                            <div class="flex items-center ml-4">
+                                <span class="text-lg font-semibold text-gray-700 dark:text-gray-200">Admin Dashboard</span>
                             </div>
 
                             <!-- Navigation Links -->
@@ -131,6 +137,25 @@ const showingNavigationDropdown = ref(false);
                             <ResponsiveNavLink :href="route('logout')" method="post" as="button">
                                 Log Out
                             </ResponsiveNavLink>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Second Navigation Bar -->
+            <nav class="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between h-12">
+                        <div class="flex space-x-8">
+                            <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
+                                Overview
+                            </NavLink>
+                            <NavLink :href="route('profile.edit')" :active="route().current('profile.edit')">
+                                Settings
+                            </NavLink>
+                            <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
+                                Reports
+                            </NavLink>
                         </div>
                     </div>
                 </div>

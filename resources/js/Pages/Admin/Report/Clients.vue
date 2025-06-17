@@ -194,11 +194,7 @@ const getStatusText = (status) => {
   <LayoutAuthenticated>
     <Head title="ลูกค้า" />
     <SectionMain>
-      <SectionTitleLineWithButton
-        :icon="mdiAccountGroup"
-        title="ลูกค้า"
-        main
-      >
+      <SectionTitleLineWithButton :icon="mdiAccountGroup" title="ลูกค้า" main>
       </SectionTitleLineWithButton>
 
       <NotificationBar v-if="error" color="danger" :icon="mdiAlertBoxOutline">

@@ -82,14 +82,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Exness credentials management
     Route::get('/exness/credentials', [ExnessController::class, 'credentials'])->name('exness.credentials');
     Route::post('/exness/credentials', [ExnessController::class, 'updateCredentials'])->name('exness.credentials.update');
-
-    Route::get('/admin/dashboard', function () {
-        return Inertia::render('Admin/Dashboard');
-    })->name('admin.dashboard');
-
-    Route::get('/admin/reports/clients', function () {
-        return Inertia::render('Admin/Report/Clients');
-    })->name('admin.reports.clients');
 });
 
 // Admin Routes
@@ -97,6 +89,31 @@ Route::middleware(['web', 'auth', 'verified', \App\Http\Middleware\HasAccessAdmi
     Route::get('/', function () {
         return Inertia::render('Admin/Dashboard');
     })->name('admin.dashboard');
+
+    // Rebate Routes
+    Route::get('/rebate', function () {
+        return Inertia::render('Admin/Rebate/Index');
+    })->name('admin.rebate');
+
+    // Promo Routes
+    Route::get('/promo', function () {
+        return Inertia::render('Admin/Promo/Index');
+    })->name('admin.promo');
+
+    // Referral Routes
+    Route::get('/referral', function () {
+        return Inertia::render('Admin/Referral/Index');
+    })->name('admin.referral');
+
+    // Agent Routes
+    Route::get('/agent', function () {
+        return Inertia::render('Admin/Agent/Index');
+    })->name('admin.agent');
+
+    // Support Routes
+    Route::get('/support', function () {
+        return Inertia::render('Admin/Support/Index');
+    })->name('admin.support');
 
     // Reports Routes
     Route::get('/reports/clients', function () {

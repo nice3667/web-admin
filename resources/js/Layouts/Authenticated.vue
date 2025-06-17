@@ -13,6 +13,7 @@ const showingNavigationDropdown = ref(false);
 <template>
     <div>
         <div class="min-h-screen bg-gray-100">
+            <!-- First Navigation Bar -->
             <nav class="bg-white border-b border-gray-100">
                 <!-- Primary Navigation Menu -->
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -23,6 +24,11 @@ const showingNavigationDropdown = ref(false);
                                 <Link :href="route('admin.dashboard')">
                                     <BreezeApplicationLogo class="block h-9 w-auto" />
                                 </Link>
+                            </div>
+
+                            <!-- Text on the left -->
+                            <div class="flex items-center ml-4">
+                                <span class="text-lg font-semibold text-gray-700">Admin Dashboard</span>
                             </div>
 
                             <!-- Navigation Links -->
@@ -95,6 +101,25 @@ const showingNavigationDropdown = ref(false);
                             <BreezeResponsiveNavLink :href="route('logout')" method="post" as="button">
                                 Log Out
                             </BreezeResponsiveNavLink>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Second Navigation Bar -->
+            <nav class="bg-gray-50 border-b border-gray-100">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between h-12">
+                        <div class="flex space-x-8">
+                            <BreezeNavLink :href="route('admin.dashboard')" :active="route().current('admin.dashboard')">
+                                Overview
+                            </BreezeNavLink>
+                            <BreezeNavLink :href="route('admin.permission.index')" :active="route().current('admin.permission.index')">
+                                Settings
+                            </BreezeNavLink>
+                            <BreezeNavLink :href="route('admin.dashboard')" :active="route().current('admin.dashboard')">
+                                Reports
+                            </BreezeNavLink>
                         </div>
                     </div>
                 </div>
