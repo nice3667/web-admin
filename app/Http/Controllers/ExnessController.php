@@ -11,14 +11,18 @@ use App\Models\ExnessClient;
 use App\Models\ExnessUser;
 use App\Models\User;
 use Inertia\Inertia;
+use App\Services\ExnessAuthService;
+use Illuminate\Http\JsonResponse;
 
 class ExnessController extends Controller
 {
     private ExnessSyncService $exnessSyncService;
+    protected ExnessAuthService $exnessService;
 
-    public function __construct(ExnessSyncService $exnessSyncService)
+    public function __construct(ExnessSyncService $exnessSyncService, ExnessAuthService $exnessService)
     {
         $this->exnessSyncService = $exnessSyncService;
+        $this->exnessService = $exnessService;
     }
 
     public function credentials()
@@ -49,89 +53,29 @@ class ExnessController extends Controller
     }
 
     /**
-     * Get clients data from database (with cache)
+     * Get clients data from Exness API
      */
     public function getClients(Request $request)
     {
         try {
-            $user = Auth::user();
+            $result = $this->exnessService->getClientsData();
             
-            if (!$user) {
-                return response()->json(['error' => 'User not authenticated'], 401);
+            if (isset($result['error'])) {
+                return response()->json(['error' => $result['error']], 400);
             }
 
-            Log::info('Getting clients from database for user', ['user_id' => $user->id]);
-
-            // Check if user needs sync
-            if ($this->exnessSyncService->userNeedsSync($user->id)) {
-                Log::info('User data needs sync, attempting background sync', ['user_id' => $user->id]);
-                
-                // Try to get fresh data if user has valid credentials
-                if ($user->exnessUser && $user->exnessUser->is_active) {
-                    $exnessUser = $user->exnessUser;
-                    $this->exnessSyncService->syncUserDataOnLogin(
-                        $user,
-                        $exnessUser->exness_email,
-                        $exnessUser->exness_password
-                    );
-                }
-            }
-
-            // Get cached client data
-            $clients = $this->exnessSyncService->getCachedClientData($user->id);
-            
-            if ($clients->isEmpty()) {
-                Log::warning('No client data found for user', ['user_id' => $user->id]);
-                return response()->json([
-                    'data_v1' => [],
-                    'data_v2' => [],
-                    'message' => 'ไม่พบข้อมูลลูกค้า กรุณาตรวจสอบบัญชี Exness ของคุณ'
-                ]);
-            }
-
-            // Convert to format expected by frontend
-            $v1Data = $clients->map(function ($client) {
-                return [
-                    'client_uid' => $client->client_uid,
-                    'client_name' => $client->client_name,
-                    'client_email' => $client->client_email,
-                    'volume_lots' => (float) $client->volume_lots,
-                    'volume_mln_usd' => (float) $client->volume_mln_usd,
-                    'reward_usd' => (float) $client->reward_usd,
-                    'currency' => $client->currency,
-                    'reg_date' => $client->reg_date?->format('Y-m-d'),
-                    'last_activity' => $client->last_activity?->toISOString()
-                ];
-            })->toArray();
-
-            $v2Data = $clients->map(function ($client) {
-                return [
-                    'client_uid' => $client->client_uid,
-                    'client_status' => $client->client_status,
-                    'rebate_amount_usd' => (float) $client->rebate_amount_usd
-                ];
-            })->toArray();
-
-            Log::info('Client data retrieved from database', [
-                'user_id' => $user->id,
-                'client_count' => $clients->count()
-            ]);
-
+            // Return the data directly without transformation
             return response()->json([
-                'data_v1' => $v1Data,
-                'data_v2' => $v2Data,
+                'data' => $result['data'] ?? [],
                 'debug' => [
-                    'source' => 'database',
-                    'cached' => true,
+                    'source' => 'api',
                     'timestamp' => now()->toISOString(),
-                    'user_id' => $user->id,
-                    'client_count' => $clients->count()
+                    'client_count' => count($result['data'] ?? [])
                 ]
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error getting clients from database', [
-                'user_id' => Auth::id(),
+            Log::error('Error getting clients from Exness API', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

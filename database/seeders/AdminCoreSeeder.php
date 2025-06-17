@@ -102,32 +102,14 @@ class AdminCoreSeeder extends Seeder
 
         // create demo users
         $user = \App\Models\User::firstOrCreate(
-            ['email' => 'superadmin@example.com'],
+            ['email' => 'dashboardadmin@example.com'],
             array_merge(\App\Models\User::factory()->raw(), [
-                'name' => 'Super Admin',
-                'email' => 'superadmin@example.com'
+                'name' => 'Admin',
+                'email' => 'dashboardadmin@example.com'
             ])
         );
         $user->assignRole($role1);
 
-        $user = \App\Models\User::firstOrCreate(
-            ['email' => 'admin@example.com'],
-            array_merge(\App\Models\User::factory()->raw(), [
-                'name' => 'Admin User',
-                'email' => 'admin@example.com'
-            ])
-        );
-        $user->assignRole($role2);
-
-        // writer test
-        $user = \App\Models\User::firstOrCreate(
-            ['email' => 'test@example.com'],
-            array_merge(\App\Models\User::factory()->raw(), [
-                'name' => 'Example User',
-                'email' => 'test@example.com'
-            ])
-        );
-        $user->assignRole($role3);
 
         // create menu
         $menu = Menu::firstOrCreate(

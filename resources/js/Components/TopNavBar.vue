@@ -29,8 +29,8 @@ const isMenuNavBarActive = ref(false);
     <div class="flex lg:items-stretch" :class="containerMaxW">
       <div class="flex items-stretch flex-1 h-16">
         <!-- Text on the left -->
-        <div class="flex items-center px-5">
-          <span class="text-lg font-semibold text-gray-700 dark:text-gray-200">Exness Dashboard</span>
+        <div class="flex items-center px-8">
+          <span class="text-2xl font-bold text-gray-700 dark:text-gray-200">Exness Dashboard</span>
         </div>
         <slot />
       </div>

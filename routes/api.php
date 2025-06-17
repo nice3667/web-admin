@@ -49,3 +49,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/exness/credentials', [ExnessController::class, 'saveCredentials']);
     Route::get('/clients', [ClientController::class, 'index']);
 });
+
+// Client routes
+Route::prefix('clients')->group(function () {
+    Route::get('/', [ClientController::class, 'index']);
+    Route::post('/sync', [ClientController::class, 'sync']);
+    Route::get('/stats', [ClientController::class, 'stats']);
+});

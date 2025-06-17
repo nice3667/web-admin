@@ -49,12 +49,6 @@ const menuClick = (event, item) => {
             size="24"
           />
         </NavBarItemPlain>
-        <NavBarItemPlain
-          display="hidden lg:flex xl:hidden"
-          @click.prevent="isAsideLgActive = true"
-        >
-          <BaseIcon :path="mdiMenu" size="24" />
-        </NavBarItemPlain>
       </TopNavBar>
 
       <!-- Bottom NavBar -->
