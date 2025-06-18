@@ -18,183 +18,132 @@ class ClientService
     public function syncClients()
     {
         try {
-            Log::info('=== STARTING CLIENT DATA SYNC ===');
+            Log::info('=== STARTING CLIENT DATA SYNC (V1 ONLY) ===');
             
-            // Get data from both APIs
+            // Fetch v1 and v2 clients
             $v1Response = $this->exnessAuthService->getClientsFromUrl(
                 "https://my.exnessaffiliates.com/api/reports/clients/",
                 'v1'
             );
-            
             $v2Response = $this->exnessAuthService->getClientsFromUrl(
                 "https://my.exnessaffiliates.com/api/v2/reports/clients/",
                 'v2'
             );
 
-            if (isset($v1Response['error'])) {
-                Log::error('V1 API Error:', ['error' => $v1Response['error']]);
-                return false;
-            }
-
-            if (isset($v2Response['error'])) {
-                Log::error('V2 API Error:', ['error' => $v2Response['error']]);
-                return false;
-            }
-
             $v1Clients = $v1Response['data'] ?? [];
             $v2Clients = $v2Response['data'] ?? [];
 
-            Log::info('API Data Received:', [
-                'v1_count' => count($v1Clients),
-                'v2_count' => count($v2Clients)
-            ]);
-
-            // Log sample data from both APIs
+            // Build v2 map for lookup by client_uid (first 8 chars)
+            $v2Map = [];
+            foreach ($v2Clients as $c) {
+                if (isset($c['client_uid'])) {
+                    $v2UidShort = substr($c['client_uid'], 0, 8);
+                    $v2Map[$v2UidShort] = $c;
+                }
+            }
+            
+            // Debug: Log sample data from both APIs
             if (!empty($v1Clients)) {
                 Log::info('V1 Sample Data:', [
                     'first_client' => $v1Clients[0],
                     'v1_fields' => array_keys($v1Clients[0])
                 ]);
             }
-
             if (!empty($v2Clients)) {
                 Log::info('V2 Sample Data:', [
                     'first_client' => $v2Clients[0],
                     'v2_fields' => array_keys($v2Clients[0])
                 ]);
             }
-
-            // Create V2 lookup map
-            $v2Map = [];
-            foreach ($v2Clients as $client) {
-                if (isset($client['client_uid'])) {
-                    $v2Uid = $client['client_uid'];
-                    
-                    // Extract short UID from V2 UUID format
-                    // V2 format: "3bf4e479-a9df-422a-a0a9-2c1376488f15"
-                    // V1 format: "3bf4e479"
-                    $shortUid = explode('-', $v2Uid)[0] ?? $v2Uid;
-                    
-                    // Store with short UID as key for matching with V1
-                    $v2Map[$shortUid] = $client;
-                    
-                    Log::info("V2 Mapping: {$v2Uid} -> {$shortUid}", [
-                        'client_status' => $client['client_status'] ?? 'NO_STATUS'
-                    ]);
-                }
-            }
-
-            Log::info('V2 Map Created:', [
-                'v2_map_count' => count($v2Map),
-                'v2_map_sample' => array_slice($v2Map, 0, 2, true),
-                'v2_uid_example' => array_keys(array_slice($v2Map, 0, 1, true))[0] ?? 'none'
-            ]);
-
-            // Get existing clients for comparison
-            $existingClients = Client::pluck('client_uid')->toArray();
-            Log::info('Existing clients in database:', [
-                'count' => count($existingClients),
-                'sample' => array_slice($existingClients, 0, 5)
-            ]);
-
-            // Process and save data - UPDATE EXISTING AND ADD NEW
-            $updatedCount = 0;
-            $newCount = 0;
-            $allUids = array_column($v1Clients, 'client_uid');
-            $uniqueUids = array_unique($allUids);
-            Log::info('V1 client_uid count', [
-                'total' => count($allUids),
-                'unique' => count($uniqueUids),
-                'duplicates' => array_diff_assoc($allUids, $uniqueUids)
+            
+            Log::info('V2 Map Summary:', [
+                'v2_clients_count' => count($v2Clients),
+                'v2_map_keys' => count($v2Map),
+                'sample_v2_keys' => array_slice(array_keys($v2Map), 0, 5)
             ]);
             
-            foreach ($v1Clients as $index => $v1Client) {
-                $clientUid = $v1Client['client_uid'] ?? null;
-                if (!$clientUid) continue;
-
-                // Get V2 data for this client using short UID
-                $v2Data = $v2Map[$clientUid] ?? [];
+            // Clear existing data and start fresh
+            Client::truncate();
+            Log::info('Cleared existing client data');
+            $processedCount = 0;
+            $uniqueUids = [];
+            $statusFoundCount = 0;
+            
+            foreach ($v1Clients as $v1) {
+                $clientUid = $v1['client_uid'] ?? null;
+                $clientAccount = $v1['client_account'] ?? null;
+                if (!$clientUid || !$clientAccount) continue;
                 
-                // Log the merge process for first few clients
-                if (($updatedCount + $newCount) < 3) {
-                    Log::info("Processing client {$index}: {$clientUid}", [
-                        'v1_status' => $v1Client['client_status'] ?? 'NOT_IN_V1',
-                        'v2_status' => $v2Data['client_status'] ?? 'NOT_IN_V2',
-                        'v2_data_exists' => !empty($v2Data),
-                        'v2_uid_in_map' => array_key_exists($clientUid, $v2Map),
-                        'v2_map_keys_sample' => array_slice(array_keys($v2Map), 0, 5),
-                        'v2_map_count' => count($v2Map)
+                // Match by client_uid 8 ตัวแรกเท่านั้น
+                $v2 = $v2Map[$clientUid] ?? [];
+                
+                // Debug: Log merge process for first few records
+                if ($processedCount < 3) {
+                    Log::info("Processing client {$processedCount}:", [
+                        'client_uid' => $clientUid,
+                        'client_account' => $clientAccount,
+                        'key' => $clientUid,
+                        'has_v2_data' => !empty($v2),
+                        'v1_status' => $v1['client_status'] ?? 'NOT_FOUND',
+                        'v2_status' => $v2['client_status'] ?? 'NOT_FOUND'
                     ]);
                 }
-
-                // Merge V1 and V2 data
-                $mergedData = array_merge($v1Client, $v2Data);
-
-                // Determine final status
-                $finalStatus = 'UNKNOWN';
-                if (!empty($v2Data) && isset($v2Data['client_status'])) {
-                    $finalStatus = strtoupper($v2Data['client_status']);
-                } elseif (isset($v1Client['client_status'])) {
-                    $finalStatus = strtoupper($v1Client['client_status']);
+                
+                // merge: ใช้ข้อมูล v1 เป็นหลัก
+                $merged = $v1;
+                // ดึงเฉพาะ client_status, kyc_passed, ftd_received, ftt_made จาก v2
+                if (!empty($v2)) {
+                    $merged['client_status'] = $v2['client_status'] ?? $merged['client_status'] ?? 'UNKNOWN';
+                    $merged['kyc_passed'] = $v2['kyc_passed'] ?? $merged['kyc_passed'] ?? false;
+                    $merged['ftd_received'] = $v2['ftd_received'] ?? $merged['ftd_received'] ?? false;
+                    $merged['ftt_made'] = $v2['ftt_made'] ?? $merged['ftt_made'] ?? false;
                 }
-
-                // Prepare client data
+                $finalStatus = strtoupper($merged['client_status'] ?? 'UNKNOWN');
+                if (!empty($v2['client_status'])) {
+                    $statusFoundCount++;
+                }
+                
                 $clientData = [
                     'client_uid' => $clientUid,
-                    'partner_account' => $mergedData['partner_account'] ?? null,
-                    'client_id' => $mergedData['client_id'] ?? null,
-                    'reg_date' => $mergedData['reg_date'] ?? $mergedData['registration_date'] ?? null,
-                    'client_country' => $mergedData['client_country'] ?? $mergedData['country'] ?? null,
-                    'volume_lots' => $mergedData['volume_lots'] ?? 0,
-                    'volume_mln_usd' => $mergedData['volume_mln_usd'] ?? 0,
-                    'reward_usd' => $mergedData['reward_usd'] ?? 0,
+                    'partner_account' => $merged['partner_account'] ?? null,
+                    'client_id' => $clientAccount,
+                    'reg_date' => $merged['reg_date'] ?? $merged['registration_date'] ?? null,
+                    'client_country' => $merged['client_country'] ?? $merged['country'] ?? null,
+                    'volume_lots' => $merged['volume_lots'] ?? 0,
+                    'volume_mln_usd' => $merged['volume_mln_usd'] ?? 0,
+                    'reward_usd' => $merged['reward_usd'] ?? 0,
                     'client_status' => $finalStatus,
-                    'kyc_passed' => $mergedData['kyc_passed'] ?? false,
-                    'ftd_received' => $mergedData['ftd_received'] ?? false,
-                    'ftt_made' => $mergedData['ftt_made'] ?? false,
-                    'rebate_amount_usd' => $mergedData['rebate_amount_usd'] ?? 0,
-                    'raw_data' => $mergedData,
+                    'kyc_passed' => $merged['kyc_passed'] ?? false,
+                    'ftd_received' => $merged['ftd_received'] ?? false,
+                    'ftt_made' => $merged['ftt_made'] ?? false,
+                    'rebate_amount_usd' => $merged['rebate_amount_usd'] ?? 0,
+                    'raw_data' => $merged,
                     'last_sync_at' => now()
                 ];
-
-                // Check if client exists
-                $existingClient = Client::where('client_uid', $clientUid)->first();
                 
-                if ($existingClient) {
-                    // Update existing client
-                    $existingClient->update($clientData);
-                    $updatedCount++;
-                    
-                    if ($updatedCount <= 3) {
-                        Log::info("Updated client {$updatedCount}: {$clientUid}", [
-                            'final_status' => $existingClient->client_status,
-                            'v1_status' => $v1Client['client_status'] ?? 'NOT_IN_V1',
-                            'v2_status' => $v2Data['client_status'] ?? 'NOT_IN_V2',
-                            'used_short_uid' => $clientUid
-                        ]);
-                    }
-                } else {
-                    // Create new client
-                    Client::create($clientData);
-                    $newCount++;
-                    
-                    if ($newCount <= 3) {
-                        Log::info("Created new client {$newCount}: {$clientUid}", [
-                            'final_status' => $finalStatus,
-                            'v1_status' => $v1Client['client_status'] ?? 'NOT_IN_V1',
-                            'v2_status' => $v2Data['client_status'] ?? 'NOT_IN_V2',
-                            'used_short_uid' => $clientUid
-                        ]);
-                    }
+                Client::create($clientData);
+                $processedCount++;
+                $uniqueUids[$clientUid] = true;
+                
+                if ($processedCount <= 5) {
+                    Log::info("Processed client {$processedCount}: {$clientUid} (Account: {$clientAccount})", [
+                        'status' => $clientData['client_status'],
+                        'volume_lots' => $clientData['volume_lots'],
+                        'volume_mln_usd' => $clientData['volume_mln_usd'],
+                        'reward_usd' => $clientData['reward_usd'],
+                        'country' => $clientData['client_country'],
+                        'client_account' => $clientAccount,
+                        'has_v2_data' => !empty($v2),
+                        'final_status' => $finalStatus
+                    ]);
                 }
             }
-
-            Log::info('=== SYNC COMPLETED ===', [
-                'total_updated' => $updatedCount,
-                'total_new' => $newCount,
-                'total_processed' => $updatedCount + $newCount,
-                'v1_clients' => count($v1Clients),
-                'v2_clients' => count($v2Clients)
+            
+            Log::info('=== CLIENT DATA SYNC SUMMARY ===', [
+                'total_accounts' => $processedCount,
+                'unique_client_uids' => count($uniqueUids),
+                'status_found_from_v2' => $statusFoundCount,
+                'status_not_found' => $processedCount - $statusFoundCount
             ]);
 
             return true;
@@ -312,13 +261,15 @@ class ClientService
                     'total_clients' => count($v1Clients),
                     'sample_client' => $v1Clients[0] ?? null,
                     'available_fields' => $v1Clients[0] ? array_keys($v1Clients[0]) : [],
-                    'client_uids' => array_slice($v1Uids, 0, 10)
+                    'client_uids' => array_slice($v1Uids, 0, 10),
+                    'data' => $v1Clients,
                 ],
                 'v2_api' => [
                     'total_clients' => count($v2Clients),
                     'sample_client' => $v2Clients[0] ?? null,
                     'available_fields' => $v2Clients[0] ? array_keys($v2Clients[0]) : [],
-                    'client_uids' => array_slice($v2Uids, 0, 10)
+                    'client_uids' => array_slice($v2Uids, 0, 10),
+                    'data' => $v2Clients,
                 ],
                 'matching_analysis' => [
                     'matching_uids_count' => count($matchingUids),

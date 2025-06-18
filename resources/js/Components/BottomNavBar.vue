@@ -114,20 +114,20 @@ const isActive = (path) => {
 </script>
 
 <template>
-  <nav class="fixed top-16 left-0 right-0 z-20 bg-gray-100 dark:bg-slate-800 h-16 border-b border-gray-200 dark:border-slate-700">
-    <div class="flex items-center justify-between h-16 px-4">
+  <nav class="fixed top-16 left-0 right-0 z-20 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 h-16 border-b border-blue-200 dark:border-slate-700 shadow-lg backdrop-blur-sm">
+    <div class="flex items-center justify-between h-16 px-6">
       <!-- Desktop Navigation -->
-      <div class="hidden lg:flex items-center space-x-4">
+      <div class="hidden lg:flex items-center space-x-2">
         <template v-for="(item, index) in menuItems" :key="item.to || item.label">
           <!-- Regular Menu Item -->
           <Link 
             v-if="!item.dropdown"
             :href="item.to"
             :class="[
-              'flex items-center px-3 py-2 rounded-md text-sm font-medium',
+              'flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105',
               isActive(item.to)
-                ? 'bg-gray-200 text-gray-900 dark:bg-slate-700 dark:text-white'
-                : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
+                : 'text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 hover:bg-white/50 dark:hover:bg-slate-700/50'
             ]"
           >
             <BaseIcon
@@ -143,10 +143,10 @@ const isActive = (path) => {
             <button
               @click="toggleDropdown(index)"
               :class="[
-                'flex items-center px-3 py-2 rounded-md text-sm font-medium',
+                'flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105',
                 item.items.some(subItem => isActive(subItem.to))
-                  ? 'bg-gray-200 text-gray-900 dark:bg-slate-700 dark:text-white'
-                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
+                  ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
+                  : 'text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 hover:bg-white/50 dark:hover:bg-slate-700/50'
               ]"
             >
               <BaseIcon
@@ -157,7 +157,8 @@ const isActive = (path) => {
               <span class="ml-2">{{ item.label }}</span>
               <BaseIcon
                 :path="mdiChevronDown"
-                class="ml-1 flex-shrink-0"
+                class="ml-1 flex-shrink-0 transition-transform duration-300"
+                :class="{ 'rotate-180': activeDropdown === index }"
                 :size="18"
               />
             </button>
@@ -165,23 +166,23 @@ const isActive = (path) => {
             <!-- Dropdown Content -->
             <div
               v-if="activeDropdown === index"
-              class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 border border-gray-200 dark:border-slate-700"
+              class="absolute left-0 mt-3 w-56 rounded-2xl shadow-2xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm ring-1 ring-blue-200 dark:ring-slate-700 border border-blue-100 dark:border-slate-600 animate-fadeIn"
             >
-              <div class="py-1">
+              <div class="py-2">
                 <Link
                   v-for="subItem in item.items"
                   :key="subItem.to"
                   :href="subItem.to"
                   :class="[
-                    'flex items-center px-4 py-2 text-sm',
+                    'flex items-center px-4 py-3 text-sm font-medium transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-slate-700 dark:hover:to-slate-600',
                     isActive(subItem.to)
-                      ? 'bg-gray-100 text-gray-900 dark:bg-slate-700 dark:text-white'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                      ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 dark:from-slate-700 dark:to-slate-600 dark:text-blue-300'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
                   ]"
                 >
                   <BaseIcon
                     :path="subItem.icon"
-                    class="flex-shrink-0 mr-2"
+                    class="flex-shrink-0 mr-3"
                     :size="18"
                   />
                   {{ subItem.label }}
@@ -197,35 +198,35 @@ const isActive = (path) => {
         <!-- Mobile Menu Button -->
         <button
           @click="isMenuNavBarActive = !isMenuNavBarActive"
-          class="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+          class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
         >
-          <BaseIcon :path="mdiMenu" size="24" />
+          <BaseIcon :path="mdiMenu" size="20" />
         </button>
 
         <!-- Mobile Menu -->
         <div
           v-if="isMenuNavBarActive"
-          class="absolute top-16 left-0 right-0 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-lg"
+          class="absolute top-16 left-0 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm border-b border-blue-200 dark:border-slate-700 shadow-2xl animate-slideDown"
         >
-          <div class="px-2 pt-2 pb-3 space-y-1">
+          <div class="px-4 pt-4 pb-6 space-y-2">
             <template v-for="(item, index) in menuItems" :key="item.to || item.label">
               <!-- Regular Menu Item -->
               <Link 
                 v-if="!item.dropdown"
                 :href="item.to"
                 :class="[
-                  'flex items-center px-3 py-2 rounded-md text-base font-medium',
+                  'flex items-center px-4 py-3 rounded-xl text-base font-semibold transition-all duration-300',
                   isActive(item.to)
-                    ? 'bg-gray-200 text-gray-900 dark:bg-slate-700 dark:text-white'
-                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
+                    : 'text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700'
                 ]"
               >
                 <BaseIcon
                   :path="item.icon"
                   class="flex-shrink-0"
-                  :size="18"
+                  :size="20"
                 />
-                <span class="ml-2">{{ item.label }}</span>
+                <span class="ml-3">{{ item.label }}</span>
               </Link>
 
               <!-- Dropdown Menu Item -->
@@ -233,39 +234,40 @@ const isActive = (path) => {
                 <button
                   @click="toggleDropdown(index)"
                   :class="[
-                    'flex items-center w-full px-3 py-2 rounded-md text-base font-medium',
+                    'flex items-center w-full px-4 py-3 rounded-xl text-base font-semibold transition-all duration-300',
                     item.items.some(subItem => isActive(subItem.to))
-                      ? 'bg-gray-200 text-gray-900 dark:bg-slate-700 dark:text-white'
-                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
+                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
+                      : 'text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700'
                   ]"
                 >
                   <BaseIcon
                     :path="item.icon"
                     class="flex-shrink-0"
-                    :size="18"
+                    :size="20"
                   />
-                  <span class="ml-2">{{ item.label }}</span>
+                  <span class="ml-3">{{ item.label }}</span>
                   <BaseIcon
                     :path="mdiChevronDown"
-                    class="ml-1 flex-shrink-0"
-                    :size="18"
+                    class="ml-auto flex-shrink-0 transition-transform duration-300"
+                    :class="{ 'rotate-180': activeDropdown === index }"
+                    :size="20"
                   />
                 </button>
-                <div v-if="activeDropdown === index" class="pl-4 border-l-2 border-gray-200 dark:border-slate-700">
+                <div v-if="activeDropdown === index" class="mt-2 ml-4 pl-4 border-l-2 border-blue-200 dark:border-slate-700 space-y-1">
                   <Link
                     v-for="subItem in item.items"
                     :key="subItem.to"
                     :href="subItem.to"
                     :class="[
-                      'flex items-center px-4 py-2 text-sm',
+                      'flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
                       isActive(subItem.to)
-                        ? 'bg-gray-100 text-gray-900 dark:bg-slate-700 dark:text-white'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                        ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 dark:from-slate-700 dark:to-slate-600 dark:text-blue-300'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700'
                     ]"
                   >
                     <BaseIcon
                       :path="subItem.icon"
-                      class="flex-shrink-0 mr-2"
+                      class="flex-shrink-0 mr-3"
                       :size="18"
                     />
                     {{ subItem.label }}
@@ -278,4 +280,36 @@ const isActive = (path) => {
       </div>
     </div>
   </nav>
-</template> 
+</template>
+
+<style scoped>
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out;
+}
+</style> 

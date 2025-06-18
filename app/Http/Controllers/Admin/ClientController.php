@@ -51,8 +51,8 @@ class ClientController extends Controller
                 $filters['kyc_passed'] = $request->kyc_passed;
             }
 
-            // Get paginated clients
-            $clients = $query->paginate($request->input('per_page', 10));
+            // Get all clients (no pagination)
+            $clients = $query->get();
 
             Log::info('Clients query result:', ['count' => $clients->count()]);
 
@@ -83,13 +83,14 @@ class ClientController extends Controller
                 'total_accounts' => $statsQuery->count(),
                 'total_volume_lots' => $statsQuery->sum('volume_lots'),
                 'total_volume_usd' => $statsQuery->sum('volume_mln_usd'),
-                'total_profit' => $statsQuery->sum('reward_usd')
+                'total_profit' => $statsQuery->sum('reward_usd'),
+                'total_client_uids' => $statsQuery->distinct('client_uid')->count()
             ];
 
             Log::info('Stats calculated:', $stats);
 
             // Format client data
-            $formattedClients = $clients->through(function ($client) {
+            $formattedClients = $clients->map(function ($client) {
                 return [
                     'partner_account' => $client->partner_account ?? '-',
                     'client_uid' => $client->client_uid ?? '-',
@@ -138,7 +139,8 @@ class ClientController extends Controller
                     'total_accounts' => 0,
                     'total_volume_lots' => 0,
                     'total_volume_usd' => 0,
-                    'total_profit' => 0
+                    'total_profit' => 0,
+                    'total_client_uids' => 0
                 ],
                 'filters' => $filters,
                 'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()
@@ -176,8 +178,22 @@ class ClientController extends Controller
                 $filters['end_date'] = $request->end_date;
             }
 
-            // Get all clients (no pagination for this view)
-            $clients = $query->orderBy('reg_date', 'desc')->get();
+            // Get unique clients grouped by client_uid for display
+            $clients = $query
+                ->selectRaw('
+                    client_uid,
+                    MAX(client_status) as client_status,
+                    SUM(reward_usd) as total_reward_usd,
+                    SUM(rebate_amount_usd) as total_rebate_amount_usd,
+                    SUM(volume_lots) as total_volume_lots,
+                    SUM(volume_mln_usd) as total_volume_mln_usd,
+                    MAX(reg_date) as reg_date,
+                    MAX(partner_account) as partner_account,
+                    MAX(client_country) as client_country
+                ')
+                ->groupBy('client_uid')
+                ->orderBy('reg_date', 'desc')
+                ->get();
 
             Log::info('Clients query result:', ['count' => $clients->count()]);
 
@@ -198,11 +214,23 @@ class ClientController extends Controller
                 $statsQuery->whereDate('reg_date', '<=', $request->end_date);
             }
 
+            // Get aggregated stats by client_uid to avoid double-counting
+            $aggregatedStats = $statsQuery
+                ->selectRaw('
+                    client_uid,
+                    SUM(volume_lots) as total_volume_lots,
+                    SUM(volume_mln_usd) as total_volume_usd,
+                    SUM(reward_usd) as total_reward_usd
+                ')
+                ->groupBy('client_uid')
+                ->get();
+
             $stats = [
-                'total_pending' => $statsQuery->count(),
-                'total_amount' => $statsQuery->sum('volume_lots'),
-                'due_today' => $statsQuery->sum('volume_mln_usd'),
-                'overdue' => $statsQuery->sum('reward_usd')
+                'total_pending' => $aggregatedStats->count(),
+                'total_amount' => $aggregatedStats->sum('total_volume_lots'),
+                'due_today' => $aggregatedStats->sum('total_volume_usd'),
+                'overdue' => $aggregatedStats->sum('total_reward_usd'),
+                'total_client_uids' => $aggregatedStats->count()
             ];
 
             Log::info('Stats calculated:', $stats);
@@ -212,10 +240,10 @@ class ClientController extends Controller
                 return [
                     'client_uid' => $client->client_uid ?? '-',
                     'client_status' => $client->client_status ?? 'UNKNOWN',
-                    'reward_usd' => (float)($client->reward_usd ?? 0),
-                    'rebate_amount_usd' => (float)($client->rebate_amount_usd ?? 0),
-                    'volume_lots' => (float)($client->volume_lots ?? 0),
-                    'volume_mln_usd' => (float)($client->volume_mln_usd ?? 0),
+                    'reward_usd' => (float)($client->total_reward_usd ?? 0),
+                    'rebate_amount_usd' => (float)($client->total_rebate_amount_usd ?? 0),
+                    'volume_lots' => (float)($client->total_volume_lots ?? 0),
+                    'volume_mln_usd' => (float)($client->total_volume_mln_usd ?? 0),
                     'reg_date' => $client->reg_date,
                     'partner_account' => $client->partner_account ?? '-',
                     'client_country' => $client->client_country ?? '-'
@@ -255,7 +283,8 @@ class ClientController extends Controller
                     'total_pending' => 0,
                     'total_amount' => 0,
                     'due_today' => 0,
-                    'overdue' => 0
+                    'overdue' => 0,
+                    'total_client_uids' => 0
                 ],
                 'filters' => $filters,
                 'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()
