@@ -62,27 +62,33 @@ class ExnessAuthService
             // Get data from both API versions without limit
             $dataV1 = $this->getClientsFromUrl(
                 "https://my.exnessaffiliates.com/api/reports/clients/",
-                $token,
                 'v1'
             );
 
             $dataV2 = $this->getClientsFromUrl(
                 "https://my.exnessaffiliates.com/api/v2/reports/clients/",
-                $token,
                 'v2'
             );
 
             // Create a map of client_uid to v2 data
             $v2Map = [];
-            foreach ($dataV2 as $client) {
+            foreach ($dataV2['data'] as $client) {
                 if (isset($client['client_uid'])) {
-                    $v2Map[$client['client_uid']] = $client;
+                    $v2Uid = $client['client_uid'];
+                    
+                    // Extract short UID from V2 UUID format
+                    // V2 format: "3bf4e479-a9df-422a-a0a9-2c1376488f15"
+                    // V1 format: "3bf4e479"
+                    $shortUid = explode('-', $v2Uid)[0] ?? $v2Uid;
+                    
+                    // Store with short UID as key for matching with V1
+                    $v2Map[$shortUid] = $client;
                 }
             }
 
             // Combine data from both sources
             $combined = [];
-            foreach ($dataV1 as $v1Client) {
+            foreach ($dataV1['data'] as $v1Client) {
                 $clientUid = $v1Client['client_uid'] ?? null;
                 $v2Data = $clientUid ? ($v2Map[$clientUid] ?? []) : [];
                 
@@ -90,17 +96,20 @@ class ExnessAuthService
             }
 
             // Add any v2 clients that weren't in v1
-            foreach ($dataV2 as $v2Client) {
+            foreach ($dataV2['data'] as $v2Client) {
                 $clientUid = $v2Client['client_uid'] ?? null;
-                if ($clientUid && !isset($v2Map[$clientUid])) {
-                    $combined[] = $v2Client;
+                if ($clientUid) {
+                    $shortUid = explode('-', $clientUid)[0] ?? $clientUid;
+                    if (!isset($v2Map[$shortUid])) {
+                        $combined[] = $v2Client;
+                    }
                 }
             }
 
             // Log the data for debugging
             Log::info('Combined clients data:', [
-                'v1_count' => count($dataV1),
-                'v2_count' => count($dataV2),
+                'v1_count' => count($dataV1['data']),
+                'v2_count' => count($dataV2['data']),
                 'total_count' => count($combined),
                 'sample_data' => $combined[0] ?? null,
                 'v2_map_keys' => array_keys($v2Map)
@@ -117,39 +126,55 @@ class ExnessAuthService
         }
     }
 
-    private function getClientsFromUrl(string $url, string $token, string $label): array
+    public function getClientsFromUrl(string $url, string $label = 'api'): array
     {
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Authorization' => 'JWT ' . $token
-        ])->get($url);
-
-        if (!$response->successful()) {
-            Log::error('Failed to fetch clients data:', [
-                'url' => $url,
-                'status' => $response->status(),
-                'response' => $response->json()
-            ]);
-            return [];
-        }
-
-        $data = $response->json()['data'] ?? [];
-
-        // Log the raw data for debugging
-        Log::info("Raw {$label} data:", [
-            'url' => $url,
-            'count' => count($data),
-            'sample' => $data[0] ?? null,
-            'fields' => $data[0] ? array_keys($data[0]) : []
-        ]);
-
-        // Ensure country field is present
-        foreach ($data as &$item) {
-            if (!isset($item['client_country']) && isset($item['country'])) {
-                $item['client_country'] = $item['country'];
+        try {
+            $token = $this->retrieveToken();
+            if (!$token) {
+                return ['error' => 'ไม่สามารถรับ token ได้'];
             }
-        }
 
-        return $data;
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Authorization' => 'JWT ' . $token
+            ])->get($url);
+
+            if (!$response->successful()) {
+                Log::error('Failed to fetch clients data:', [
+                    'url' => $url,
+                    'label' => $label,
+                    'status' => $response->status(),
+                    'response' => $response->json()
+                ]);
+                return ['error' => 'API call failed: ' . $response->status()];
+            }
+
+            $data = $response->json()['data'] ?? [];
+
+            // Log the raw data for debugging
+            Log::info("Raw {$label} data:", [
+                'url' => $url,
+                'count' => count($data),
+                'sample' => $data[0] ?? null,
+                'fields' => $data[0] ? array_keys($data[0]) : []
+            ]);
+
+            // Ensure country field is present
+            foreach ($data as &$item) {
+                if (!isset($item['client_country']) && isset($item['country'])) {
+                    $item['client_country'] = $item['country'];
+                }
+            }
+
+            return ['data' => $data];
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching {$label} clients data:", [
+                'url' => $url,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return ['error' => $e->getMessage()];
+        }
     }
 } 

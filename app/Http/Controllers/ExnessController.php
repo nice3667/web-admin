@@ -13,6 +13,7 @@ use App\Models\User;
 use Inertia\Inertia;
 use App\Services\ExnessAuthService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Schema;
 
 class ExnessController extends Controller
 {
@@ -201,6 +202,114 @@ class ExnessController extends Controller
             
             return response()->json([
                 'error' => 'เกิดข้อผิดพลาดในการซิงค์ข้อมูล',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Debug method to check raw API responses
+     */
+    public function debugApiResponses(Request $request)
+    {
+        try {
+            $token = $this->exnessService->retrieveToken();
+            if (!$token) {
+                return response()->json(['error' => 'ไม่สามารถรับ token ได้'], 400);
+            }
+
+            // Get raw responses from both APIs
+            $v1Response = $this->exnessService->getClientsFromUrl(
+                "https://my.exnessaffiliates.com/api/reports/clients/",
+                'v1'
+            );
+            
+            $v2Response = $this->exnessService->getClientsFromUrl(
+                "https://my.exnessaffiliates.com/api/v2/reports/clients/",
+                'v2'
+            );
+
+            $v1Clients = $v1Response['data'] ?? [];
+            $v2Clients = $v2Response['data'] ?? [];
+
+            // Get client_uid lists from both APIs
+            $v1Uids = array_column($v1Clients, 'client_uid');
+            $v2Uids = array_column($v2Clients, 'client_uid');
+
+            // Find matching and non-matching UIDs
+            $matchingUids = array_intersect($v1Uids, $v2Uids);
+            $v1OnlyUids = array_diff($v1Uids, $v2Uids);
+            $v2OnlyUids = array_diff($v2Uids, $v1Uids);
+
+            // Sample data from each API
+            $v1Sample = $v1Clients[0] ?? null;
+            $v2Sample = $v2Clients[0] ?? null;
+
+            return response()->json([
+                'v1_api' => [
+                    'total_clients' => count($v1Clients),
+                    'sample_client' => $v1Sample,
+                    'available_fields' => $v1Sample ? array_keys($v1Sample) : [],
+                    'client_uids' => array_slice($v1Uids, 0, 10) // First 10 UIDs
+                ],
+                'v2_api' => [
+                    'total_clients' => count($v2Clients),
+                    'sample_client' => $v2Sample,
+                    'available_fields' => $v2Sample ? array_keys($v2Sample) : [],
+                    'client_uids' => array_slice($v2Uids, 0, 10) // First 10 UIDs
+                ],
+                'matching_analysis' => [
+                    'matching_uids_count' => count($matchingUids),
+                    'v1_only_count' => count($v1OnlyUids),
+                    'v2_only_count' => count($v2OnlyUids),
+                    'matching_uids_sample' => array_slice($matchingUids, 0, 5),
+                    'v1_only_sample' => array_slice($v1OnlyUids, 0, 5),
+                    'v2_only_sample' => array_slice($v2OnlyUids, 0, 5)
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'เกิดข้อผิดพลาดในการตรวจสอบ API',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Debug method to check database status
+     */
+    public function debugDatabaseStatus(Request $request)
+    {
+        try {
+            // Check clients table
+            $totalClients = \App\Models\Client::count();
+            $statusCounts = \App\Models\Client::selectRaw('client_status, COUNT(*) as count')
+                ->groupBy('client_status')
+                ->get()
+                ->pluck('count', 'client_status')
+                ->toArray();
+
+            // Sample clients with their status
+            $sampleClients = \App\Models\Client::select('client_uid', 'client_status', 'last_sync_at')
+                ->limit(10)
+                ->get();
+
+            // Check if rebate_amount_usd column exists
+            $hasRebateColumn = Schema::hasColumn('clients', 'rebate_amount_usd');
+
+            return response()->json([
+                'database_status' => [
+                    'total_clients' => $totalClients,
+                    'status_distribution' => $statusCounts,
+                    'has_rebate_column' => $hasRebateColumn,
+                    'sample_clients' => $sampleClients
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'เกิดข้อผิดพลาดในการตรวจสอบฐานข้อมูล',
                 'message' => $e->getMessage()
             ], 500);
         }

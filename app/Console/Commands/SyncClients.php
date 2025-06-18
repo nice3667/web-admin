@@ -13,7 +13,7 @@ class SyncClients extends Command
      *
      * @var string
      */
-    protected $signature = 'clients:sync';
+    protected $signature = 'clients:sync {--show-api : Show API data for debugging}';
 
     /**
      * The console command description.
@@ -35,6 +35,11 @@ class SyncClients extends Command
      */
     public function handle()
     {
+        // Check if user wants to see API data
+        if ($this->option('show-api')) {
+            return $this->showApiData();
+        }
+
         $this->info('Starting client data synchronization...');
         Log::info('Starting client data synchronization via command');
 
@@ -42,34 +47,79 @@ class SyncClients extends Command
             $success = $this->clientService->syncClients();
 
             if ($success) {
-                $stats = $this->clientService->getClientStats();
+                $this->info('✅ Client data synchronization completed successfully!');
                 
-                $this->info('Client data synchronization completed successfully!');
-                $this->info('Statistics:');
-                $this->info('- Total Clients: ' . $stats['total_clients']);
-                $this->info('- Active Clients: ' . $stats['active_clients']);
-                $this->info('- Total Volume (lots): ' . $stats['total_volume_lots']);
-                $this->info('- Total Volume (USD): ' . $stats['total_volume_usd']);
-                $this->info('- Total Reward (USD): ' . $stats['total_reward_usd']);
-                $this->info('- KYC Passed: ' . $stats['kyc_passed_count']);
-                $this->info('- FTD Received: ' . $stats['ftd_received_count']);
-                $this->info('- FTT Made: ' . $stats['ftt_made_count']);
-                $this->info('- Last Sync: ' . $stats['last_sync']);
+                // Get final stats
+                $totalClients = \App\Models\Client::count();
+                $statusCounts = \App\Models\Client::selectRaw('client_status, COUNT(*) as count')
+                    ->groupBy('client_status')
+                    ->get()
+                    ->pluck('count', 'client_status')
+                    ->toArray();
 
-                Log::info('Client data synchronization completed successfully', $stats);
+                $this->info('📊 Final Statistics:');
+                $this->info('- Total Clients: ' . $totalClients);
+                $this->info('- Status Distribution:');
+                foreach ($statusCounts as $status => $count) {
+                    $this->info("  • {$status}: {$count}");
+                }
+                
+                Log::info('Client sync command completed successfully', [
+                    'total_clients' => $totalClients,
+                    'status_distribution' => $statusCounts
+                ]);
+                
                 return 0;
+            } else {
+                $this->error('❌ Client data synchronization failed!');
+                Log::error('Client sync command failed');
+                return 1;
             }
 
-            $this->error('Failed to sync client data');
-            Log::error('Client data synchronization failed');
-            return 1;
-
         } catch (\Exception $e) {
-            $this->error('Error: ' . $e->getMessage());
-            Log::error('Error in client sync command:', [
+            $this->error('❌ Error during synchronization: ' . $e->getMessage());
+            Log::error('Client sync command error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
+            return 1;
+        }
+    }
+
+    /**
+     * Show API data for debugging
+     */
+    public function showApiData()
+    {
+        $this->info('Fetching API data for debugging...');
+        
+        try {
+            $apiData = $this->clientService->getRawApiData();
+            
+            if (isset($apiData['error'])) {
+                $this->error('❌ API Error: ' . $apiData['error']);
+                return 1;
+            }
+
+            $this->info('📊 API Data Summary:');
+            $this->info('- V1 API Clients: ' . $apiData['v1_api']['total_clients']);
+            $this->info('- V2 API Clients: ' . $apiData['v2_api']['total_clients']);
+            $this->info('- Matching UIDs: ' . $apiData['matching_analysis']['matching_uids_count']);
+            $this->info('- V1 Only: ' . $apiData['matching_analysis']['v1_only_count']);
+            $this->info('- V2 Only: ' . $apiData['matching_analysis']['v2_only_count']);
+
+            $this->info('');
+            $this->info('🔍 V1 API Sample:');
+            $this->line(json_encode($apiData['v1_api']['sample_client'], JSON_PRETTY_PRINT));
+
+            $this->info('');
+            $this->info('🔍 V2 API Sample:');
+            $this->line(json_encode($apiData['v2_api']['sample_client'], JSON_PRETTY_PRINT));
+
+            return 0;
+
+        } catch (\Exception $e) {
+            $this->error('❌ Error fetching API data: ' . $e->getMessage());
             return 1;
         }
     }

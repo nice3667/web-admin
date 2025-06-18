@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\ExnessController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use App\Http\Controllers\ClientController;
 
 
 Route::get('/', function () {
@@ -79,6 +80,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/wallet/accounts', [ExnessController::class, 'getWalletAccounts']);
     Route::post('/api/exness/credentials', [ExnessController::class, 'saveCredentials']);
     
+    // Debug route for API analysis
+    Route::get('/api/exness/debug', [ExnessController::class, 'debugApiResponses']);
+    Route::get('/api/exness/debug-db', [ExnessController::class, 'debugDatabaseStatus']);
+    
+    // Client sync route
+    Route::post('/api/clients/sync', [ClientController::class, 'sync']);
+    Route::get('/api/clients/debug', [ClientController::class, 'debugApi']);
+    Route::get('/api/clients/debug-db', [ClientController::class, 'debugDatabase']);
+    
     // Exness credentials management
     Route::get('/exness/credentials', [ExnessController::class, 'credentials'])->name('exness.credentials');
     Route::post('/exness/credentials', [ExnessController::class, 'updateCredentials'])->name('exness.credentials.update');
@@ -116,13 +126,9 @@ Route::middleware(['web', 'auth', 'verified', \App\Http\Middleware\HasAccessAdmi
     })->name('admin.support');
 
     // Reports Routes
-    Route::get('/reports/clients', function () {
-        return Inertia::render('Admin/Report/Clients');
-    })->name('admin.reports.clients');
+    Route::get('/reports/clients', [\App\Http\Controllers\Admin\ClientController::class, 'clients'])->name('admin.reports.clients');
 
-    Route::get('/reports/client-account', function () {
-        return Inertia::render('Admin/Report/ClientAccount');
-    })->name('admin.reports.client-account');
+    Route::get('/reports/client-account', [\App\Http\Controllers\Admin\ClientController::class, 'index'])->name('admin.reports.client-account');
 
     Route::get('/reports/reward-history', function () {
         return Inertia::render('Admin/Report/RewardHistory');
