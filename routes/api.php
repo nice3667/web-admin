@@ -54,5 +54,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 Route::prefix('clients')->group(function () {
     Route::get('/', [ClientController::class, 'index']);
     Route::post('/sync', [ClientController::class, 'sync']);
+    Route::post('/sync-new', [ClientController::class, 'syncNewClients']);
+    Route::get('/sync-stats', [ClientController::class, 'syncStats']);
     Route::get('/stats', [ClientController::class, 'stats']);
+    Route::get('/debug', [ClientController::class, 'debugApi']);
+    Route::get('/debug-db', [ClientController::class, 'debugDatabase']);
 });

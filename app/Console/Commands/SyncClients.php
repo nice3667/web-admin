@@ -13,7 +13,7 @@ class SyncClients extends Command
      *
      * @var string
      */
-    protected $signature = 'clients:sync {--show-api : Show API data for debugging}';
+    protected $signature = 'clients:sync {--show-api : Show API data for debugging} {--new-only : Sync only new clients (don\'t update existing ones)}';
 
     /**
      * The console command description.
@@ -38,6 +38,11 @@ class SyncClients extends Command
         // Check if user wants to see API data
         if ($this->option('show-api')) {
             return $this->showApiData();
+        }
+
+        // Check if user wants to sync only new clients
+        if ($this->option('new-only')) {
+            return $this->syncNewClients();
         }
 
         $this->info('Starting client data synchronization...');
@@ -79,6 +84,50 @@ class SyncClients extends Command
         } catch (\Exception $e) {
             $this->error('❌ Error during synchronization: ' . $e->getMessage());
             Log::error('Client sync command error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return 1;
+        }
+    }
+
+    /**
+     * Sync only new clients
+     */
+    public function syncNewClients()
+    {
+        $this->info('Starting new clients synchronization...');
+        Log::info('Starting new clients synchronization via command');
+
+        try {
+            $result = $this->clientService->syncNewClients();
+
+            if ($result['success']) {
+                $this->info('✅ New clients synchronization completed successfully!');
+                $this->info('📊 Sync Results:');
+                $this->info('- New clients added: ' . $result['new_clients_added']);
+                $this->info('- Total API clients: ' . $result['total_api_clients']);
+                $this->info('- Existing clients: ' . $result['existing_clients']);
+                
+                if ($result['new_clients_added'] > 0) {
+                    $this->info('🎉 Successfully added ' . $result['new_clients_added'] . ' new clients!');
+                } else {
+                    $this->info('ℹ️  No new clients found to add.');
+                }
+                
+                Log::info('New clients sync command completed successfully', $result);
+                
+                return 0;
+            } else {
+                $this->error('❌ New clients synchronization failed!');
+                $this->error('Error: ' . ($result['error'] ?? 'Unknown error'));
+                Log::error('New clients sync command failed', $result);
+                return 1;
+            }
+
+        } catch (\Exception $e) {
+            $this->error('❌ Error during new clients synchronization: ' . $e->getMessage());
+            Log::error('New clients sync command error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

@@ -8,6 +8,7 @@ use App\Http\Controllers\ExnessController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\RealtimeSyncController;
 
 
 Route::get('/', function () {
@@ -86,8 +87,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Client sync route
     Route::post('/api/clients/sync', [ClientController::class, 'sync']);
+    Route::post('/api/clients/sync-new', [ClientController::class, 'syncNewClients']);
+    Route::get('/api/clients/sync-stats', [ClientController::class, 'syncStats']);
     Route::get('/api/clients/debug', [ClientController::class, 'debugApi']);
     Route::get('/api/clients/debug-db', [ClientController::class, 'debugDatabase']);
+    
+    // Real-time sync routes
+    Route::prefix('api/realtime-sync')->group(function () {
+        Route::post('/start', [RealtimeSyncController::class, 'startMonitoring']);
+        Route::post('/stop', [RealtimeSyncController::class, 'stopMonitoring']);
+        Route::get('/status', [RealtimeSyncController::class, 'getStatus']);
+        Route::post('/trigger', [RealtimeSyncController::class, 'triggerSync']);
+        Route::get('/history', [RealtimeSyncController::class, 'getSyncHistory']);
+        Route::get('/websocket', [RealtimeSyncController::class, 'websocketEndpoint']);
+    });
     
     // Exness credentials management
     Route::get('/exness/credentials', [ExnessController::class, 'credentials'])->name('exness.credentials');

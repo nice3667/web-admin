@@ -90,12 +90,16 @@ class ClientService
                 'v2_uid_example' => array_keys(array_slice($v2Map, 0, 1, true))[0] ?? 'none'
             ]);
 
-            // Clear existing data
-            Log::info('Clearing existing data...');
-            Client::truncate();
+            // Get existing clients for comparison
+            $existingClients = Client::pluck('client_uid')->toArray();
+            Log::info('Existing clients in database:', [
+                'count' => count($existingClients),
+                'sample' => array_slice($existingClients, 0, 5)
+            ]);
 
-            // Process and save data - SAVE ALL DATA INCLUDING DUPLICATES
-            $savedCount = 0;
+            // Process and save data - UPDATE EXISTING AND ADD NEW
+            $updatedCount = 0;
+            $newCount = 0;
             $allUids = array_column($v1Clients, 'client_uid');
             $uniqueUids = array_unique($allUids);
             Log::info('V1 client_uid count', [
@@ -112,7 +116,7 @@ class ClientService
                 $v2Data = $v2Map[$clientUid] ?? [];
                 
                 // Log the merge process for first few clients
-                if ($savedCount < 3) {
+                if (($updatedCount + $newCount) < 3) {
                     Log::info("Processing client {$index}: {$clientUid}", [
                         'v1_status' => $v1Client['client_status'] ?? 'NOT_IN_V1',
                         'v2_status' => $v2Data['client_status'] ?? 'NOT_IN_V2',
@@ -134,8 +138,8 @@ class ClientService
                     $finalStatus = strtoupper($v1Client['client_status']);
                 }
 
-                // Save to database using CREATE (not updateOrCreate) to allow duplicates
-                $client = Client::create([
+                // Prepare client data
+                $clientData = [
                     'client_uid' => $clientUid,
                     'partner_account' => $mergedData['partner_account'] ?? null,
                     'client_id' => $mergedData['client_id'] ?? null,
@@ -151,22 +155,44 @@ class ClientService
                     'rebate_amount_usd' => $mergedData['rebate_amount_usd'] ?? 0,
                     'raw_data' => $mergedData,
                     'last_sync_at' => now()
-                ]);
+                ];
 
-                $savedCount++;
+                // Check if client exists
+                $existingClient = Client::where('client_uid', $clientUid)->first();
                 
-                if ($savedCount <= 3) {
-                    Log::info("Saved client {$savedCount}: {$clientUid}", [
-                        'final_status' => $client->client_status,
-                        'v1_status' => $v1Client['client_status'] ?? 'NOT_IN_V1',
-                        'v2_status' => $v2Data['client_status'] ?? 'NOT_IN_V2',
-                        'used_short_uid' => $clientUid
-                    ]);
+                if ($existingClient) {
+                    // Update existing client
+                    $existingClient->update($clientData);
+                    $updatedCount++;
+                    
+                    if ($updatedCount <= 3) {
+                        Log::info("Updated client {$updatedCount}: {$clientUid}", [
+                            'final_status' => $existingClient->client_status,
+                            'v1_status' => $v1Client['client_status'] ?? 'NOT_IN_V1',
+                            'v2_status' => $v2Data['client_status'] ?? 'NOT_IN_V2',
+                            'used_short_uid' => $clientUid
+                        ]);
+                    }
+                } else {
+                    // Create new client
+                    Client::create($clientData);
+                    $newCount++;
+                    
+                    if ($newCount <= 3) {
+                        Log::info("Created new client {$newCount}: {$clientUid}", [
+                            'final_status' => $finalStatus,
+                            'v1_status' => $v1Client['client_status'] ?? 'NOT_IN_V1',
+                            'v2_status' => $v2Data['client_status'] ?? 'NOT_IN_V2',
+                            'used_short_uid' => $clientUid
+                        ]);
+                    }
                 }
             }
 
             Log::info('=== SYNC COMPLETED ===', [
-                'total_saved' => $savedCount,
+                'total_updated' => $updatedCount,
+                'total_new' => $newCount,
+                'total_processed' => $updatedCount + $newCount,
                 'v1_clients' => count($v1Clients),
                 'v2_clients' => count($v2Clients)
             ]);
@@ -310,6 +336,162 @@ class ClientService
                 'trace' => $e->getTraceAsString()
             ]);
             return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Sync only new clients (don't update existing ones)
+     */
+    public function syncNewClients()
+    {
+        try {
+            Log::info('=== STARTING NEW CLIENTS SYNC ===');
+            
+            // Get data from both APIs
+            $v1Response = $this->exnessAuthService->getClientsFromUrl(
+                "https://my.exnessaffiliates.com/api/reports/clients/",
+                'v1'
+            );
+            
+            $v2Response = $this->exnessAuthService->getClientsFromUrl(
+                "https://my.exnessaffiliates.com/api/v2/reports/clients/",
+                'v2'
+            );
+
+            if (isset($v1Response['error'])) {
+                Log::error('V1 API Error:', ['error' => $v1Response['error']]);
+                return false;
+            }
+
+            if (isset($v2Response['error'])) {
+                Log::error('V2 API Error:', ['error' => $v2Response['error']]);
+                return false;
+            }
+
+            $v1Clients = $v1Response['data'] ?? [];
+            $v2Clients = $v2Response['data'] ?? [];
+
+            // Create V2 lookup map
+            $v2Map = [];
+            foreach ($v2Clients as $client) {
+                if (isset($client['client_uid'])) {
+                    $v2Uid = $client['client_uid'];
+                    $shortUid = explode('-', $v2Uid)[0] ?? $v2Uid;
+                    $v2Map[$shortUid] = $client;
+                }
+            }
+
+            // Get existing client UIDs
+            $existingUids = Client::pluck('client_uid')->toArray();
+            
+            // Process only new clients
+            $newCount = 0;
+            foreach ($v1Clients as $v1Client) {
+                $clientUid = $v1Client['client_uid'] ?? null;
+                if (!$clientUid || in_array($clientUid, $existingUids)) {
+                    continue; // Skip if client already exists
+                }
+
+                // Get V2 data for this client
+                $v2Data = $v2Map[$clientUid] ?? [];
+                $mergedData = array_merge($v1Client, $v2Data);
+
+                // Determine final status
+                $finalStatus = 'UNKNOWN';
+                if (!empty($v2Data) && isset($v2Data['client_status'])) {
+                    $finalStatus = strtoupper($v2Data['client_status']);
+                } elseif (isset($v1Client['client_status'])) {
+                    $finalStatus = strtoupper($v1Client['client_status']);
+                }
+
+                // Create new client
+                Client::create([
+                    'client_uid' => $clientUid,
+                    'partner_account' => $mergedData['partner_account'] ?? null,
+                    'client_id' => $mergedData['client_id'] ?? null,
+                    'reg_date' => $mergedData['reg_date'] ?? $mergedData['registration_date'] ?? null,
+                    'client_country' => $mergedData['client_country'] ?? $mergedData['country'] ?? null,
+                    'volume_lots' => $mergedData['volume_lots'] ?? 0,
+                    'volume_mln_usd' => $mergedData['volume_mln_usd'] ?? 0,
+                    'reward_usd' => $mergedData['reward_usd'] ?? 0,
+                    'client_status' => $finalStatus,
+                    'kyc_passed' => $mergedData['kyc_passed'] ?? false,
+                    'ftd_received' => $mergedData['ftd_received'] ?? false,
+                    'ftt_made' => $mergedData['ftt_made'] ?? false,
+                    'rebate_amount_usd' => $mergedData['rebate_amount_usd'] ?? 0,
+                    'raw_data' => $mergedData,
+                    'last_sync_at' => now()
+                ]);
+
+                $newCount++;
+                
+                if ($newCount <= 5) {
+                    Log::info("Added new client {$newCount}: {$clientUid}", [
+                        'final_status' => $finalStatus,
+                        'country' => $mergedData['client_country'] ?? $mergedData['country'] ?? 'Unknown'
+                    ]);
+                }
+            }
+
+            Log::info('=== NEW CLIENTS SYNC COMPLETED ===', [
+                'new_clients_added' => $newCount,
+                'total_api_clients' => count($v1Clients),
+                'existing_clients' => count($existingUids)
+            ]);
+
+            return [
+                'success' => true,
+                'new_clients_added' => $newCount,
+                'total_api_clients' => count($v1Clients),
+                'existing_clients' => count($existingUids)
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('=== NEW CLIENTS SYNC ERROR ===', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get sync statistics
+     */
+    public function getSyncStats()
+    {
+        try {
+            $stats = [
+                'total_clients' => Client::count(),
+                'last_sync' => Client::max('last_sync_at'),
+                'clients_synced_today' => Client::whereDate('last_sync_at', today())->count(),
+                'clients_synced_this_week' => Client::whereBetween('last_sync_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+                'status_distribution' => Client::selectRaw('client_status, COUNT(*) as count')
+                    ->groupBy('client_status')
+                    ->get()
+                    ->pluck('count', 'client_status')
+                    ->toArray(),
+                'countries_distribution' => Client::selectRaw('client_country, COUNT(*) as count')
+                    ->whereNotNull('client_country')
+                    ->groupBy('client_country')
+                    ->orderBy('count', 'desc')
+                    ->limit(10)
+                    ->get()
+                    ->pluck('count', 'client_country')
+                    ->toArray()
+            ];
+
+            return $stats;
+
+        } catch (\Exception $e) {
+            Log::error('Error getting sync stats:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return [];
         }
     }
 } 

@@ -170,13 +170,12 @@ class ClientController extends Controller
             $columns = Schema::getColumnListing('clients');
 
             return response()->json([
-                'database_info' => [
-                    'table_exists' => Schema::hasTable('clients'),
-                    'columns' => $columns,
-                    'has_rebate_column' => $hasRebateColumn,
+                'database_status' => [
                     'total_clients' => $totalClients,
                     'status_distribution' => $statusCounts,
-                    'sample_clients' => $sampleClients
+                    'has_rebate_column' => $hasRebateColumn,
+                    'sample_clients' => $sampleClients,
+                    'table_columns' => $columns
                 ]
             ]);
 
@@ -189,6 +188,69 @@ class ClientController extends Controller
             return response()->json([
                 'error' => 'เกิดข้อผิดพลาดในการตรวจสอบฐานข้อมูล',
                 'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Sync only new clients (don't update existing ones)
+     */
+    public function syncNewClients(Request $request)
+    {
+        try {
+            Log::info('Manual new clients sync triggered');
+            
+            $result = $this->clientService->syncNewClients();
+            
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'New clients synchronized successfully',
+                    'data' => $result
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to synchronize new clients: ' . ($result['error'] ?? 'Unknown error'),
+                    'data' => $result
+                ], 500);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Error in syncNewClients:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error during new clients synchronization: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get sync statistics
+     */
+    public function syncStats(Request $request)
+    {
+        try {
+            $stats = $this->clientService->getSyncStats();
+            
+            return response()->json([
+                'success' => true,
+                'data' => $stats
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching sync stats:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการดึงสถิติการ sync: ' . $e->getMessage()
             ], 500);
         }
     }
