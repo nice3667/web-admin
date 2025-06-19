@@ -43,7 +43,8 @@ const menuItems = [
         icon: mdiGift
       }
     ]
-  },
+  }
+  ,
   {
     label: "Rebate",
     to: "/admin/rebate",
