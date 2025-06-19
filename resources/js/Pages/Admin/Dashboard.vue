@@ -93,9 +93,9 @@ const stats = ref({
   <Head :title="title" />
 
   <LayoutAuthenticated>
-    <NotificationBar v-if="error" color="danger" :icon="mdiAlertCircle">
+    <!-- <NotificationBar v-if="error" color="danger" :icon="mdiAlertCircle">
       {{ error }}
-    </NotificationBar>
+    </NotificationBar> -->
 
     <SectionMain>
       <!-- Welcome Section -->
@@ -285,11 +285,7 @@ const stats = ref({
         </div>
       </div>
 
-      <!-- Charts and Data Section -->
-      <div class="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-2">
-        <CardBoxTransaction />
-        <CardBoxClient />
-      </div>
+      
     </SectionMain>
   </LayoutAuthenticated>
 </template>

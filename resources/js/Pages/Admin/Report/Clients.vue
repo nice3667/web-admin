@@ -173,7 +173,7 @@ watch(() => props.filters, (newFilters) => {
   <LayoutAuthenticated>
     <Head title="ลูกค้า" />
     <SectionMain>
-      <SectionTitleLineWithButton :icon="mdiAccountGroup" title="รายงานลูกค้า" main>
+      <SectionTitleLineWithButton  title="รายงานลูกค้า" main>
         <template #button>
           <BaseButton
             :icon="mdiChartLine"

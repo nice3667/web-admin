@@ -222,12 +222,11 @@ watch(
 
 <template>
   <LayoutAuthenticated>
-    <Head title="รายงานลูกค้า" />
+    <Head title="บัญชีลูกค้า" />
     
     <SectionMain>
       <SectionTitleLineWithButton
-        :icon="mdiAccountGroup"
-        title="รายงานลูกค้า"
+        title="บัญชีลูกค้า"
         main
       >
       </SectionTitleLineWithButton>
@@ -670,21 +669,27 @@ watch(
         @confirm="applySearch"
         @cancel="resetFilters"
       >
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div class="flex flex-col gap-5 px-2 md:px-6 py-2 md:py-6">
           <FormControl
             v-model="tempFilters.partner_account"
             label="Partner Account"
             placeholder="กรอก Partner Account"
+            class="bg-white dark:bg-slate-800 rounded-xl shadow-sm px-4 py-3 border border-gray-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-blue-200 dark:focus-within:ring-blue-800 transition-all"
+            input-class="text-lg py-3"
           />
           <FormControl
             v-model="tempFilters.client_uid"
             label="Client UID"
             placeholder="กรอก Client UID"
+            class="bg-white dark:bg-slate-800 rounded-xl shadow-sm px-4 py-3 border border-gray-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-blue-200 dark:focus-within:ring-blue-800 transition-all"
+            input-class="text-lg py-3"
           />
           <FormControl
             v-model="tempFilters.client_country"
             label="ประเทศ"
             placeholder="กรอกรหัสประเทศ"
+            class="bg-white dark:bg-slate-800 rounded-xl shadow-sm px-4 py-3 border border-gray-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-blue-200 dark:focus-within:ring-blue-800 transition-all"
+            input-class="text-lg py-3"
           />
           <FormControl
             v-model="tempFilters.client_status"
@@ -696,11 +701,15 @@ watch(
               { value: 'INACTIVE', label: 'INACTIVE' },
               { value: 'PENDING', label: 'PENDING' },
             ]"
+            class="bg-white dark:bg-slate-800 rounded-xl shadow-sm px-4 py-3 border border-gray-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-blue-200 dark:focus-within:ring-blue-800 transition-all"
+            input-class="text-lg py-3"
           />
           <FormControl
             v-model="tempFilters.reg_date"
             label="วันที่ลงทะเบียน"
             type="date"
+            class="bg-white dark:bg-slate-800 rounded-xl shadow-sm px-4 py-3 border border-gray-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-blue-200 dark:focus-within:ring-blue-800 transition-all"
+            input-class="text-lg py-3"
           />
           <FormControl
             v-model="tempFilters.kyc_passed"
@@ -711,8 +720,11 @@ watch(
               { value: '1', label: 'ผ่าน' },
               { value: '0', label: 'ไม่ผ่าน' },
             ]"
+            class="bg-white dark:bg-slate-800 rounded-xl shadow-sm px-4 py-3 border border-gray-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-blue-200 dark:focus-within:ring-blue-800 transition-all"
+            input-class="text-lg py-3"
           />
         </div>
+        <div class="border-t border-gray-100 dark:border-slate-700 mt-4"></div>
       </CardBoxModal>
     </SectionMain>
   </LayoutAuthenticated>

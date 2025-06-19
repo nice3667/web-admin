@@ -40,8 +40,10 @@ const hasSlot = computed(() => useSlots().default)
         size="20"
       />
       <h1
-        :class="main ? 'text-3xl' : 'text-2xl'"
-        class="leading-tight"
+        :class="[
+          main ? 'text-3xl text-black font-bold tracking-wide' : 'text-2xl',
+          'leading-tight'
+        ]"
       >
         {{ title }}
       </h1>
