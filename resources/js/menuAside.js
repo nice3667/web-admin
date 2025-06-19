@@ -11,9 +11,20 @@ import {
     mdiResponsive,
     mdiPalette,
     mdiReact,
+    mdiChartLine,
 } from "@mdi/js";
 
 export default [
+    {
+        to: "/admin/reports1/client-account1",
+        icon: mdiChartLine,
+        label: "รายงานบัญชีลูกค้า 1",
+    },
+    {
+        to: "/admin/reports2/client-account2",
+        icon: mdiChartLine,
+        label: "รายงานบัญชีลูกค้า 2 (Kantapong)",
+    },
     {
         to: "/dashboard",
         icon: mdiMonitor,

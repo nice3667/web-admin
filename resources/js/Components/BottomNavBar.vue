@@ -46,6 +46,70 @@ const menuItems = [
   }
   ,
   {
+    label: "Report1",
+    icon: mdiChartBar,
+    dropdown: true,
+    items: [
+      {
+        label: "Clients",
+        to: "/admin/reports1/clients1",
+        icon: mdiAccountGroup
+      },
+      {
+        label: "Client Account",
+        to: "/admin/reports1/client-account1",
+        icon: mdiAccountDetails
+      },
+      {
+        label: "Client Transaction",
+        to: "/admin/reports1/client-transaction1",
+        icon: mdiCashMultiple
+      },
+      {
+        label: "Transactions Pending",
+        to: "/admin/reports1/transactions-pending1",
+        icon: mdiClockOutline
+      },
+      {
+        label: "Reward History",
+        to: "/admin/reports1/reward-history1",
+        icon: mdiGift
+      }
+    ]
+  },
+  {
+    label: "Report2",
+    icon: mdiChartBar,
+    dropdown: true,
+    items: [
+      {
+        label: "Clients",
+        to: "/admin/reports2/clients2",
+        icon: mdiAccountGroup
+      },
+      {
+        label: "Client Account",
+        to: "/admin/reports2/client-account2",
+        icon: mdiAccountDetails
+      },
+      {
+        label: "Client Transaction",
+        to: "/admin/reports2/client-transaction2",
+        icon: mdiCashMultiple
+      },
+      {
+        label: "Transactions Pending",
+        to: "/admin/reports2/transactions-pending2",
+        icon: mdiClockOutline
+      },
+      {
+        label: "Reward History",
+        to: "/admin/reports2/reward-history2",
+        icon: mdiGift
+      }
+    ]
+  },
+  {
     label: "Rebate",
     to: "/admin/rebate",
     icon: mdiCashMultiple
