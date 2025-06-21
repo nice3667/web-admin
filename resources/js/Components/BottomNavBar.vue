@@ -43,7 +43,8 @@ const menuItems = [
         icon: mdiGift
       }
     ]
-  },
+  }
+  ,
   {
     label: "Report1",
     icon: mdiChartBar,

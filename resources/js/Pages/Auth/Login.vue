@@ -75,7 +75,7 @@ const submit = () => {
           <form @submit.prevent="submit" class="space-y-6">
             <!-- Email Field -->
             <div>
-              <label for="email" class="block text-sm font-semibold text-white mb-2">
+              <label for="email" class="block text-sm font-semibold text-gray-600 mb-2">
                 Email Address
               </label>
               <div class="relative">
@@ -100,7 +100,7 @@ const submit = () => {
 
             <!-- Password Field -->
             <div>
-              <label for="password" class="block text-sm font-semibold text-white mb-2">
+              <label for="password" class="block text-sm font-semibold text-gray-600 mb-2">
                 Password
               </label>
               <div class="relative">
@@ -145,7 +145,7 @@ const submit = () => {
                   type="checkbox"
                   class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-500 rounded"
                 />
-                <label for="remember" class="ml-2 block text-sm font-semibold text-white">
+                <label for="remember" class="ml-2 block text-sm font-semibold text-purple-700">
                   Remember me
                 </label>
               </div>
@@ -178,7 +178,7 @@ const submit = () => {
 
             <!-- Register Link -->
             <div class="text-center">
-              <p class="text-sm text-white font-semibold">
+              <p class="text-sm text-gray-600 font-semibold">
                 Don't have an account?
                 <Link
                   :href="route('register')"
