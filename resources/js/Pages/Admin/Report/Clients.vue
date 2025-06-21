@@ -34,6 +34,14 @@ const props = defineProps({
   error: {
     type: String,
     default: null
+  },
+  user_email: {
+    type: String,
+    default: null
+  },
+  data_source: {
+    type: String,
+    default: 'Database'
   }
 });
 
@@ -175,12 +183,28 @@ watch(() => props.filters, (newFilters) => {
     <SectionMain>
       <SectionTitleLineWithButton  title="รายงานลูกค้า" main>
         <template #button>
-          <BaseButton
-            :icon="mdiChartLine"
-            label="อัปเดตข้อมูล"
-            color="success"
-            @click="router.get('/admin/reports/clients')"
-          />
+          <div class="flex items-center space-x-3">
+            <!-- User Email Badge -->
+            <div v-if="props.user_email" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+              {{ props.user_email }}
+            </div>
+            
+            <!-- Data Source Badge -->
+            <div :class="{
+              'bg-green-100 text-green-800': props.data_source === 'Exness API',
+              'bg-yellow-100 text-yellow-800': props.data_source === 'Database',
+              'bg-red-100 text-red-800': props.data_source === 'Error'
+            }" class="px-3 py-1 rounded-full text-sm font-medium">
+              {{ props.data_source }}
+            </div>
+            
+            <BaseButton
+              :icon="mdiChartLine"
+              label="อัปเดตข้อมูล"
+              color="success"
+              @click="router.get('/admin/reports/clients')"
+            />
+          </div>
         </template>
       </SectionTitleLineWithButton>
 
@@ -329,7 +353,6 @@ watch(() => props.filters, (newFilters) => {
               <option value="all">ทุกสถานะ</option>
               <option value="ACTIVE">ACTIVE</option>
               <option value="INACTIVE">INACTIVE</option>
-              <option value="LEFT">LEFT</option>
             </select>
           </div>
 
@@ -447,7 +470,7 @@ watch(() => props.filters, (newFilters) => {
                 </tr>
               </thead>
               <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                <tr v-for="(client, index) in filteredClients" :key="client.client_uid" 
+                <tr v-for="client in filteredClients" :key="client.client_uid" 
                     class="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-300 transform hover:scale-[1.01]">
                   <td class="px-8 py-8 whitespace-nowrap">
                     <div>
@@ -464,16 +487,12 @@ watch(() => props.filters, (newFilters) => {
                       'inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold shadow-lg',
                       client.client_status === 'ACTIVE' ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 dark:from-green-900 dark:to-green-800 dark:text-green-200' :
                       client.client_status === 'INACTIVE' ? 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 dark:from-red-900 dark:to-red-800 dark:text-red-200' :
-                      client.client_status === 'LEFT' ? 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 dark:from-yellow-900 dark:to-yellow-800 dark:text-yellow-200' :
                       'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 dark:from-gray-900 dark:to-gray-800 dark:text-gray-200'
                     ]">
                       <svg v-if="client.client_status === 'ACTIVE'" class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                       </svg>
                       <svg v-else-if="client.client_status === 'INACTIVE'" class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-                      </svg>
-                      <svg v-else-if="client.client_status === 'LEFT'" class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
                       </svg>
                       {{ getStatusText(client.client_status) }}

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\KantapongExnessAuthService;
-use App\Models\Client;
+use App\Models\KantapongClient;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
@@ -21,124 +21,172 @@ class Report2Controller extends Controller
     public function clients2(Request $request)
     {
         try {
-            // Get data from Exness API via KantapongExnessAuthService
-            $apiResult = $this->kantapongExnessService->getClientsData();
+            Log::info('Fetching Kantapong clients data for reports2/clients2...');
             
-            if (isset($apiResult['error'])) {
-                Log::warning('Kantapong API failed, using database fallback', ['error' => $apiResult['error']]);
+            // Try to get data from Exness API first, fallback to database
+            $dataSource = 'Database';
+            $apiError = null;
+            $userEmail = 'kantapong.exness@gmail.com';
+            
+            try {
+                $apiResponse = $this->kantapongExnessService->getClientsData();
                 
-                // Fallback to database data
-                $clients = Client::all()->map(function ($client) {
+                if (isset($apiResponse['error'])) {
+                    throw new \Exception($apiResponse['error']);
+                }
+                
+                $apiClients = $apiResponse['data'] ?? [];
+                $dataSource = 'Exness API';
+                
+                Log::info('Successfully fetched data from Exness API', [
+                    'count' => count($apiClients),
+                    'user' => 'kantapong.exness@gmail.com'
+                ]);
+                
+                // Use API data
+                $clients = collect($apiClients);
+                
+            } catch (\Exception $e) {
+                Log::warning('Failed to fetch from Exness API, using database data', [
+                    'error' => $e->getMessage(),
+                    'user' => 'kantapong.exness@gmail.com'
+                ]);
+                
+                $apiError = $e->getMessage();
+                
+                // Fallback to database
+                $query = KantapongClient::query();
+                $clients = $query->get();
+                
+                // Convert to API format for consistency
+                $clients = $clients->map(function ($client) {
                     return [
-                        'id' => $client->id,
+                        'partner_account' => $client->partner_account,
                         'client_uid' => $client->client_uid,
-                        'partner_account' => $client->partner_account ?? '',
-                        'client_country' => $client->country ?? '',
-                        'reg_date' => $client->reg_date ?? '',
-                        'volume_lots' => (float) ($client->volume_lots ?? 0),
-                        'volume_mln_usd' => (float) ($client->volume_mln_usd ?? 0),
-                        'reward_usd' => (float) ($client->reward_usd ?? 0),
-                        'client_status' => $client->client_status ?? 'UNKNOWN',
-                        'kyc_passed' => $client->kyc_passed ?? false,
-                        'ftd_received' => $client->ftd_received ?? false,
-                        'ftt_made' => $client->ftt_made ?? false,
+                        'reg_date' => $client->reg_date,
+                        'client_country' => $client->client_country,
+                        'volume_lots' => $client->volume_lots,
+                        'volume_mln_usd' => $client->volume_mln_usd,
+                        'reward_usd' => $client->reward_usd,
+                        'client_status' => $client->client_status,
+                        'kyc_passed' => $client->kyc_passed,
+                        'ftd_received' => $client->ftd_received,
+                        'ftt_made' => $client->ftt_made,
                     ];
-                })->toArray();
-                
-                $dataSource = 'database';
-            } else {
-                $clients = $apiResult['data'];
-                $dataSource = 'exness_api';
-                Log::info('Kantapong Using Exness API data', ['count' => count($clients)]);
+                });
             }
 
-            // Apply filters if provided
+            // Apply filters
+            $filters = [];
+            
             if ($request->filled('search')) {
-                $search = strtolower($request->search);
-                $clients = array_filter($clients, function ($client) use ($search) {
-                    return strpos(strtolower($client['client_uid'] ?? ''), $search) !== false ||
-                           strpos(strtolower($client['client_country'] ?? ''), $search) !== false ||
-                           strpos(strtolower($client['partner_account'] ?? ''), $search) !== false;
+                $clients = $clients->filter(function ($client) use ($request) {
+                    return stripos($client['client_uid'], $request->search) !== false;
                 });
+                $filters['search'] = $request->search;
             }
 
-            if ($request->filled('country')) {
-                $clients = array_filter($clients, function ($client) use ($request) {
-                    return ($client['client_country'] ?? '') === $request->country;
+            if ($request->filled('status') && $request->status !== 'all') {
+                $clients = $clients->filter(function ($client) use ($request) {
+                    $volumeLots = (float)($client['volume_lots'] ?? 0);
+                    $rewardUsd = (float)($client['reward_usd'] ?? 0);
+                    $calculatedStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
+                    return strtoupper($calculatedStatus) === strtoupper($request->status);
                 });
+                $filters['status'] = $request->status;
             }
 
-            if ($request->filled('status')) {
-                $clients = array_filter($clients, function ($client) use ($request) {
-                    return ($client['client_status'] ?? '') === $request->status;
+            if ($request->filled('start_date')) {
+                $clients = $clients->filter(function ($client) use ($request) {
+                    return $client['reg_date'] >= $request->start_date;
                 });
+                $filters['start_date'] = $request->start_date;
             }
 
-            // Calculate statistics from filtered data
-            $totalClients = count($clients);
-            $uniqueClients = count(array_unique(array_column($clients, 'client_uid')));
-            $totalVolumeLots = array_sum(array_column($clients, 'volume_lots'));
-            $totalVolumeUsd = array_sum(array_column($clients, 'volume_mln_usd'));
-            $totalRewardUsd = array_sum(array_column($clients, 'reward_usd'));
+            if ($request->filled('end_date')) {
+                $clients = $clients->filter(function ($client) use ($request) {
+                    return $client['reg_date'] <= $request->end_date;
+                });
+                $filters['end_date'] = $request->end_date;
+            }
 
-            // Get unique countries for filter
-            $countries = array_unique(array_column($clients, 'client_country'));
-            sort($countries);
+            // Group by client_uid for unique display
+            $uniqueClients = $clients->groupBy('client_uid')->map(function ($group) {
+                $client = $group->first();
+                return [
+                    'client_uid' => $client['client_uid'] ?? '-',
+                    'client_status' => $client['client_status'] ?? 'UNKNOWN',
+                    'reward_usd' => $group->sum('reward_usd'),
+                    'rebate_amount_usd' => 0, // Not available in Kantapong data
+                    'volume_lots' => $group->sum('volume_lots'),
+                    'volume_mln_usd' => $group->sum('volume_mln_usd'),
+                    'reg_date' => $client['reg_date'] ?? null,
+                    'partner_account' => $client['partner_account'] ?? '-',
+                    'client_country' => $client['client_country'] ?? '-',
+                ];
+            })->values();
 
-            // Get unique statuses for filter
-            $statuses = array_unique(array_column($clients, 'client_status'));
-            sort($statuses);
+            // Calculate statistics
+            $stats = [
+                'total_pending' => $uniqueClients->count(),
+                'total_amount' => $uniqueClients->sum('volume_lots'),
+                'due_today' => $uniqueClients->sum('volume_mln_usd'),
+                'overdue' => $uniqueClients->sum('reward_usd'),
+                'total_client_uids' => $uniqueClients->count()
+            ];
 
-            // Reset array keys after filtering
-            $clients = array_values($clients);
+            // Format client data with calculated status
+            $formattedClients = $uniqueClients->map(function ($client) {
+                $volumeLots = (float)($client['volume_lots'] ?? 0);
+                $rewardUsd = (float)($client['reward_usd'] ?? 0);
+                
+                // Calculate status based on activity
+                $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
+                
+                return [
+                    'client_uid' => $client['client_uid'] ?? '-',
+                    'client_status' => $clientStatus,
+                    'reward_usd' => $rewardUsd,
+                    'rebate_amount_usd' => (float)($client['rebate_amount_usd'] ?? 0),
+                    'volume_lots' => $volumeLots,
+                    'volume_mln_usd' => (float)($client['volume_mln_usd'] ?? 0),
+                    'reg_date' => $client['reg_date'],
+                    'partner_account' => $client['partner_account'] ?? '-',
+                    'client_country' => $client['client_country'] ?? '-'
+                ];
+            });
+
+            Log::info('Kantapong data formatted successfully', [
+                'count' => $formattedClients->count(),
+                'data_source' => $dataSource
+            ]);
 
             return Inertia::render('Admin/Report2/Clients2', [
-                'clients' => $clients,
-                'stats' => [
-                    'total_clients' => $totalClients,
-                    'unique_clients' => $uniqueClients,
-                    'total_volume_lots' => $totalVolumeLots,
-                    'total_volume_usd' => $totalVolumeUsd,
-                    'total_reward_usd' => $totalRewardUsd,
-                    'data_source' => $dataSource,
-                ],
-                'filters' => [
-                    'countries' => $countries,
-                    'statuses' => $statuses,
-                ],
-                'currentFilters' => [
-                    'search' => $request->search ?? '',
-                    'country' => $request->country ?? '',
-                    'status' => $request->status ?? '',
-                ]
+                'clients' => $formattedClients,
+                'stats' => $stats,
+                'filters' => $filters,
+                'data_source' => $dataSource,
+                'user_email' => $userEmail,
+                'error' => $apiError
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Kantapong Report2 clients error:', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
+            Log::error('Error in Report2Controller@clients2: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            
             return Inertia::render('Admin/Report2/Clients2', [
-                'clients' => [],
+                'clients' => collect([]),
                 'stats' => [
-                    'total_clients' => 0,
-                    'unique_clients' => 0,
-                    'total_volume_lots' => 0,
-                    'total_volume_usd' => 0,
-                    'total_reward_usd' => 0,
-                    'data_source' => 'error',
+                    'total_pending' => 0,
+                    'total_amount' => 0,
+                    'due_today' => 0,
+                    'overdue' => 0,
+                    'total_client_uids' => 0
                 ],
-                'filters' => [
-                    'countries' => [],
-                    'statuses' => [],
-                ],
-                'currentFilters' => [
-                    'search' => '',
-                    'country' => '',
-                    'status' => '',
-                ],
-                'error' => 'เกิดข้อผิดพลาดในการโหลดข้อมูล: ' . $e->getMessage()
+                'filters' => [],
+                'data_source' => 'Error',
+                'user_email' => 'kantapong.exness@gmail.com',
+                'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()
             ]);
         }
     }
@@ -146,87 +194,168 @@ class Report2Controller extends Controller
     public function clientAccount2(Request $request)
     {
         try {
-            // Get data from Exness API
-            $apiResult = $this->kantapongExnessService->getClientsData();
+            Log::info('Fetching Kantapong client account data...');
             
-            if (isset($apiResult['error'])) {
-                Log::warning('Kantapong API failed for client accounts, using database fallback', ['error' => $apiResult['error']]);
+            // Try to get data from Exness API first, fallback to database
+            $dataSource = 'Database';
+            $apiError = null;
+            $userEmail = 'kantapong.exness@gmail.com';
+            
+            try {
+                $apiResponse = $this->kantapongExnessService->getClientsData();
+                
+                if (isset($apiResponse['error'])) {
+                    throw new \Exception($apiResponse['error']);
+                }
+                
+                $apiClients = $apiResponse['data'] ?? [];
+                $dataSource = 'Exness API';
+                
+                Log::info('Successfully fetched data from Exness API', [
+                    'count' => count($apiClients),
+                    'user' => 'kantapong.exness@gmail.com'
+                ]);
+                
+                // Use API data
+                $clients = collect($apiClients);
+                
+            } catch (\Exception $e) {
+                Log::warning('Failed to fetch from Exness API, using database data', [
+                    'error' => $e->getMessage(),
+                    'user' => 'kantapong.exness@gmail.com'
+                ]);
+                
+                $apiError = $e->getMessage();
                 
                 // Fallback to database
-                $clients = Client::all()->map(function ($client) {
-                    return [
-                        'id' => $client->id,
-                        'client_uid' => $client->client_uid,
-                        'partner_account' => $client->partner_account ?? '',
-                        'client_country' => $client->country ?? '',
-                        'reg_date' => $client->reg_date ?? '',
-                        'volume_lots' => (float) ($client->volume_lots ?? 0),
-                        'volume_mln_usd' => (float) ($client->volume_mln_usd ?? 0),
-                        'reward_usd' => (float) ($client->reward_usd ?? 0),
-                        'client_status' => $client->client_status ?? 'UNKNOWN',
-                    ];
-                })->toArray();
+                $query = KantapongClient::query();
+                $clients = $query->get();
                 
-                $dataSource = 'database';
-            } else {
-                $clients = $apiResult['data'];
-                $dataSource = 'exness_api';
-            }
-
-            // Apply search filter
-            if ($request->filled('search')) {
-                $search = strtolower($request->search);
-                $clients = array_filter($clients, function ($client) use ($search) {
-                    return strpos(strtolower($client['client_uid'] ?? ''), $search) !== false ||
-                           strpos(strtolower($client['partner_account'] ?? ''), $search) !== false;
+                // Convert to API format for consistency
+                $clients = $clients->map(function ($client) {
+                    return [
+                        'partner_account' => $client->partner_account,
+                        'client_uid' => $client->client_uid,
+                        'reg_date' => $client->reg_date,
+                        'client_country' => $client->client_country,
+                        'volume_lots' => $client->volume_lots,
+                        'volume_mln_usd' => $client->volume_mln_usd,
+                        'reward_usd' => $client->reward_usd,
+                        'client_status' => $client->client_status,
+                        'kyc_passed' => $client->kyc_passed,
+                        'ftd_received' => $client->ftd_received,
+                        'ftt_made' => $client->ftt_made,
+                    ];
                 });
             }
 
-            // Calculate statistics
-            $totalAccounts = count($clients);
-            $uniqueClients = count(array_unique(array_column($clients, 'client_uid')));
-            $totalVolumeLots = array_sum(array_column($clients, 'volume_lots'));
-            $totalVolumeUsd = array_sum(array_column($clients, 'volume_mln_usd'));
-            $totalRewardUsd = array_sum(array_column($clients, 'reward_usd'));
+            // Apply filters (same as clients method)
+            $filters = [];
+            
+            if ($request->filled('partner_account')) {
+                $clients = $clients->filter(function ($client) use ($request) {
+                    return stripos($client['partner_account'], $request->partner_account) !== false;
+                });
+                $filters['partner_account'] = $request->partner_account;
+            }
 
-            // Reset array keys
-            $clients = array_values($clients);
+            if ($request->filled('client_uid')) {
+                $clients = $clients->filter(function ($client) use ($request) {
+                    return stripos($client['client_uid'], $request->client_uid) !== false;
+                });
+                $filters['client_uid'] = $request->client_uid;
+            }
+
+            if ($request->filled('client_country')) {
+                $clients = $clients->filter(function ($client) use ($request) {
+                    return $client['client_country'] === $request->client_country;
+                });
+                $filters['client_country'] = $request->client_country;
+            }
+
+            if ($request->filled('client_status')) {
+                $clients = $clients->filter(function ($client) use ($request) {
+                    $volumeLots = (float)($client['volume_lots'] ?? 0);
+                    $rewardUsd = (float)($client['reward_usd'] ?? 0);
+                    $calculatedStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
+                    return strtoupper($calculatedStatus) === strtoupper($request->client_status);
+                });
+                $filters['client_status'] = $request->client_status;
+            }
+
+            if ($request->filled('reg_date')) {
+                $clients = $clients->filter(function ($client) use ($request) {
+                    return $client['reg_date'] === $request->reg_date;
+                });
+                $filters['reg_date'] = $request->reg_date;
+            }
+
+            // Calculate statistics
+            $stats = [
+                'total_accounts' => $clients->count(),
+                'total_volume_lots' => $clients->sum('volume_lots'),
+                'total_volume_usd' => $clients->sum('volume_mln_usd'),
+                'total_profit' => $clients->sum('reward_usd'),
+                'total_client_uids' => $clients->pluck('client_uid')->unique()->count()
+            ];
+
+            // Format client data with calculated fields
+            $formattedClients = $clients->map(function ($client) {
+                $volumeLots = (float)($client['volume_lots'] ?? 0);
+                $rewardUsd = (float)($client['reward_usd'] ?? 0);
+                
+                // Calculate status based on activity
+                $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
+                
+                // KYC estimation based on activity level
+                $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
+                
+                return [
+                    'partner_account' => $client['partner_account'] ?? '-',
+                    'client_uid' => $client['client_uid'] ?? '-',
+                    'reg_date' => $client['reg_date'],
+                    'client_country' => $client['client_country'] ?? '-',
+                    'volume_lots' => $volumeLots,
+                    'volume_mln_usd' => (float)($client['volume_mln_usd'] ?? 0),
+                    'reward_usd' => $rewardUsd,
+                    'client_status' => $clientStatus,
+                    'kyc_passed' => $kycPassed,
+                    'ftd_received' => ($volumeLots > 0 || $rewardUsd > 0),
+                    'ftt_made' => ($volumeLots > 0)
+                ];
+            });
+
+            Log::info('Kantapong client account data formatted successfully', [
+                'count' => $formattedClients->count(),
+                'data_source' => $dataSource
+            ]);
 
             return Inertia::render('Admin/Report2/ClientAccount2', [
-                'accounts' => $clients,
-                'stats' => [
-                    'total_accounts' => $totalAccounts,
-                    'unique_clients' => $uniqueClients,
-                    'total_volume_lots' => $totalVolumeLots,
-                    'total_volume_usd' => $totalVolumeUsd,
-                    'total_reward_usd' => $totalRewardUsd,
-                    'data_source' => $dataSource,
-                ],
-                'currentFilters' => [
-                    'search' => $request->search ?? '',
-                ]
+                'clients' => $formattedClients,
+                'stats' => $stats,
+                'filters' => $filters,
+                'data_source' => $dataSource,
+                'user_email' => $userEmail,
+                'error' => $apiError
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Kantapong Report2 client accounts error:', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
+            Log::error('Error in Report2Controller@clientAccount2: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            
             return Inertia::render('Admin/Report2/ClientAccount2', [
-                'accounts' => [],
+                'clients' => collect([]),
                 'stats' => [
                     'total_accounts' => 0,
-                    'unique_clients' => 0,
                     'total_volume_lots' => 0,
                     'total_volume_usd' => 0,
-                    'total_reward_usd' => 0,
-                    'data_source' => 'error',
+                    'total_profit' => 0,
+                    'total_client_uids' => 0
                 ],
-                'currentFilters' => [
-                    'search' => '',
-                ],
-                'error' => 'เกิดข้อผิดพลาดในการโหลดข้อมูล: ' . $e->getMessage()
+                'filters' => [],
+                'data_source' => 'Error',
+                'user_email' => 'kantapong.exness@gmail.com',
+                'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()
             ]);
         }
     }

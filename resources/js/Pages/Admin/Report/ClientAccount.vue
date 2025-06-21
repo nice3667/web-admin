@@ -45,6 +45,18 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+  error: {
+    type: String,
+    default: null
+  },
+  user_email: {
+    type: String,
+    default: null
+  },
+  data_source: {
+    type: String,
+    default: 'Database'
+  }
 });
 
 const isModalActive = ref(false);
@@ -229,7 +241,35 @@ watch(
         title="บัญชีลูกค้า"
         main
       >
+        <template #button>
+          <div class="flex items-center space-x-3">
+            <!-- User Email Badge -->
+            <div v-if="props.user_email" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+              {{ props.user_email }}
+            </div>
+            
+            <!-- Data Source Badge -->
+            <div :class="{
+              'bg-green-100 text-green-800': props.data_source === 'Exness API',
+              'bg-yellow-100 text-yellow-800': props.data_source === 'Database',
+              'bg-red-100 text-red-800': props.data_source === 'Error'
+            }" class="px-3 py-1 rounded-full text-sm font-medium">
+              {{ props.data_source }}
+            </div>
+            
+            <BaseButton
+              :icon="mdiRefresh"
+              label="อัปเดตข้อมูล"
+              color="success"
+              @click="router.get('/admin/reports/client-account')"
+            />
+          </div>
+        </template>
       </SectionTitleLineWithButton>
+
+      <NotificationBar v-if="props.error" color="danger" :icon="mdiAlertBoxOutline">
+        {{ props.error }}
+      </NotificationBar>
 
       <!-- Enhanced Statistics Cards -->
       <div class="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
@@ -579,7 +619,7 @@ watch(
               </tr>
             </thead>
             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              <tr v-for="(account, index) in accounts" :key="account?.client_uid || Math.random()"
+              <tr v-for="account in accounts" :key="account?.client_uid || Math.random()"
                   class="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-300 transform hover:scale-[1.01]">
                 <td class="px-8 py-8 whitespace-nowrap">
                   <div class="text-sm font-bold text-gray-900 dark:text-white">
@@ -621,7 +661,6 @@ watch(
                     'inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold shadow-lg',
                     account?.client_status === 'ACTIVE' ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 dark:from-green-900 dark:to-green-800 dark:text-green-200' :
                     account?.client_status === 'INACTIVE' ? 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 dark:from-red-900 dark:to-red-800 dark:text-red-200' :
-                    account?.client_status === 'PENDING' ? 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 dark:from-yellow-900 dark:to-yellow-800 dark:text-yellow-200' :
                     'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 dark:from-gray-900 dark:to-gray-800 dark:text-gray-200'
                   ]">
                     {{ account?.client_status || "-" }}
@@ -630,10 +669,11 @@ watch(
                 <td class="px-8 py-8 whitespace-nowrap">
                   <span :class="[
                     'inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold shadow-lg',
-                    account?.kyc_passed ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 dark:from-green-900 dark:to-green-800 dark:text-green-200' :
-                    'bg-gradient-to-r from-red-100 to-red-200 text-red-800 dark:from-red-900 dark:to-red-800 dark:text-red-200'
+                    account?.kyc_passed === true ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 dark:from-green-900 dark:to-green-800 dark:text-green-200' :
+                    account?.kyc_passed === false ? 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 dark:from-red-900 dark:to-red-800 dark:text-red-200' :
+                    'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 dark:from-gray-900 dark:to-gray-800 dark:text-gray-200'
                   ]">
-                    {{ account?.kyc_passed ? "ผ่าน" : "ไม่ผ่าน" }}
+                    {{ account?.kyc_passed === true ? "ผ่าน" : account?.kyc_passed === false ? "ไม่ผ่าน" : "ไม่ทราบ" }}
                   </span>
                 </td>
                 <td class="px-8 py-8 whitespace-nowrap">
@@ -699,7 +739,6 @@ watch(
               { value: '', label: 'ทั้งหมด' },
               { value: 'ACTIVE', label: 'ACTIVE' },
               { value: 'INACTIVE', label: 'INACTIVE' },
-              { value: 'PENDING', label: 'PENDING' },
             ]"
             class="bg-white dark:bg-slate-800 rounded-xl shadow-sm px-4 py-3 border border-gray-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-blue-200 dark:focus-within:ring-blue-800 transition-all"
             input-class="text-lg py-3"

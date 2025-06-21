@@ -139,9 +139,8 @@ Route::middleware(['web', 'auth', 'verified', \App\Http\Middleware\HasAccessAdmi
     })->name('admin.support');
 
     // Reports Routes
-    Route::get('/reports/clients', [\App\Http\Controllers\Admin\ClientController::class, 'clients'])->name('admin.reports.clients');
-
-    Route::get('/reports/client-account', [\App\Http\Controllers\Admin\ClientController::class, 'index'])->name('admin.reports.client-account');
+    Route::get('/reports/clients', [\App\Http\Controllers\Admin\ReportController::class, 'clients'])->name('admin.reports.clients');
+Route::get('/reports/client-account', [\App\Http\Controllers\Admin\ReportController::class, 'clientAccount'])->name('admin.reports.client-account');
 
     Route::get('/reports/reward-history', function () {
         return Inertia::render('Admin/Report/RewardHistory');

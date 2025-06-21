@@ -91,18 +91,28 @@ class ClientController extends Controller
 
             // Format client data
             $formattedClients = $clients->map(function ($client) {
+                // Determine status from activity (same logic as Report1 but using database data)
+                $volumeLots = (float)($client->volume_lots ?? 0);
+                $rewardUsd = (float)($client->reward_usd ?? 0);
+                
+                // Use activity-based status determination instead of old client_status
+                $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
+                
+                // KYC estimation based on activity level (same as Report1)
+                $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
+                
                 return [
                     'partner_account' => $client->partner_account ?? '-',
                     'client_uid' => $client->client_uid ?? '-',
                     'reg_date' => $client->reg_date,
                     'client_country' => $client->client_country ?? '-',
-                    'volume_lots' => (float)($client->volume_lots ?? 0),
+                    'volume_lots' => $volumeLots,
                     'volume_mln_usd' => (float)($client->volume_mln_usd ?? 0),
-                    'reward_usd' => (float)($client->reward_usd ?? 0),
-                    'client_status' => $client->client_status ?? 'UNKNOWN',
-                    'kyc_passed' => (bool)$client->kyc_passed,
-                    'ftd_received' => (bool)$client->ftd_received,
-                    'ftt_made' => (bool)$client->ftt_made
+                    'reward_usd' => $rewardUsd,
+                    'client_status' => $clientStatus, // Use calculated status
+                    'kyc_passed' => $kycPassed, // Use calculated KYC
+                    'ftd_received' => ($volumeLots > 0 || $rewardUsd > 0), // Calculate from activity
+                    'ftt_made' => ($volumeLots > 0) // Calculate from trading activity
                 ];
             });
 
@@ -237,12 +247,19 @@ class ClientController extends Controller
 
             // Format client data for the clients view
             $formattedClients = $clients->map(function ($client) {
+                // Determine status from activity (same logic as Report1 but using database data)
+                $volumeLots = (float)($client->total_volume_lots ?? 0);
+                $rewardUsd = (float)($client->total_reward_usd ?? 0);
+                
+                // Use activity-based status determination instead of old client_status
+                $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
+                
                 return [
                     'client_uid' => $client->client_uid ?? '-',
-                    'client_status' => $client->client_status ?? 'UNKNOWN',
-                    'reward_usd' => (float)($client->total_reward_usd ?? 0),
+                    'client_status' => $clientStatus, // Use calculated status instead of database status
+                    'reward_usd' => $rewardUsd,
                     'rebate_amount_usd' => (float)($client->total_rebate_amount_usd ?? 0),
-                    'volume_lots' => (float)($client->total_volume_lots ?? 0),
+                    'volume_lots' => $volumeLots,
                     'volume_mln_usd' => (float)($client->total_volume_mln_usd ?? 0),
                     'reg_date' => $client->reg_date,
                     'partner_account' => $client->partner_account ?? '-',

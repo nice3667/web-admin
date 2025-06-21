@@ -200,16 +200,16 @@ watch(() => props.filters, (newFilters) => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z" v-else></path>
               </svg>
               <span class="text-sm font-medium" :class="data_source === 'exness_api' ? 'text-green-800 dark:text-green-200' : 'text-yellow-800 dark:text-yellow-200'">
-                {{ data_source === 'exness_api' ? 'Exness API' : 'Database' }}
+                {{ data_source === 'exness_api' ? 'Exness API V1' : 'Database' }}
               </span>
             </div>
             
-            <BaseButton
-              :icon="mdiChartLine"
-              label="อัปเดตข้อมูล"
-              color="success"
+          <BaseButton
+            :icon="mdiChartLine"
+            label="อัปเดตข้อมูล"
+            color="success"
               @click="router.get('/admin/reports1/clients1')"
-            />
+          />
           </div>
         </template>
       </SectionTitleLineWithButton>

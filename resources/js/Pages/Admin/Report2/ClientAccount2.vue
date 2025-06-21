@@ -205,13 +205,12 @@ const totalReward = computed(() => {
 
 const formattedStats = computed(() => {
   const stats = props.stats || {};
-  console.log('ClientAccount2 stats:', stats); // Debug log
   return {
     total_accounts: stats.total_accounts ?? 0,
     total_volume_lots: Number(stats.total_volume_lots ?? 0).toFixed(4),
     total_volume_usd: Number(stats.total_volume_usd ?? 0).toFixed(4),
-    total_profit: Number(stats.total_reward_usd ?? 0).toFixed(4),
-    total_client_uids: stats.unique_clients ?? stats.total_accounts ?? 0
+    total_profit: Number(stats.total_profit ?? 0).toFixed(4),
+    total_client_uids: stats.total_client_uids ?? 0
   };
 });
 

@@ -258,8 +258,16 @@ watch(
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z" v-else></path>
               </svg>
               <span class="text-sm font-medium" :class="data_source === 'exness_api' ? 'text-green-800 dark:text-green-200' : 'text-yellow-800 dark:text-yellow-200'">
-                {{ data_source === 'exness_api' ? 'Exness API' : 'Database' }}
+                {{ data_source === 'exness_api' ? 'Exness API V1' : 'Database' }}
               </span>
+            </div>
+            
+            <!-- API V1 Notice -->
+            <div v-if="data_source === 'exness_api'" class="flex items-center space-x-2 px-4 py-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+              <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span class="text-xs font-medium text-blue-800 dark:text-blue-200">สถานะวิเคราะห์จาก Exness</span>
             </div>
           </div>
         </template>
@@ -430,7 +438,6 @@ watch(
               <option value="">ทุกสถานะ</option>
               <option value="ACTIVE">ACTIVE</option>
               <option value="INACTIVE">INACTIVE</option>
-              <option value="PENDING">PENDING</option>
             </select>
           </div>
 
@@ -660,7 +667,6 @@ watch(
                     'inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold shadow-lg',
                     account?.client_status === 'ACTIVE' ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 dark:from-green-900 dark:to-green-800 dark:text-green-200' :
                     account?.client_status === 'INACTIVE' ? 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 dark:from-red-900 dark:to-red-800 dark:text-red-200' :
-                    account?.client_status === 'PENDING' ? 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 dark:from-yellow-900 dark:to-yellow-800 dark:text-yellow-200' :
                     'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 dark:from-gray-900 dark:to-gray-800 dark:text-gray-200'
                   ]">
                     {{ account?.client_status || "-" }}
@@ -669,10 +675,11 @@ watch(
                 <td class="px-8 py-8 whitespace-nowrap">
                   <span :class="[
                     'inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold shadow-lg',
+                    account?.kyc_passed === null ? 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 dark:from-gray-900 dark:to-gray-800 dark:text-gray-200' :
                     account?.kyc_passed ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 dark:from-green-900 dark:to-green-800 dark:text-green-200' :
                     'bg-gradient-to-r from-red-100 to-red-200 text-red-800 dark:from-red-900 dark:to-red-800 dark:text-red-200'
                   ]">
-                    {{ account?.kyc_passed ? "ผ่าน" : "ไม่ผ่าน" }}
+                    {{ account?.kyc_passed === null ? "ประเมิน" : (account?.kyc_passed ? "ผ่าน" : "ไม่ผ่าน") }}
                   </span>
                 </td>
                 <td class="px-8 py-8 whitespace-nowrap">
@@ -738,7 +745,6 @@ watch(
               { value: '', label: 'ทั้งหมด' },
               { value: 'ACTIVE', label: 'ACTIVE' },
               { value: 'INACTIVE', label: 'INACTIVE' },
-              { value: 'PENDING', label: 'PENDING' },
             ]"
             class="bg-white dark:bg-slate-800 rounded-xl shadow-sm px-4 py-3 border border-gray-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-blue-200 dark:focus-within:ring-blue-800 transition-all"
             input-class="text-lg py-3"

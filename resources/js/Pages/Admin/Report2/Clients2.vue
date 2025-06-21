@@ -140,12 +140,11 @@ const filteredClients = computed(() => {
 
 // Computed properties for stats
 const computedStats = computed(() => {
-  console.log('Props stats:', props.stats); // Debug log
   return {
-    total_pending: props.stats.unique_clients || props.stats.total_clients || 0,
-    total_amount: Number(props.stats.total_volume_lots || 0).toFixed(4),
-    due_today: Number(props.stats.total_volume_usd || 0).toFixed(4),
-    overdue: Number(props.stats.total_reward_usd || 0).toFixed(4),
+    total_pending: props.stats.total_pending || props.stats.total_client_uids || 0,
+    total_amount: Number(props.stats.total_amount || 0).toFixed(4),
+    due_today: Number(props.stats.due_today || 0).toFixed(4),
+    overdue: Number(props.stats.overdue || 0).toFixed(4),
   };
 });
 
