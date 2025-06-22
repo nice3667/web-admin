@@ -59,23 +59,23 @@ const filters = ref({
 // Apply filters and navigate
 const applyFilters = () => {
   const params = {};
-  
+
   if (filters.value.search) {
     params.search = filters.value.search;
   }
-  
+
   if (filters.value.status !== 'all') {
     params.status = filters.value.status;
   }
-  
+
   if (filters.value.date_range.start) {
     params.start_date = filters.value.date_range.start;
   }
-  
+
   if (filters.value.date_range.end) {
     params.end_date = filters.value.date_range.end;
   }
-  
+
   router.get('/admin/reports/clients', params, {
     preserveState: true,
     preserveScroll: true
@@ -91,7 +91,7 @@ const resetFilters = () => {
       end: "",
     },
   };
-  
+
   router.get('/admin/reports/clients', {}, {
     preserveState: true,
     preserveScroll: true
@@ -189,7 +189,7 @@ watch(() => props.filters, (newFilters) => {
             <div v-if="props.user_email" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
               {{ props.user_email }}
             </div>
-            
+
             <!-- Data Source Badge -->
             <div :class="{
               'bg-green-100 text-green-800': props.data_source === 'Exness API',
@@ -198,7 +198,7 @@ watch(() => props.filters, (newFilters) => {
             }" class="px-3 py-1 rounded-full text-sm font-medium">
               {{ props.data_source }}
             </div>
-            
+
             <BaseButton
               :icon="mdiChartLine"
               label="อัปเดตข้อมูล"
@@ -312,7 +312,7 @@ watch(() => props.filters, (newFilters) => {
             </span>
           </div>
         </div>
-        
+
         <div class="grid grid-cols-1 gap-6 md:grid-cols-4">
           <!-- Search Input -->
           <div class="space-y-3">
@@ -375,9 +375,9 @@ watch(() => props.filters, (newFilters) => {
 
           <!-- Reset Button -->
           <div class="flex items-end">
-            <BaseButton 
-              color="gray" 
-              label="รีเซ็ต" 
+            <BaseButton
+              color="gray"
+              label="รีเซ็ต"
               :icon="mdiAlertBoxOutline"
               @click="resetFilters"
               class="w-full py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
@@ -406,7 +406,7 @@ watch(() => props.filters, (newFilters) => {
             </span>
           </div>
         </div>
-        
+
         <!-- Empty State -->
         <div v-if="!props.clients.data || !props.clients.data.length" class="p-16 text-center">
           <div class="mx-auto w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center mb-8 shadow-lg">
@@ -421,7 +421,7 @@ watch(() => props.filters, (newFilters) => {
             <p>ข้อมูลที่กรองแล้ว: {{ filteredClients.length }} รายการ</p>
           </div>
         </div>
-        
+
         <!-- Data Table -->
         <div v-else class="overflow-hidden">
           <div class="overflow-x-auto">
@@ -471,7 +471,7 @@ watch(() => props.filters, (newFilters) => {
                 </tr>
               </thead>
               <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                <tr v-for="client in filteredClients" :key="client.client_uid" 
+                <tr v-for="client in filteredClients" :key="client.client_uid"
                     class="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-300 transform hover:scale-[1.01]">
                   <td class="px-8 py-8 whitespace-nowrap">
                     <div>
@@ -519,7 +519,7 @@ watch(() => props.filters, (newFilters) => {
               </tbody>
             </table>
           </div>
-          
+
           <!-- Pagination -->
           <div class="py-4">
             <Pagination :data="clients" />

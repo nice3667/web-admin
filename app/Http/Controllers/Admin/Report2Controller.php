@@ -22,42 +22,42 @@ class Report2Controller extends Controller
     {
         try {
             Log::info('Fetching Kantapong clients data for reports2/clients2...');
-            
+
             // Try to get data from Exness API first, fallback to database
             $dataSource = 'Database';
             $apiError = null;
             $userEmail = 'kantapong.exness@gmail.com';
-            
+
             try {
                 $apiResponse = $this->kantapongExnessService->getClientsData();
-                
+
                 if (isset($apiResponse['error'])) {
                     throw new \Exception($apiResponse['error']);
                 }
-                
+
                 $apiClients = $apiResponse['data'] ?? [];
                 $dataSource = 'Exness API';
-                
+
                 Log::info('Successfully fetched data from Exness API', [
                     'count' => count($apiClients),
                     'user' => 'kantapong.exness@gmail.com'
                 ]);
-                
+
                 // Use API data
                 $clients = collect($apiClients);
-                
+
             } catch (\Exception $e) {
                 Log::warning('Failed to fetch from Exness API, using database data', [
                     'error' => $e->getMessage(),
                     'user' => 'kantapong.exness@gmail.com'
                 ]);
-                
+
                 $apiError = $e->getMessage();
-                
+
                 // Fallback to database
                 $query = KantapongClient::query();
                 $clients = $query->get();
-                
+
                 // Convert to API format for consistency
                 $clients = $clients->map(function ($client) {
                     return [
@@ -78,7 +78,7 @@ class Report2Controller extends Controller
 
             // Apply filters
             $filters = [];
-            
+
             if ($request->filled('search')) {
                 $clients = $clients->filter(function ($client) use ($request) {
                     return stripos($client['client_uid'], $request->search) !== false;
@@ -139,10 +139,10 @@ class Report2Controller extends Controller
             $formattedClients = $uniqueClients->map(function ($client) {
                 $volumeLots = (float)($client['volume_lots'] ?? 0);
                 $rewardUsd = (float)($client['reward_usd'] ?? 0);
-                
+
                 // Calculate status based on activity
                 $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
-                
+
                 return [
                     'client_uid' => $client['client_uid'] ?? '-',
                     'client_status' => $clientStatus,
@@ -163,10 +163,13 @@ class Report2Controller extends Controller
 
             // Convert to paginated collection
             $perPage = 10;
-            $currentPage = $request->get('page', 1);
+            $currentPage = (int) $request->get('page', 1);
+            if ($currentPage < 1) {
+                $currentPage = 1;
+            }
             $offset = ($currentPage - 1) * $perPage;
             $paginatedClients = $formattedClients->slice($offset, $perPage)->values();
-            
+
             // Create pagination data manually
             $pagination = [
                 'data' => $paginatedClients,
@@ -180,11 +183,11 @@ class Report2Controller extends Controller
                 'next_page_url' => $currentPage < ceil($formattedClients->count() / $perPage) ? $request->fullUrlWithQuery(['page' => $currentPage + 1]) : null,
                 'links' => []
             ];
-            
+
             // Generate pagination links
             $totalPages = ceil($formattedClients->count() / $perPage);
             $pagination['links'][] = ['url' => $pagination['prev_page_url'], 'label' => '&laquo; Previous', 'active' => false];
-            
+
             for ($i = 1; $i <= $totalPages; $i++) {
                 $pagination['links'][] = [
                     'url' => $request->fullUrlWithQuery(['page' => $i]),
@@ -192,7 +195,7 @@ class Report2Controller extends Controller
                     'active' => $i == $currentPage
                 ];
             }
-            
+
             $pagination['links'][] = ['url' => $pagination['next_page_url'], 'label' => 'Next &raquo;', 'active' => false];
 
             return Inertia::render('Admin/Report2/Clients2', [
@@ -207,7 +210,7 @@ class Report2Controller extends Controller
         } catch (\Exception $e) {
             Log::error('Error in Report2Controller@clients2: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-            
+
             return Inertia::render('Admin/Report2/Clients2', [
                 'clients' => collect([]),
                 'stats' => [
@@ -229,42 +232,42 @@ class Report2Controller extends Controller
     {
         try {
             Log::info('Fetching Kantapong client account data...');
-            
+
             // Try to get data from Exness API first, fallback to database
             $dataSource = 'Database';
             $apiError = null;
             $userEmail = 'kantapong.exness@gmail.com';
-            
+
             try {
                 $apiResponse = $this->kantapongExnessService->getClientsData();
-                
+
                 if (isset($apiResponse['error'])) {
                     throw new \Exception($apiResponse['error']);
                 }
-                
+
                 $apiClients = $apiResponse['data'] ?? [];
                 $dataSource = 'Exness API';
-                
+
                 Log::info('Successfully fetched data from Exness API', [
                     'count' => count($apiClients),
                     'user' => 'kantapong.exness@gmail.com'
                 ]);
-                
+
                 // Use API data
                 $clients = collect($apiClients);
-                
+
             } catch (\Exception $e) {
                 Log::warning('Failed to fetch from Exness API, using database data', [
                     'error' => $e->getMessage(),
                     'user' => 'kantapong.exness@gmail.com'
                 ]);
-                
+
                 $apiError = $e->getMessage();
-                
+
                 // Fallback to database
                 $query = KantapongClient::query();
                 $clients = $query->get();
-                
+
                 // Convert to API format for consistency
                 $clients = $clients->map(function ($client) {
                     return [
@@ -285,7 +288,7 @@ class Report2Controller extends Controller
 
             // Apply filters (same as clients method)
             $filters = [];
-            
+
             if ($request->filled('partner_account')) {
                 $clients = $clients->filter(function ($client) use ($request) {
                     return stripos($client['partner_account'], $request->partner_account) !== false;
@@ -337,13 +340,13 @@ class Report2Controller extends Controller
             $formattedClients = $clients->map(function ($client) {
                 $volumeLots = (float)($client['volume_lots'] ?? 0);
                 $rewardUsd = (float)($client['reward_usd'] ?? 0);
-                
+
                 // Calculate status based on activity
                 $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
-                
+
                 // KYC estimation based on activity level
                 $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
-                
+
                 return [
                     'partner_account' => $client['partner_account'] ?? '-',
                     'client_uid' => $client['client_uid'] ?? '-',
@@ -366,10 +369,13 @@ class Report2Controller extends Controller
 
             // Convert to paginated collection
             $perPage = 10;
-            $currentPage = $request->get('page', 1);
+            $currentPage = (int) $request->get('page', 1);
+            if ($currentPage < 1) {
+                $currentPage = 1;
+            }
             $offset = ($currentPage - 1) * $perPage;
             $paginatedClients = $formattedClients->slice($offset, $perPage)->values();
-            
+
             // Create pagination data manually
             $pagination = [
                 'data' => $paginatedClients,
@@ -383,11 +389,11 @@ class Report2Controller extends Controller
                 'next_page_url' => $currentPage < ceil($formattedClients->count() / $perPage) ? $request->fullUrlWithQuery(['page' => $currentPage + 1]) : null,
                 'links' => []
             ];
-            
+
             // Generate pagination links
             $totalPages = ceil($formattedClients->count() / $perPage);
             $pagination['links'][] = ['url' => $pagination['prev_page_url'], 'label' => '&laquo; Previous', 'active' => false];
-            
+
             for ($i = 1; $i <= $totalPages; $i++) {
                 $pagination['links'][] = [
                     'url' => $request->fullUrlWithQuery(['page' => $i]),
@@ -395,7 +401,7 @@ class Report2Controller extends Controller
                     'active' => $i == $currentPage
                 ];
             }
-            
+
             $pagination['links'][] = ['url' => $pagination['next_page_url'], 'label' => 'Next &raquo;', 'active' => false];
 
             return Inertia::render('Admin/Report2/ClientAccount2', [
@@ -410,7 +416,7 @@ class Report2Controller extends Controller
         } catch (\Exception $e) {
             Log::error('Error in Report2Controller@clientAccount2: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-            
+
             return Inertia::render('Admin/Report2/ClientAccount2', [
                 'clients' => collect([]),
                 'stats' => [
@@ -433,7 +439,7 @@ class Report2Controller extends Controller
         try {
             // Get data from Exness API
             $apiResult = $this->kantapongExnessService->getClientsData();
-            
+
             if (isset($apiResult['error'])) {
                 $transactions = [];
                 $dataSource = 'error';
@@ -452,7 +458,7 @@ class Report2Controller extends Controller
                         'status' => $client['client_status'] ?? 'UNKNOWN',
                     ];
                 })->toArray();
-                
+
                 $dataSource = 'exness_api';
             }
 
@@ -516,14 +522,14 @@ class Report2Controller extends Controller
         try {
             // Get data from Exness API
             $apiResult = $this->kantapongExnessService->getClientsData();
-            
+
             if (isset($apiResult['error'])) {
                 $pendingTransactions = [];
                 $dataSource = 'error';
             } else {
                 // Filter for pending transactions (example logic)
                 $pendingTransactions = collect($apiResult['data'])->filter(function ($client) {
-                    return ($client['client_status'] ?? '') === 'PENDING' || 
+                    return ($client['client_status'] ?? '') === 'PENDING' ||
                            !($client['kyc_passed'] ?? false);
                 })->map(function ($client) {
                     return [
@@ -538,7 +544,7 @@ class Report2Controller extends Controller
                         'kyc_passed' => $client['kyc_passed'] ?? false,
                     ];
                 })->values()->toArray();
-                
+
                 $dataSource = 'exness_api';
             }
 
@@ -580,7 +586,7 @@ class Report2Controller extends Controller
         try {
             // Get data from Exness API
             $apiResult = $this->kantapongExnessService->getClientsData();
-            
+
             if (isset($apiResult['error'])) {
                 $rewardHistory = [];
                 $dataSource = 'error';
@@ -600,7 +606,7 @@ class Report2Controller extends Controller
                         'status' => 'PAID',
                     ];
                 })->values()->toArray();
-                
+
                 $dataSource = 'exness_api';
             }
 
@@ -641,7 +647,7 @@ class Report2Controller extends Controller
     {
         try {
             $result = $this->kantapongExnessService->testConnection();
-            
+
             return response()->json($result);
 
         } catch (\Exception $e) {
@@ -651,4 +657,4 @@ class Report2Controller extends Controller
             ]);
         }
     }
-} 
+}

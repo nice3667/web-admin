@@ -22,41 +22,41 @@ class ReportController extends Controller
     {
         try {
             Log::info('Fetching Janischa clients data for reports/clients...');
-            
+
             // Try to get data from Exness API first, fallback to database
             $dataSource = 'Database';
             $apiError = null;
-            
+
             try {
                 $apiResponse = $this->janischaExnessService->getClientsData();
-                
+
                 if (isset($apiResponse['error'])) {
                     throw new \Exception($apiResponse['error']);
                 }
-                
+
                 $apiClients = $apiResponse['data'] ?? [];
                 $dataSource = 'Exness API';
-                
+
                 Log::info('Successfully fetched data from Exness API', [
                     'count' => count($apiClients),
                     'user' => 'Janischa.trade@gmail.com'
                 ]);
-                
+
                 // Use API data
                 $clients = collect($apiClients);
-                
+
             } catch (\Exception $e) {
                 Log::warning('Failed to fetch from Exness API, using database data', [
                     'error' => $e->getMessage(),
                     'user' => 'Janischa.trade@gmail.com'
                 ]);
-                
+
                 $apiError = $e->getMessage();
-                
+
                 // Fallback to database
                 $query = JanischaClient::query();
                 $clients = $query->get();
-                
+
                 // Convert to API format for consistency
                 $clients = $clients->map(function ($client) {
                     return [
@@ -77,7 +77,7 @@ class ReportController extends Controller
 
             // Apply filters
             $filters = [];
-            
+
             if ($request->filled('search')) {
                 $clients = $clients->filter(function ($client) use ($request) {
                     return stripos($client['client_uid'], $request->search) !== false;
@@ -112,10 +112,10 @@ class ReportController extends Controller
             // Group by client_uid for unique display
             $uniqueClients = $clients->groupBy('client_uid')->map(function ($group) {
                 $client = $group->first();
-                
+
                 // Ensure country field is properly handled
                 $clientCountry = $client['client_country'] ?? $client['country'] ?? '-';
-                
+
                 return [
                     'client_uid' => $client['client_uid'] ?? '-',
                     'client_status' => $client['client_status'] ?? 'UNKNOWN',
@@ -142,10 +142,10 @@ class ReportController extends Controller
             $formattedClients = $uniqueClients->map(function ($client) {
                 $volumeLots = (float)($client['volume_lots'] ?? 0);
                 $rewardUsd = (float)($client['reward_usd'] ?? 0);
-                
+
                 // Calculate status based on activity
                 $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
-                
+
                 return [
                     'client_uid' => $client['client_uid'] ?? '-',
                     'client_status' => $clientStatus,
@@ -177,10 +177,13 @@ class ReportController extends Controller
 
             // Convert to paginated collection
             $perPage = 10;
-            $currentPage = $request->get('page', 1);
+            $currentPage = (int) $request->get('page', 1);
+            if ($currentPage < 1) {
+                $currentPage = 1;
+            }
             $offset = ($currentPage - 1) * $perPage;
             $paginatedClients = $formattedClients->slice($offset, $perPage)->values();
-            
+
             // Create pagination data manually
             $pagination = [
                 'data' => $paginatedClients,
@@ -194,11 +197,11 @@ class ReportController extends Controller
                 'next_page_url' => $currentPage < ceil($formattedClients->count() / $perPage) ? $request->fullUrlWithQuery(['page' => $currentPage + 1]) : null,
                 'links' => []
             ];
-            
+
             // Generate pagination links
             $totalPages = ceil($formattedClients->count() / $perPage);
             $pagination['links'][] = ['url' => $pagination['prev_page_url'], 'label' => '&laquo; Previous', 'active' => false];
-            
+
             for ($i = 1; $i <= $totalPages; $i++) {
                 $pagination['links'][] = [
                     'url' => $request->fullUrlWithQuery(['page' => $i]),
@@ -206,7 +209,7 @@ class ReportController extends Controller
                     'active' => $i == $currentPage
                 ];
             }
-            
+
             $pagination['links'][] = ['url' => $pagination['next_page_url'], 'label' => 'Next &raquo;', 'active' => false];
 
             return Inertia::render('Admin/Report/Clients', [
@@ -221,7 +224,7 @@ class ReportController extends Controller
         } catch (\Exception $e) {
             Log::error('Error in ReportController@clients: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-            
+
             if ($request->wantsJson()) {
                 return response()->json([
                     'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()
@@ -249,41 +252,41 @@ class ReportController extends Controller
     {
         try {
             Log::info('Fetching Janischa client account data...');
-            
+
             // Try to get data from Exness API first, fallback to database
             $dataSource = 'Database';
             $apiError = null;
-            
+
             try {
                 $apiResponse = $this->janischaExnessService->getClientsData();
-                
+
                 if (isset($apiResponse['error'])) {
                     throw new \Exception($apiResponse['error']);
                 }
-                
+
                 $apiClients = $apiResponse['data'] ?? [];
                 $dataSource = 'Exness API';
-                
+
                 Log::info('Successfully fetched data from Exness API', [
                     'count' => count($apiClients),
                     'user' => 'Janischa.trade@gmail.com'
                 ]);
-                
+
                 // Use API data
                 $clients = collect($apiClients);
-                
+
             } catch (\Exception $e) {
                 Log::warning('Failed to fetch from Exness API, using database data', [
                     'error' => $e->getMessage(),
                     'user' => 'Janischa.trade@gmail.com'
                 ]);
-                
+
                 $apiError = $e->getMessage();
-                
+
                 // Fallback to database
                 $query = JanischaClient::query();
                 $clients = $query->get();
-                
+
                 // Convert to API format for consistency
                 $clients = $clients->map(function ($client) {
                     return [
@@ -304,7 +307,7 @@ class ReportController extends Controller
 
             // Apply filters (same as clients method)
             $filters = [];
-            
+
             if ($request->filled('partner_account')) {
                 $clients = $clients->filter(function ($client) use ($request) {
                     return stripos($client['partner_account'], $request->partner_account) !== false;
@@ -356,16 +359,16 @@ class ReportController extends Controller
             $formattedClients = $clients->map(function ($client) {
                 $volumeLots = (float)($client['volume_lots'] ?? 0);
                 $rewardUsd = (float)($client['reward_usd'] ?? 0);
-                
+
                 // Calculate status based on activity
                 $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
-                
+
                 // KYC estimation based on activity level
                 $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
-                
+
                 // Ensure country field is properly handled
                 $clientCountry = $client['client_country'] ?? $client['country'] ?? '-';
-                
+
                 return [
                     'partner_account' => $client['partner_account'] ?? '-',
                     'client_uid' => $client['client_uid'] ?? '-',
@@ -399,10 +402,13 @@ class ReportController extends Controller
 
             // Convert to paginated collection
             $perPage = 10;
-            $currentPage = $request->get('page', 1);
+            $currentPage = (int) $request->get('page', 1);
+            if ($currentPage < 1) {
+                $currentPage = 1;
+            }
             $offset = ($currentPage - 1) * $perPage;
             $paginatedClients = $formattedClients->slice($offset, $perPage)->values();
-            
+
             // Create pagination data manually
             $pagination = [
                 'data' => $paginatedClients,
@@ -416,11 +422,11 @@ class ReportController extends Controller
                 'next_page_url' => $currentPage < ceil($formattedClients->count() / $perPage) ? $request->fullUrlWithQuery(['page' => $currentPage + 1]) : null,
                 'links' => []
             ];
-            
+
             // Generate pagination links
             $totalPages = ceil($formattedClients->count() / $perPage);
             $pagination['links'][] = ['url' => $pagination['prev_page_url'], 'label' => '&laquo; Previous', 'active' => false];
-            
+
             for ($i = 1; $i <= $totalPages; $i++) {
                 $pagination['links'][] = [
                     'url' => $request->fullUrlWithQuery(['page' => $i]),
@@ -428,7 +434,7 @@ class ReportController extends Controller
                     'active' => $i == $currentPage
                 ];
             }
-            
+
             $pagination['links'][] = ['url' => $pagination['next_page_url'], 'label' => 'Next &raquo;', 'active' => false];
 
             return Inertia::render('Admin/Report/ClientAccount', [
@@ -443,7 +449,7 @@ class ReportController extends Controller
         } catch (\Exception $e) {
             Log::error('Error in ReportController@clientAccount: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-            
+
             if ($request->wantsJson()) {
                 return response()->json([
                     'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()
@@ -466,4 +472,4 @@ class ReportController extends Controller
             ]);
         }
     }
-} 
+}
