@@ -23,12 +23,13 @@ import BaseButton from "@/Components/BaseButton.vue";
 import BaseButtons from "@/Components/BaseButtons.vue";
 import { ref, onMounted, computed, watch } from "vue";
 import FormControl from "@/Components/FormControl.vue";
+import Pagination from "@/Components/Admin/Pagination.vue";
 
 const props = defineProps({
   clients: {
-    type: Array,
+    type: Object,
     required: true,
-    default: () => []
+    default: () => ({})
   },
   stats: {
     type: Object,
@@ -95,7 +96,7 @@ onMounted(() => {
 
 // Computed properties for data
 const accounts = computed(() => {
-  return props.clients || [];
+  return props.clients.data || [];
 });
 
 // Apply search filters
@@ -157,8 +158,9 @@ const formatDate = (date) => {
 
 // Format country code to name
 const formatCountry = (code) => {
-  if (!code || code === "-") return "-";
-  return countryNames[code] || code;
+  if (!code || code === "-" || code === "") return "-";
+  // Return full country name if found, otherwise show the code with a prefix
+  return countryNames[code] || `[${code}]`;
 };
 
 // Get status class
@@ -188,6 +190,74 @@ const countryNames = {
   KH: "Cambodia",
   LA: "Laos",
   BN: "Brunei",
+  // European countries
+  DE: "Germany",
+  FR: "France",
+  IT: "Italy",
+  ES: "Spain",
+  NL: "Netherlands",
+  BE: "Belgium",
+  AT: "Austria",
+  CH: "Switzerland",
+  SE: "Sweden",
+  NO: "Norway",
+  DK: "Denmark",
+  FI: "Finland",
+  PT: "Portugal",
+  IE: "Ireland",
+  PL: "Poland",
+  CZ: "Czech Republic",
+  HU: "Hungary",
+  RO: "Romania",
+  BG: "Bulgaria",
+  HR: "Croatia",
+  GR: "Greece",
+  // Americas
+  CA: "Canada",
+  MX: "Mexico",
+  BR: "Brazil",
+  AR: "Argentina",
+  CL: "Chile",
+  CO: "Colombia",
+  PE: "Peru",
+  // Middle East & Africa
+  AE: "United Arab Emirates",
+  SA: "Saudi Arabia",
+  EG: "Egypt",
+  ZA: "South Africa",
+  NG: "Nigeria",
+  AO: "Angola",
+  KE: "Kenya",
+  GH: "Ghana",
+  MA: "Morocco",
+  TN: "Tunisia",
+  ET: "Ethiopia",
+  UG: "Uganda",
+  TZ: "Tanzania",
+  ZW: "Zimbabwe",
+  BW: "Botswana",
+  MW: "Malawi",
+  IL: "Israel",
+  TR: "Turkey",
+  // Asia Pacific
+  AU: "Australia",
+  NZ: "New Zealand",
+  IN: "India",
+  PK: "Pakistan",
+  BD: "Bangladesh",
+  LK: "Sri Lanka",
+  HK: "Hong Kong",
+  TW: "Taiwan",
+  // Additional Southeast Asian countries
+  BT: "Bhutan",
+  NP: "Nepal",
+  MV: "Maldives",
+  // Other common countries
+  RU: "Russia",
+  UA: "Ukraine",
+  BY: "Belarus",
+  KZ: "Kazakhstan",
+  UZ: "Uzbekistan",
 };
 
 // Computed properties for stats
@@ -696,6 +766,11 @@ watch(
               </tr>
             </tbody>
           </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="py-4">
+          <Pagination :data="clients" />
         </div>
       </CardBox>
 

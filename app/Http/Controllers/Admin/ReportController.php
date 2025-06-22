@@ -112,6 +112,10 @@ class ReportController extends Controller
             // Group by client_uid for unique display
             $uniqueClients = $clients->groupBy('client_uid')->map(function ($group) {
                 $client = $group->first();
+                
+                // Ensure country field is properly handled
+                $clientCountry = $client['client_country'] ?? $client['country'] ?? '-';
+                
                 return [
                     'client_uid' => $client['client_uid'] ?? '-',
                     'client_status' => $client['client_status'] ?? 'UNKNOWN',
@@ -121,7 +125,7 @@ class ReportController extends Controller
                     'volume_mln_usd' => $group->sum('volume_mln_usd'),
                     'reg_date' => $client['reg_date'] ?? null,
                     'partner_account' => $client['partner_account'] ?? '-',
-                    'client_country' => $client['client_country'] ?? '-',
+                    'client_country' => $clientCountry,
                 ];
             })->values();
 
@@ -171,8 +175,42 @@ class ReportController extends Controller
                 ]);
             }
 
+            // Convert to paginated collection
+            $perPage = 10;
+            $currentPage = $request->get('page', 1);
+            $offset = ($currentPage - 1) * $perPage;
+            $paginatedClients = $formattedClients->slice($offset, $perPage)->values();
+            
+            // Create pagination data manually
+            $pagination = [
+                'data' => $paginatedClients,
+                'current_page' => $currentPage,
+                'per_page' => $perPage,
+                'total' => $formattedClients->count(),
+                'last_page' => ceil($formattedClients->count() / $perPage),
+                'from' => $offset + 1,
+                'to' => min($offset + $perPage, $formattedClients->count()),
+                'prev_page_url' => $currentPage > 1 ? $request->fullUrlWithQuery(['page' => $currentPage - 1]) : null,
+                'next_page_url' => $currentPage < ceil($formattedClients->count() / $perPage) ? $request->fullUrlWithQuery(['page' => $currentPage + 1]) : null,
+                'links' => []
+            ];
+            
+            // Generate pagination links
+            $totalPages = ceil($formattedClients->count() / $perPage);
+            $pagination['links'][] = ['url' => $pagination['prev_page_url'], 'label' => '&laquo; Previous', 'active' => false];
+            
+            for ($i = 1; $i <= $totalPages; $i++) {
+                $pagination['links'][] = [
+                    'url' => $request->fullUrlWithQuery(['page' => $i]),
+                    'label' => (string)$i,
+                    'active' => $i == $currentPage
+                ];
+            }
+            
+            $pagination['links'][] = ['url' => $pagination['next_page_url'], 'label' => 'Next &raquo;', 'active' => false];
+
             return Inertia::render('Admin/Report/Clients', [
-                'clients' => $formattedClients,
+                'clients' => $pagination,
                 'stats' => $stats,
                 'filters' => $filters,
                 'data_source' => $dataSource,
@@ -325,11 +363,14 @@ class ReportController extends Controller
                 // KYC estimation based on activity level
                 $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
                 
+                // Ensure country field is properly handled
+                $clientCountry = $client['client_country'] ?? $client['country'] ?? '-';
+                
                 return [
                     'partner_account' => $client['partner_account'] ?? '-',
                     'client_uid' => $client['client_uid'] ?? '-',
                     'reg_date' => $client['reg_date'],
-                    'client_country' => $client['client_country'] ?? '-',
+                    'client_country' => $clientCountry,
                     'volume_lots' => $volumeLots,
                     'volume_mln_usd' => (float)($client['volume_mln_usd'] ?? 0),
                     'reward_usd' => $rewardUsd,
@@ -356,8 +397,42 @@ class ReportController extends Controller
                 ]);
             }
 
+            // Convert to paginated collection
+            $perPage = 10;
+            $currentPage = $request->get('page', 1);
+            $offset = ($currentPage - 1) * $perPage;
+            $paginatedClients = $formattedClients->slice($offset, $perPage)->values();
+            
+            // Create pagination data manually
+            $pagination = [
+                'data' => $paginatedClients,
+                'current_page' => $currentPage,
+                'per_page' => $perPage,
+                'total' => $formattedClients->count(),
+                'last_page' => ceil($formattedClients->count() / $perPage),
+                'from' => $offset + 1,
+                'to' => min($offset + $perPage, $formattedClients->count()),
+                'prev_page_url' => $currentPage > 1 ? $request->fullUrlWithQuery(['page' => $currentPage - 1]) : null,
+                'next_page_url' => $currentPage < ceil($formattedClients->count() / $perPage) ? $request->fullUrlWithQuery(['page' => $currentPage + 1]) : null,
+                'links' => []
+            ];
+            
+            // Generate pagination links
+            $totalPages = ceil($formattedClients->count() / $perPage);
+            $pagination['links'][] = ['url' => $pagination['prev_page_url'], 'label' => '&laquo; Previous', 'active' => false];
+            
+            for ($i = 1; $i <= $totalPages; $i++) {
+                $pagination['links'][] = [
+                    'url' => $request->fullUrlWithQuery(['page' => $i]),
+                    'label' => (string)$i,
+                    'active' => $i == $currentPage
+                ];
+            }
+            
+            $pagination['links'][] = ['url' => $pagination['next_page_url'], 'label' => 'Next &raquo;', 'active' => false];
+
             return Inertia::render('Admin/Report/ClientAccount', [
-                'clients' => $formattedClients,
+                'clients' => $pagination,
                 'stats' => $stats,
                 'filters' => $filters,
                 'data_source' => $dataSource,

@@ -144,9 +144,14 @@ class JanischaExnessAuthService
                 return ['error' => $dataV1['error']];
             }
 
-            // Create a map of V1 clients by short UID
+            // Create a map of V1 clients by short UID and ensure country field consistency
             $v1ClientMap = [];
-            foreach ($dataV1['data'] as $client) {
+            foreach ($dataV1['data'] as &$client) {
+                // Ensure client_country field exists, fallback to 'country' field
+                if (!isset($client['client_country']) && isset($client['country'])) {
+                    $client['client_country'] = $client['country'];
+                }
+                
                 $uid = $client['client_uid'] ?? null;
                 if ($uid) {
                     if (!isset($v1ClientMap[$uid])) {

@@ -9,12 +9,13 @@ import NotificationBar from "@/Components/NotificationBar.vue";
 import BaseButton from "@/Components/BaseButton.vue";
 import BaseButtons from "@/Components/BaseButtons.vue";
 import { ref, computed, watch } from "vue";
+import Pagination from "@/Components/Admin/Pagination.vue";
 
 const props = defineProps({
   clients: {
-    type: Array,
+    type: Object,
     required: true,
-    default: () => []
+    default: () => ({})
   },
   stats: {
     type: Object,
@@ -99,7 +100,7 @@ const resetFilters = () => {
 
 // Computed properties for filtered data
 const filteredClients = computed(() => {
-  let result = props.clients || [];
+  let result = props.clients.data || [];
 
   // ค้นหา (เฉพาะ client_uid)
   if (filters.value.search) {
@@ -403,7 +404,7 @@ watch(() => props.filters, (newFilters) => {
             </div>
             <div>
               <h3 class="text-2xl font-bold text-gray-900 dark:text-white">รายการ Client UID</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">ข้อมูลลูกค้าทั้งหมด {{ props.clients.length }} รายการ</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">ข้อมูลลูกค้าทั้งหมด {{ props.clients.total || 0 }} รายการ</p>
             </div>
           </div>
           <div class="flex items-center space-x-3">
@@ -414,7 +415,7 @@ watch(() => props.filters, (newFilters) => {
         </div>
         
         <!-- Empty State -->
-        <div v-if="!props.clients.length" class="p-16 text-center">
+        <div v-if="!props.clients.data || !props.clients.data.length" class="p-16 text-center">
           <div class="mx-auto w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center mb-8 shadow-lg">
             <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -423,7 +424,7 @@ watch(() => props.filters, (newFilters) => {
           <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">ไม่พบข้อมูล</h3>
           <p class="text-gray-600 dark:text-gray-400 mb-6 text-lg">ลองปรับเปลี่ยนเงื่อนไขการค้นหา</p>
           <div class="space-y-2 text-sm text-gray-500">
-            <p>จำนวนข้อมูลทั้งหมด: {{ props.clients.length }} รายการ</p>
+            <p>จำนวนข้อมูลทั้งหมด: {{ props.clients.total || 0 }} รายการ</p>
             <p>ข้อมูลที่กรองแล้ว: {{ filteredClients.length }} รายการ</p>
           </div>
         </div>
@@ -528,6 +529,11 @@ watch(() => props.filters, (newFilters) => {
                 </tr>
               </tbody>
             </table>
+          </div>
+          
+          <!-- Pagination -->
+          <div class="py-4">
+            <Pagination :data="clients" />
           </div>
         </div>
       </CardBox>
