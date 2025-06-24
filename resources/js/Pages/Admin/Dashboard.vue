@@ -175,7 +175,7 @@ async function copyPartnerInfo3() {
         <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white shadow-2xl">
           <div class="flex items-center justify-between">
             <div>
-              <h1 class="text-3xl font-bold mb-2">ยินดีต้อนรับสู่ Admin Dashboard</h1>
+              <h1 class="text-3xl font-bold mb-2">ยินดีต้อนรับสู่fff Admin Dashboard</h1>
               <p class="text-blue-100 text-lg">จัดการระบบและติดตามข้อมูลลูกค้า Exness</p>
             </div>
             <div class="hidden md:block">
@@ -195,7 +195,7 @@ async function copyPartnerInfo3() {
         <br>
         <small>กรุณาตรวจสอบว่าคุณมีบัญชี Exness และใช้ email/password เดียวกันกับบัญชี Exness ของคุณ</small>
       </NotificationBar>
-      
+
       <!-- Enhanced Statistics Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <!-- ซ้าย -->
@@ -260,7 +260,7 @@ async function copyPartnerInfo3() {
                 <span>QR code</span>
               </button>
             </div>
-           
+
             <!-- QR Code Modal -->
             <CardBoxModal v-model="isQrModalOpen" largeTitle="QR code" :button="null" :button-label="''" :has-cancel="false">
               <div class="flex flex-col items-center justify-between h-full w-full pt-2 pb-4">
@@ -394,7 +394,7 @@ async function copyPartnerInfo3() {
                 >Partner code</button>
               </div>
             </div>
-            
+
             <div>
               <span v-if="partnerTab3 === 'link'">
                 <a :href="partnerLink3" target="_blank" class="block text-blue-600 font-medium text-lg break-all hover:underline text-center">
@@ -552,7 +552,7 @@ async function copyPartnerInfo3() {
         </div>
       </div>
 
-      
+
     </SectionMain>
   </LayoutAuthenticated>
 </template>
