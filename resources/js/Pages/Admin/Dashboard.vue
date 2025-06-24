@@ -200,25 +200,25 @@ async function copyPartnerInfo3() {
       <!-- Welcome Section -->
       <div class="mb-8">
         <div
-          class="p-8 text-white shadow-2xl bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl"
+          class="p-8 text-white shadow-2xl bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl dark:from-slate-800 dark:to-slate-900 dark:text-blue-100"
         >
           <div class="flex items-center justify-between">
             <div>
-              <h1 class="mb-2 text-3xl font-bold">ทดสอบ update git web</h1>
-              <h1 class="mb-2 text-3xl font-bold">
+              <h1 class="mb-2 text-3xl font-bold text-white dark:text-white dark:font-bold dark:drop-shadow-lg">ทดสอบ update git web</h1>
+              <h1 class="mb-2 text-3xl font-bold text-white dark:text-white dark:font-bold dark:drop-shadow-lg">
                 ยินดีต้อนรับสู่ Admin Dashboard
               </h1>
 
-              <p class="text-lg text-blue-100">
+              <p class="text-lg text-blue-100 dark:text-white dark:font-semibold dark:drop-shadow">
                 จัดการระบบและติดตามข้อมูลลูกค้า Exness
               </p>
             </div>
             <div class="hidden md:block">
               <div
-                class="flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm"
+                class="flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm dark:bg-slate-700/40"
               >
                 <svg
-                  class="w-10 h-10 text-white"
+                  class="w-10 h-10 text-white dark:text-blue-200"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -257,7 +257,7 @@ async function copyPartnerInfo3() {
         <div class="flex flex-col gap-6">
           <!-- CardBox 1: Partner Link Card (Styled to match the image, with tab switch) -->
           <CardBox
-            class="flex flex-col gap-2 p-4 bg-white border border-gray-100 shadow rounded-xl"
+            class="flex flex-col gap-2 p-4 bg-white border border-gray-100 shadow rounded-xl dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:font-semibold dark:drop-shadow"
           >
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center">
@@ -274,7 +274,7 @@ async function copyPartnerInfo3() {
                     d="M13.828 14.828a4 4 0 01-5.656-5.656m1.414-1.414a4 4 0 015.656 5.656m-6.364 6.364a9 9 0 1112.728-12.728 9 9 0 01-12.728 12.728z"
                   />
                 </svg>
-                <span class="font-medium text-gray-700">Your Partner Link</span>
+                <span class="font-medium text-gray-700 dark:text-white dark:font-semibold dark:drop-shadow">Your Partner Link</span>
               </div>
               <div class="flex items-center gap-2">
                 <button
@@ -282,8 +282,8 @@ async function copyPartnerInfo3() {
                   :class="[
                     'px-4 py-2 rounded-full font-medium text-base border shadow-sm focus:outline-none transition',
                     partnerTab === 'link'
-                      ? 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 active:bg-violet-300'
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200',
+                      ? 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 active:bg-violet-300 dark:bg-violet-900 dark:text-violet-200 dark:border-violet-700 dark:hover:bg-violet-800 dark:active:bg-violet-700'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200 dark:bg-slate-700 dark:text-gray-200 dark:border-slate-600 dark:hover:bg-slate-600 dark:active:bg-slate-700',
                   ]"
                 >
                   Partner link
@@ -293,8 +293,8 @@ async function copyPartnerInfo3() {
                   :class="[
                     'px-4 py-2 rounded-full font-medium text-base border shadow-sm focus:outline-none transition',
                     partnerTab === 'code'
-                      ? 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 active:bg-violet-300'
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200',
+                      ? 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 active:bg-violet-300 dark:bg-violet-900 dark:text-violet-200 dark:border-violet-700 dark:hover:bg-violet-800 dark:active:bg-violet-700'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200 dark:bg-slate-700 dark:text-gray-200 dark:border-slate-600 dark:hover:bg-slate-600 dark:active:bg-slate-700',
                   ]"
                 >
                   Partner code
@@ -306,14 +306,14 @@ async function copyPartnerInfo3() {
                 <a
                   :href="partnerLink"
                   target="_blank"
-                  class="block text-lg font-medium text-center text-blue-600 break-all hover:underline"
+                  class="block text-lg font-medium text-center text-blue-600 break-all hover:underline dark:text-white dark:font-bold dark:drop-shadow"
                 >
                   {{ partnerLink }}
                 </a>
               </span>
               <span
                 v-else
-                class="block p-2 text-lg font-medium text-center text-blue-600 break-all rounded cursor-pointer select-all hover:bg-blue-50"
+                class="block p-2 text-lg font-medium text-center text-blue-600 break-all rounded cursor-pointer select-all hover:bg-blue-50 dark:text-white dark:font-bold dark:drop-shadow dark:hover:bg-slate-700"
                 @click="copyPartnerInfo"
               >
                 {{ partnerCode }}
@@ -323,7 +323,7 @@ async function copyPartnerInfo3() {
               <div class="relative flex items-center">
                 <button
                   @click="copyPartnerInfo"
-                  class="flex items-center gap-2 px-4 py-2 text-base font-medium text-gray-700 transition bg-white border border-gray-200 rounded-full shadow hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  class="flex items-center gap-2 px-4 py-2 text-base font-medium text-gray-700 transition bg-white border border-gray-200 rounded-full shadow hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:text-white dark:font-bold dark:drop-shadow dark:bg-slate-700 dark:border-slate-600 dark:hover:bg-slate-600 dark:active:bg-slate-700"
                 >
                   <svg
                     class="w-5 h-5"
@@ -351,7 +351,7 @@ async function copyPartnerInfo3() {
               </div>
               <button
                 @click="openQrModal"
-                class="flex items-center gap-2 px-4 py-2 text-base font-medium text-blue-700 transition border border-blue-200 rounded-full shadow bg-blue-50 hover:bg-blue-100 active:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                class="flex items-center gap-2 px-4 py-2 text-base font-medium text-blue-700 transition border border-blue-200 rounded-full shadow bg-blue-50 hover:bg-blue-100 active:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:text-yellow-200 dark:font-bold dark:drop-shadow dark:bg-slate-700 dark:border-blue-700 dark:hover:bg-slate-800 dark:active:bg-slate-900"
               >
                 <svg
                   class="w-5 h-5"
@@ -376,8 +376,6 @@ async function copyPartnerInfo3() {
                 <span>QR code</span>
               </button>
             </div>
-
-            <!-- QR Code Modal -->
             <CardBoxModal
               v-model="isQrModalOpen"
               largeTitle="QR code"
@@ -399,7 +397,7 @@ async function copyPartnerInfo3() {
                   <a
                     :href="partnerDisplay"
                     target="_blank"
-                    class="block mb-6 text-sm font-medium text-center text-blue-600 break-all hover:underline"
+                    class="block mb-6 text-sm font-medium text-center text-blue-600 break-all hover:underline dark:text-white dark:font-bold dark:drop-shadow"
                   >
                     {{ partnerDisplay }}
                   </a>
@@ -433,7 +431,7 @@ async function copyPartnerInfo3() {
           </CardBox>
           <!-- CardBox 2: Partner Link Card (ข้อมูลใหม่) -->
           <CardBox
-            class="flex flex-col gap-2 p-4 bg-white border border-gray-100 shadow rounded-xl"
+            class="flex flex-col gap-2 p-4 bg-white border border-gray-100 shadow rounded-xl dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:font-semibold dark:drop-shadow"
           >
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center">
@@ -450,7 +448,7 @@ async function copyPartnerInfo3() {
                     d="M13.828 14.828a4 4 0 01-5.656-5.656m1.414-1.414a4 4 0 015.656 5.656m-6.364 6.364a9 9 0 1112.728-12.728 9 9 0 01-12.728 12.728z"
                   />
                 </svg>
-                <span class="font-medium text-gray-700">Your Partner Link</span>
+                <span class="font-medium text-gray-700 dark:text-white dark:font-semibold dark:drop-shadow">Your Partner Link</span>
               </div>
               <div class="flex items-center gap-2">
                 <button
@@ -458,8 +456,8 @@ async function copyPartnerInfo3() {
                   :class="[
                     'px-4 py-2 rounded-full font-medium text-base border shadow-sm focus:outline-none transition',
                     partnerTab2 === 'link'
-                      ? 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 active:bg-violet-300'
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200',
+                      ? 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 active:bg-violet-300 dark:bg-violet-900 dark:text-violet-200 dark:border-violet-700 dark:hover:bg-violet-800 dark:active:bg-violet-700'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200 dark:bg-slate-700 dark:text-gray-200 dark:border-slate-600 dark:hover:bg-slate-600 dark:active:bg-slate-700',
                   ]"
                 >
                   Partner link
@@ -469,8 +467,8 @@ async function copyPartnerInfo3() {
                   :class="[
                     'px-4 py-2 rounded-full font-medium text-base border shadow-sm focus:outline-none transition',
                     partnerTab2 === 'code'
-                      ? 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 active:bg-violet-300'
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200',
+                      ? 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 active:bg-violet-300 dark:bg-violet-900 dark:text-violet-200 dark:border-violet-700 dark:hover:bg-violet-800 dark:active:bg-violet-700'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200 dark:bg-slate-700 dark:text-gray-200 dark:border-slate-600 dark:hover:bg-slate-600 dark:active:bg-slate-700',
                   ]"
                 >
                   Partner code
@@ -482,14 +480,14 @@ async function copyPartnerInfo3() {
                 <a
                   :href="partnerLink2"
                   target="_blank"
-                  class="block text-lg font-medium text-center text-blue-600 break-all hover:underline"
+                  class="block text-lg font-medium text-center text-blue-600 break-all hover:underline dark:text-white dark:font-bold dark:drop-shadow"
                 >
                   {{ partnerLink2 }}
                 </a>
               </span>
               <span
                 v-else
-                class="block p-2 text-lg font-medium text-center text-blue-600 break-all rounded cursor-pointer select-all hover:bg-blue-50"
+                class="block p-2 text-lg font-medium text-center text-blue-600 break-all rounded cursor-pointer select-all hover:bg-blue-50 dark:text-white dark:font-bold dark:drop-shadow dark:hover:bg-slate-700"
                 @click="copyPartnerInfo2"
               >
                 {{ partnerCode2 }}
@@ -499,7 +497,7 @@ async function copyPartnerInfo3() {
               <div class="relative flex items-center">
                 <button
                   @click="copyPartnerInfo2"
-                  class="flex items-center gap-2 px-4 py-2 text-base font-medium text-gray-700 transition bg-white border border-gray-200 rounded-full shadow hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  class="flex items-center gap-2 px-4 py-2 text-base font-medium text-gray-700 transition bg-white border border-gray-200 rounded-full shadow hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:text-white dark:font-bold dark:drop-shadow dark:bg-slate-700 dark:border-slate-600 dark:hover:bg-slate-600 dark:active:bg-slate-700"
                 >
                   <svg
                     class="w-5 h-5"
@@ -527,7 +525,7 @@ async function copyPartnerInfo3() {
               </div>
               <button
                 @click="openQrModal2"
-                class="flex items-center gap-2 px-4 py-2 text-base font-medium text-blue-700 transition border border-blue-200 rounded-full shadow bg-blue-50 hover:bg-blue-100 active:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                class="flex items-center gap-2 px-4 py-2 text-base font-medium text-blue-700 transition border border-blue-200 rounded-full shadow bg-blue-50 hover:bg-blue-100 active:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:text-yellow-200 dark:font-bold dark:drop-shadow dark:bg-slate-700 dark:border-blue-700 dark:hover:bg-slate-800 dark:active:bg-slate-900"
               >
                 <svg
                   class="w-5 h-5"
@@ -573,7 +571,7 @@ async function copyPartnerInfo3() {
                   <a
                     :href="partnerTab2 === 'link' ? partnerLink2 : partnerCode2"
                     target="_blank"
-                    class="block mb-6 text-sm font-medium text-center text-blue-600 break-all hover:underline"
+                    class="block mb-6 text-sm font-medium text-center text-blue-600 break-all hover:underline dark:text-white dark:font-bold dark:drop-shadow"
                   >
                     {{ partnerTab2 === "link" ? partnerLink2 : partnerCode2 }}
                   </a>
@@ -607,7 +605,7 @@ async function copyPartnerInfo3() {
           </CardBox>
           <!-- CardBox 3: Partner Link Card -->
           <CardBox
-            class="flex flex-col gap-2 p-4 bg-white border border-gray-100 shadow rounded-xl"
+            class="flex flex-col gap-2 p-4 bg-white border border-gray-100 shadow rounded-xl dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:font-semibold dark:drop-shadow"
           >
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center">
@@ -624,7 +622,7 @@ async function copyPartnerInfo3() {
                     d="M13.828 14.828a4 4 0 01-5.656-5.656m1.414-1.414a4 4 0 015.656 5.656m-6.364 6.364a9 9 0 1112.728-12.728 9 9 0 01-12.728 12.728z"
                   />
                 </svg>
-                <span class="font-medium text-gray-700">Your Partner Link</span>
+                <span class="font-medium text-gray-700 dark:text-white dark:font-semibold dark:drop-shadow">Your Partner Link</span>
               </div>
               <div class="flex items-center gap-2">
                 <button
@@ -632,8 +630,8 @@ async function copyPartnerInfo3() {
                   :class="[
                     'px-4 py-2 rounded-full font-medium text-base border shadow-sm focus:outline-none transition',
                     partnerTab3 === 'link'
-                      ? 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 active:bg-violet-300'
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200',
+                      ? 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 active:bg-violet-300 dark:bg-violet-900 dark:text-violet-200 dark:border-violet-700 dark:hover:bg-violet-800 dark:active:bg-violet-700'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200 dark:bg-slate-700 dark:text-gray-200 dark:border-slate-600 dark:hover:bg-slate-600 dark:active:bg-slate-700',
                   ]"
                 >
                   Partner link
@@ -643,8 +641,8 @@ async function copyPartnerInfo3() {
                   :class="[
                     'px-4 py-2 rounded-full font-medium text-base border shadow-sm focus:outline-none transition',
                     partnerTab3 === 'code'
-                      ? 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 active:bg-violet-300'
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200',
+                      ? 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 active:bg-violet-300 dark:bg-violet-900 dark:text-violet-200 dark:border-violet-700 dark:hover:bg-violet-800 dark:active:bg-violet-700'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200 dark:bg-slate-700 dark:text-gray-200 dark:border-slate-600 dark:hover:bg-slate-600 dark:active:bg-slate-700',
                   ]"
                 >
                   Partner code
@@ -657,14 +655,14 @@ async function copyPartnerInfo3() {
                 <a
                   :href="partnerLink3"
                   target="_blank"
-                  class="block text-lg font-medium text-center text-blue-600 break-all hover:underline"
+                  class="block text-lg font-medium text-center text-blue-600 break-all hover:underline dark:text-white dark:font-bold dark:drop-shadow"
                 >
                   {{ partnerLink3 }}
                 </a>
               </span>
               <span
                 v-else
-                class="block p-2 text-lg font-medium text-center text-blue-600 break-all rounded cursor-pointer select-all hover:bg-blue-50"
+                class="block p-2 text-lg font-medium text-center text-blue-600 break-all rounded cursor-pointer select-all hover:bg-blue-50 dark:text-white dark:font-bold dark:drop-shadow dark:hover:bg-slate-700"
                 @click="copyPartnerInfo3"
               >
                 {{ partnerCode3 }}
@@ -674,7 +672,7 @@ async function copyPartnerInfo3() {
               <div class="relative flex items-center">
                 <button
                   @click="copyPartnerInfo3"
-                  class="flex items-center gap-2 px-4 py-2 text-base font-medium text-gray-700 transition bg-white border border-gray-200 rounded-full shadow hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  class="flex items-center gap-2 px-4 py-2 text-base font-medium text-gray-700 transition bg-white border border-gray-200 rounded-full shadow hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:text-white dark:font-bold dark:drop-shadow dark:bg-slate-700 dark:border-slate-600 dark:hover:bg-slate-600 dark:active:bg-slate-700"
                 >
                   <svg
                     class="w-5 h-5"

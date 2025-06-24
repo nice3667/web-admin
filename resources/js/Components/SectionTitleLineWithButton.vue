@@ -1,6 +1,7 @@
 <script setup>
 import { mdiCog } from '@mdi/js'
 import { useSlots, computed } from 'vue'
+import { useDarkModeStore } from '@/Stores/darkMode.js'
 import BaseIcon from '@/Components/BaseIcon.vue'
 import BaseButton from '@/Components/BaseButton.vue'
 import IconRounded from '@/Components/IconRounded.vue'
@@ -18,10 +19,11 @@ defineProps({
 })
 
 const hasSlot = computed(() => useSlots().default)
+const darkModeStore = useDarkModeStore()
 </script>
 
 <template>
-  <section 
+  <section
     :class="{'pt-6':!main}"
     class="mb-6 flex items-center justify-between"
   >
@@ -41,8 +43,9 @@ const hasSlot = computed(() => useSlots().default)
       />
       <h1
         :class="[
-          main ? 'text-3xl text-black font-bold tracking-wide' : 'text-2xl',
-          'leading-tight'
+          main ? 'text-3xl font-bold tracking-wide' : 'text-2xl',
+          'leading-tight',
+          main ? 'text-black dark:text-white' : 'text-gray-900 dark:text-gray-100'
         ]"
       >
         {{ title }}

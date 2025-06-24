@@ -49,7 +49,7 @@ const cancel = () => confirmCancel('cancel')
 
 <template>
   <OverlayLayer
-    v-show="value"
+    :modelValue="value"
     @overlay-click="cancel"
   >
     <div class="flex justify-center items-center min-h-screen">
