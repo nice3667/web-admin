@@ -24,7 +24,8 @@ class Client extends Model
         'ftd_received',
         'ftt_made',
         'raw_data',
-        'last_sync_at'
+        'last_sync_at',
+        'user_id'
     ];
 
     protected $casts = [
@@ -39,6 +40,14 @@ class Client extends Model
         'raw_data' => 'array',
         'last_sync_at' => 'datetime'
     ];
+
+    /**
+     * Get the user that owns the client.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function scopeActive($query)
     {
@@ -78,5 +87,10 @@ class Client extends Model
     public function scopeByDateRange($query, $startDate, $endDate)
     {
         return $query->whereBetween('reg_date', [$startDate, $endDate]);
+    }
+
+    public function scopeByUser($query, $userId)
+    {
+        return $query->where('user_id', $userId);
     }
 }

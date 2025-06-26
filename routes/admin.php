@@ -13,7 +13,7 @@ Route::group([
 ], function () {
     Route::get('/', function () {
         return Inertia::render('Admin/Dashboard');
-    })->name('dashboard');    
+    })->name('dashboard');
     Route::resource('user', 'UserController');
     Route::resource('role', 'RoleController');
     Route::resource('permission', 'PermissionController');
@@ -36,7 +36,17 @@ Route::group([
     Route::get('edit-account-info', 'UserController@accountInfo')->name('account.info');
     Route::post('edit-account-info', 'UserController@accountInfoStore')->name('account.info.store');
     Route::post('change-password', 'UserController@changePasswordStore')->name('account.password.store');
-    
+
+    // Customers Routes
+    Route::group([
+        'prefix' => 'customers',
+        'as' => 'customers.',
+    ], function () {
+        Route::get('/', 'CustomersController@index')->name('index');
+        Route::post('/assign-owner', 'CustomersController@assignOwner')->name('assign-owner');
+        Route::get('/{clientUid}/details', 'CustomersController@getCustomerDetails')->name('details');
+    });
+
     // Report1 Routes
     Route::group([
         'prefix' => 'reports1',
@@ -49,7 +59,7 @@ Route::group([
         Route::get('reward-history1', 'Report1Controller@rewardHistory1')->name('reward-history1');
         Route::get('test-connection', 'Report1Controller@testConnection')->name('test-connection');
     });
-    
+
     // Report2 Routes
     Route::group([
         'prefix' => 'reports2',

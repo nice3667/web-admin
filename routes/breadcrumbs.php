@@ -14,6 +14,12 @@ Breadcrumbs::for('admin.dashboard', function (BreadcrumbTrail $trail) {
     $trail->push('Admin Dashboard', route('admin.dashboard'));
 });
 
+// Admin > Customers
+Breadcrumbs::for('admin.customers.index', function (BreadcrumbTrail $trail) {
+    $trail->parent('admin.dashboard');
+    $trail->push('Customers', route('admin.customers.index'));
+});
+
 // Admin > Reports > Clients
 Breadcrumbs::for('admin.reports.clients', function (BreadcrumbTrail $trail) {
     $trail->parent('admin.dashboard');
@@ -60,7 +66,7 @@ Breadcrumbs::macro('resource', function (string $name, string $title, ?string $p
             $trail->parent("{$name}.index", $model);
             $trail->push('Create', route("{$name}.create", $model));
         });
-    
+
         Breadcrumbs::for("{$name}.show", function (BreadcrumbTrail $trail, $model, $item) use ($name) {
             $trail->parent("{$name}.index", $model);
             if (Route::has("{$name}.show")) {
@@ -69,12 +75,12 @@ Breadcrumbs::macro('resource', function (string $name, string $title, ?string $p
                 $trail->push($item->name ?? $model);
             }
         });
-    
+
         Breadcrumbs::for("{$name}.edit", function (BreadcrumbTrail $trail, $model, $item) use ($name) {
             $trail->parent("{$name}.show", $model, $item);
             $trail->push('Edit', route("{$name}.edit", [$model, $item]));
         });
-        
+
     } else {
         Breadcrumbs::for("{$name}.index", function (BreadcrumbTrail $trail) use ($name, $title) {
             $trail->parent('admin.dashboard');
@@ -85,7 +91,7 @@ Breadcrumbs::macro('resource', function (string $name, string $title, ?string $p
             $trail->parent("{$name}.index");
             $trail->push('Create', route("{$name}.create"));
         });
-    
+
         Breadcrumbs::for("{$name}.show", function (BreadcrumbTrail $trail, $model) use ($name) {
             $trail->parent("{$name}.index");
             if (Route::has("{$name}.show")) {
@@ -94,7 +100,7 @@ Breadcrumbs::macro('resource', function (string $name, string $title, ?string $p
                 $trail->push($model->name ?? $model);
             }
         });
-    
+
         Breadcrumbs::for("{$name}.edit", function (BreadcrumbTrail $trail, $model) use ($name) {
             $trail->parent("{$name}.show", $model);
             $trail->push('Edit', route("{$name}.edit", $model));

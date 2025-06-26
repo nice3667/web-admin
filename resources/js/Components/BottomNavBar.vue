@@ -13,7 +13,12 @@ const menuItems = [
     icon: mdiViewDashboard
   },
   {
-    label: "Report",
+    label: "Customers",
+    to: "/admin/customers",
+    icon: mdiAccountGroup
+  },
+  {
+    label: "Exness 1",
     icon: mdiChartBar,
     dropdown: true,
     items: [
@@ -26,27 +31,28 @@ const menuItems = [
         label: "Client Account",
         to: "/admin/reports/client-account",
         icon: mdiAccountDetails
-      },
-      {
-        label: "Client Transaction",
-        to: "/admin/reports/client-transaction",
-        icon: mdiCashMultiple
-      },
-      {
-        label: "Transactions Pending",
-        to: "/admin/reports/transactions-pending",
-        icon: mdiClockOutline
-      },
-      {
-        label: "Reward History",
-        to: "/admin/reports/reward-history",
-        icon: mdiGift
-      }
+        }
+    //     ,
+    //   {
+    //     label: "Client Transaction",
+    //     to: "/admin/reports/client-transaction",
+    //     icon: mdiCashMultiple
+    //   },
+    //   {
+    //     label: "Transactions Pending",
+    //     to: "/admin/reports/transactions-pending",
+    //     icon: mdiClockOutline
+    //   },
+    //   {
+    //     label: "Reward History",
+    //     to: "/admin/reports/reward-history",
+    //     icon: mdiGift
+    //   }
     ]
   }
   ,
   {
-    label: "Report1",
+    label: "Exness 2",
     icon: mdiChartBar,
     dropdown: true,
     items: [
@@ -59,26 +65,27 @@ const menuItems = [
         label: "Client Account",
         to: "/admin/reports1/client-account1",
         icon: mdiAccountDetails
-      },
-      {
-        label: "Client Transaction",
-        to: "/admin/reports1/client-transaction1",
-        icon: mdiCashMultiple
-      },
-      {
-        label: "Transactions Pending",
-        to: "/admin/reports1/transactions-pending1",
-        icon: mdiClockOutline
-      },
-      {
-        label: "Reward History",
-        to: "/admin/reports1/reward-history1",
-        icon: mdiGift
-      }
+        }
+    //     ,
+    //   {
+    //     label: "Client Transaction",
+    //     to: "/admin/reports1/client-transaction1",
+    //     icon: mdiCashMultiple
+    //   },
+    //   {
+    //     label: "Transactions Pending",
+    //     to: "/admin/reports1/transactions-pending1",
+    //     icon: mdiClockOutline
+    //   },
+    //   {
+    //     label: "Reward History",
+    //     to: "/admin/reports1/reward-history1",
+    //     icon: mdiGift
+    //   }
     ]
   },
   {
-    label: "Report2",
+    label: "Exness 3",
     icon: mdiChartBar,
     dropdown: true,
     items: [
@@ -91,61 +98,66 @@ const menuItems = [
         label: "Client Account",
         to: "/admin/reports2/client-account2",
         icon: mdiAccountDetails
-      },
-      {
-        label: "Client Transaction",
-        to: "/admin/reports2/client-transaction2",
-        icon: mdiCashMultiple
-      },
-      {
-        label: "Transactions Pending",
-        to: "/admin/reports2/transactions-pending2",
-        icon: mdiClockOutline
-      },
-      {
-        label: "Reward History",
-        to: "/admin/reports2/reward-history2",
-        icon: mdiGift
-      }
+        }
+    //     ,
+    //   {
+    //     label: "Client Transaction",
+    //     to: "/admin/reports2/client-transaction2",
+    //     icon: mdiCashMultiple
+    //   },
+    //   {
+    //     label: "Transactions Pending",
+    //     to: "/admin/reports2/transactions-pending2",
+    //     icon: mdiClockOutline
+    //   },
+    //   {
+    //     label: "Reward History",
+    //     to: "/admin/reports2/reward-history2",
+    //     icon: mdiGift
+    //   }
     ]
-  },
-  {
-    label: "Rebate",
-    to: "/admin/rebate",
-    icon: mdiCashMultiple
-  },
-  {
-    label: "Promo",
-    to: "/admin/promo",
-    icon: mdiGift
-  },
-  {
-    label: "Referral Agent",
-    to: "/admin/referral",
-    icon: mdiAccountGroup
-  },
-  {
-    label: "Support",
-    icon: mdiHelpCircle,
-    dropdown: true,
-    items: [
-      {
-        label: "Tickets",
-        to: "/admin/support/tickets",
-        icon: mdiTicket
-      },
-      {
-        label: "FAQ",
-        to: "/admin/support/faq",
-        icon: mdiFrequentlyAskedQuestions
-      },
-      {
-        label: "Contact Us",
-        to: "/admin/support/contact",
-        icon: mdiEmail
-      }
-    ]
-  }
+    }
+//     ,
+//   {
+//     label: "Rebate",
+//     to: "/admin/rebate",
+//     icon: mdiCashMultiple
+//     }
+//     ,
+//   {
+//     label: "Promo",
+//     to: "/admin/promo",
+//     icon: mdiGift
+//     }
+//     ,
+//   {
+//     label: "Referral Agent",
+//     to: "/admin/referral",
+//     icon: mdiAccountGroup
+//     }
+//     ,
+//   {
+//     label: "Support",
+//     icon: mdiHelpCircle,
+//     dropdown: true,
+//     items: [
+//       {
+//         label: "Tickets",
+//         to: "/admin/support/tickets",
+//         icon: mdiTicket
+//       },
+//       {
+//         label: "FAQ",
+//         to: "/admin/support/faq",
+//         icon: mdiFrequentlyAskedQuestions
+//       },
+//       {
+//         label: "Contact Us",
+//         to: "/admin/support/contact",
+//         icon: mdiEmail
+//       }
+//     ]
+//   }
 ];
 
 const props = defineProps({
@@ -185,7 +197,7 @@ const isActive = (path) => {
       <div class="hidden lg:flex items-center space-x-2">
         <template v-for="(item, index) in menuItems" :key="item.to || item.label">
           <!-- Regular Menu Item -->
-          <Link 
+          <Link
             v-if="!item.dropdown"
             :href="item.to"
             :class="[
@@ -276,7 +288,7 @@ const isActive = (path) => {
           <div class="px-4 pt-4 pb-6 space-y-2">
             <template v-for="(item, index) in menuItems" :key="item.to || item.label">
               <!-- Regular Menu Item -->
-              <Link 
+              <Link
                 v-if="!item.dropdown"
                 :href="item.to"
                 :class="[
@@ -377,4 +389,4 @@ const isActive = (path) => {
 .animate-slideDown {
   animation: slideDown 0.3s ease-out;
 }
-</style> 
+</style>
