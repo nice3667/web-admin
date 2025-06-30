@@ -25,7 +25,7 @@
           <div class="relative flex items-center justify-between">
             <div class="flex flex-col">
               <span class="text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">ลูกค้าทั้งหมด</span>
-              <span class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ stats.total_customers }}</span>
+              <span class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ stats.total_customers || 0 }}</span>
               <span class="text-xs text-gray-500 mt-1">ราย</span>
             </div>
             <div class="flex-shrink-0">
@@ -42,7 +42,7 @@
           <div class="relative flex items-center justify-between">
             <div class="flex flex-col">
               <span class="text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">ลูกค้าที่ใช้งาน</span>
-              <span class="text-3xl font-bold text-green-600 dark:text-green-400">{{ stats.active_customers }}</span>
+              <span class="text-3xl font-bold text-green-600 dark:text-green-400">{{ stats.active_customers || 0 }}</span>
               <span class="text-xs text-gray-500 mt-1">ราย</span>
             </div>
             <div class="flex-shrink-0">
@@ -59,7 +59,7 @@
           <div class="relative flex items-center justify-between">
             <div class="flex flex-col">
               <span class="text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">Volume (Lots)</span>
-              <span class="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(stats.total_volume_lots) }}</span>
+              <span class="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(stats.total_volume_lots || 0) }}</span>
               <span class="text-xs text-gray-500 mt-1">ยอดรวม</span>
             </div>
             <div class="flex-shrink-0">
@@ -72,15 +72,15 @@
           </div>
         </CardBox>
         <CardBox class="relative overflow-hidden transform hover:scale-105 transition-all duration-300 shadow-xl">
-          <div class="absolute inset-0 bg-gradient-to-br from-purple-500 to-purple-600 opacity-10"></div>
+          <div class="absolute inset-0 bg-gradient-to-br from-orange-500 to-orange-600 opacity-10"></div>
           <div class="relative flex items-center justify-between">
             <div class="flex flex-col">
               <span class="text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">Reward (USD)</span>
-              <span class="text-3xl font-bold text-purple-600 dark:text-purple-400">${{ formatNumber(stats.total_reward_usd) }}</span>
+              <span class="text-3xl font-bold text-orange-600 dark:text-orange-400">${{ formatNumber(stats.total_reward_usd || 0) }}</span>
               <span class="text-xs text-gray-500 mt-1">กำไรรวม</span>
             </div>
             <div class="flex-shrink-0">
-              <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                 </svg>
@@ -163,7 +163,7 @@
       </CardBox>
 
       <!-- Customers Table -->
-      <CardBox class="shadow-2xl border-0 overflow-hidden transform hover:shadow-3xl transition-all duration-300" has-table>
+      <CardBox v-if="!loading && customers.length === 0" class="shadow-2xl border-0 overflow-hidden transform hover:shadow-3xl transition-all duration-300" has-table>
         <div class="flex items-center justify-between mb-6 p-8 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
           <div class="flex items-center space-x-4">
             <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -173,24 +173,40 @@
             </div>
             <div>
               <h3 class="text-2xl font-bold text-gray-900 dark:text-white">รายการลูกค้า</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">ข้อมูลลูกค้าทั้งหมด {{ customers.length }} รายการ</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">กรุณาค้นหาลูกค้าเพื่อดูข้อมูล</p>
             </div>
           </div>
         </div>
-        <div v-if="!loading && customers.length === 0" class="p-16 text-center">
+        <div class="p-16 text-center">
           <div class="mx-auto w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center mb-8 shadow-lg">
             <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">ไม่พบข้อมูล</h3>
-          <p class="text-gray-600 dark:text-gray-400 mb-6 text-lg">ลองปรับเปลี่ยนเงื่อนไขการค้นหา</p>
+          <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">กรุณาค้นหาลูกค้า</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-6 text-lg">ใส่ Client UID หรือเลือกสถานะเพื่อค้นหาข้อมูลลูกค้า</p>
           <div class="space-y-2 text-sm text-gray-500">
-            <p>จำนวนข้อมูลทั้งหมด: 0 รายการ</p>
-            <p>ข้อมูลที่กรองแล้ว: 0 รายการ</p>
+            <p>จำนวนข้อมูลทั้งหมด: {{ stats.total_customers || 0 }} รายการ</p>
+            <p>ข้อมูลที่ค้นหา: 0 รายการ</p>
           </div>
         </div>
-        <div v-else class="overflow-hidden">
+      </CardBox>
+
+      <CardBox v-else-if="!loading && customers.length > 0" class="shadow-2xl border-0 overflow-hidden transform hover:shadow-3xl transition-all duration-300" has-table>
+        <div class="flex items-center justify-between mb-6 p-8 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
+          <div class="flex items-center space-x-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-gray-900 dark:text-white">รายการลูกค้า</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">ข้อมูลลูกค้าที่ค้นหา {{ customers.length }} รายการ</p>
+            </div>
+          </div>
+        </div>
+        <div class="overflow-hidden">
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
@@ -222,7 +238,7 @@
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                         </svg>
                       </div>
-                      <span class="text-sm font-bold">Reward (USD)</span>
+                      <span class="text-sm font-bold">Rewards (USD)</span>
                     </div>
                   </th>
                   <th class="px-8 py-6 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
@@ -232,16 +248,17 @@
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                         </svg>
                       </div>
-                      <span class="text-sm font-bold">เจ้าของ</span>
+                      <span class="text-sm font-bold">Rebate Amount (USD)</span>
                     </div>
                   </th>
                   <th class="px-8 py-6 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     <div class="flex items-center space-x-3">
-                      <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
                       </div>
-                      <span class="text-sm font-bold">การดำเนินการ</span>
+                      <span class="text-sm font-bold">เจ้าของ</span>
                     </div>
                   </th>
                 </tr>
@@ -284,30 +301,25 @@
                     </div>
                   </td>
                   <td class="px-8 py-8 whitespace-nowrap">
+                    <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
+                      ${{ formatNumber(customer.rebate_amount_usd) }}
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                      Rebate
+                    </div>
+                  </td>
+                  <td class="px-8 py-8 whitespace-nowrap">
                     <div v-if="customer.owner" class="flex items-center space-x-2">
-                      <svg class="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 10a4 4 0 100-8 4 4 0 000 8zm0 2a6 6 0 00-5.197 2.978A2 2 0 006 18h8a2 2 0 001.197-3.022A6 6 0 0010 12z" /></svg>
-                      <span class="font-medium text-blue-900 dark:text-blue-100">{{ customer.owner.name }}</span>
+                      <svg class="w-4 h-4 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 10a4 4 0 100-8 4 4 0 000 8zm0 2a6 6 0 00-5.197 2.978A2 2 0 006 18h8a2 2 0 001.197-3.022A6 6 0 0010 12z" />
+                      </svg>
+                      <div>
+                        <span class="font-medium text-indigo-900 dark:text-indigo-100">{{ customer.owner.name }}</span>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ customer.owner.email }}</div>
+                      </div>
                     </div>
                     <div v-else class="flex items-center">
                       <span class="text-gray-400 dark:text-gray-500 italic">ยังไม่ได้กำหนด</span>
-                    </div>
-                  </td>
-                  <td class="px-8 py-8 whitespace-nowrap text-sm font-medium">
-                    <div class="flex space-x-2">
-                      <BaseButton
-                        color="info"
-                        :icon="mdiAccountGroup"
-                        label="กำหนดเจ้าของ"
-                        @click="showAssignOwnerModal(customer)"
-                        class="text-xs"
-                      />
-                      <BaseButton
-                        color="success"
-                        :icon="mdiChartLine"
-                        label="ดูรายละเอียด"
-                        @click="showCustomerDetails(customer)"
-                        class="text-xs"
-                      />
                     </div>
                   </td>
                 </tr>
@@ -375,7 +387,7 @@ const props = defineProps({
 // Reactive data
 const loading = ref(false)
 const error = ref(props.error)
-const customers = ref(props.customers)
+const customers = ref([])
 const stats = ref(props.stats)
 const users = ref(props.users)
 const filters = ref({ ...props.filters })
@@ -394,15 +406,39 @@ const searchCustomers = async () => {
   error.value = null
 
   try {
+    // Only search if there's a search term or status filter
+    if (!filters.value.search && !filters.value.client_status) {
+      customers.value = []
+      stats.value = {
+        total_customers: 0,
+        active_customers: 0,
+        total_volume_lots: 0,
+        total_reward_usd: 0
+      }
+      return
+    }
+
     const response = await axios.get('/admin/customers', {
       params: filters.value
     })
 
-    customers.value = response.data.data.customers
-    stats.value = response.data.data.stats
-    users.value = response.data.data.users
+    if (response.data.success) {
+      customers.value = response.data.data.customers || []
+      stats.value = response.data.data.stats || {
+        total_customers: customers.value.length,
+        active_customers: customers.value.filter(c => c.client_status === 'ACTIVE').length,
+        total_volume_lots: customers.value.reduce((sum, c) => sum + (c.total_volume_lots || 0), 0),
+        total_reward_usd: customers.value.reduce((sum, c) => sum + (c.total_reward_usd || 0), 0)
+      }
+      users.value = response.data.data.users || []
+    } else {
+      error.value = response.data.message || 'เกิดข้อผิดพลาดในการค้นหาข้อมูล'
+      customers.value = []
+    }
   } catch (err) {
-    error.value = err.response?.data?.error || 'เกิดข้อผิดพลาดในการค้นหาข้อมูล'
+    console.error('Search error:', err)
+    error.value = err.response?.data?.message || 'เกิดข้อผิดพลาดในการค้นหาข้อมูล'
+    customers.value = []
   } finally {
     loading.value = false
   }
@@ -427,9 +463,23 @@ const showCustomerDetails = (customer) => {
 
 // Initialize data on mount
 onMounted(() => {
-  if (customers.value.length === 0) {
-    searchCustomers()
-  }
+  // Start with empty customers array - no data loaded initially
+  customers.value = []
+
+  // Load stats on page load
+  loadStats()
 })
+
+// Add method to load only stats
+const loadStats = async () => {
+  try {
+    const response = await axios.get('/admin/customers/stats')
+    if (response.data.success) {
+      stats.value = response.data.stats
+    }
+  } catch (err) {
+    console.error('Error loading stats:', err)
+  }
+}
 </script>
 

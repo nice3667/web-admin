@@ -43,6 +43,7 @@ Route::group([
         'as' => 'customers.',
     ], function () {
         Route::get('/', 'CustomersController@index')->name('index');
+        Route::get('/stats', 'CustomersController@getStats')->name('stats');
         Route::post('/assign-owner', 'CustomersController@assignOwner')->name('assign-owner');
         Route::get('/{clientUid}/details', 'CustomersController@getCustomerDetails')->name('details');
     });
