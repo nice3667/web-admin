@@ -19,7 +19,7 @@ class ClientService
     {
         try {
             Log::info('=== STARTING CLIENT DATA SYNC (V1 ONLY) ===');
-            
+
             // Fetch v1 and v2 clients
             $v1Response = $this->exnessAuthService->getClientsFromUrl(
                 "https://my.exnessaffiliates.com/api/reports/clients/",
@@ -41,7 +41,7 @@ class ClientService
                     $v2Map[$v2UidShort] = $c;
                 }
             }
-            
+
             // Debug: Log sample data from both APIs
             if (!empty($v1Clients)) {
                 Log::info('V1 Sample Data:', [
@@ -55,28 +55,28 @@ class ClientService
                     'v2_fields' => array_keys($v2Clients[0])
                 ]);
             }
-            
+
             Log::info('V2 Map Summary:', [
                 'v2_clients_count' => count($v2Clients),
                 'v2_map_keys' => count($v2Map),
                 'sample_v2_keys' => array_slice(array_keys($v2Map), 0, 5)
             ]);
-            
+
             // Clear existing data and start fresh
             Client::truncate();
             Log::info('Cleared existing client data');
             $processedCount = 0;
             $uniqueUids = [];
             $statusFoundCount = 0;
-            
+
             foreach ($v1Clients as $v1) {
                 $clientUid = $v1['client_uid'] ?? null;
                 $clientAccount = $v1['client_account'] ?? null;
                 if (!$clientUid || !$clientAccount) continue;
-                
+
                 // Match by client_uid 8 ตัวแรกเท่านั้น
                 $v2 = $v2Map[$clientUid] ?? [];
-                
+
                 // Debug: Log merge process for first few records
                 if ($processedCount < 3) {
                     Log::info("Processing client {$processedCount}:", [
@@ -88,7 +88,7 @@ class ClientService
                         'v2_status' => $v2['client_status'] ?? 'NOT_FOUND'
                     ]);
                 }
-                
+
                 // merge: ใช้ข้อมูล v1 เป็นหลัก
                 $merged = $v1;
                 // ดึงเฉพาะ client_status, kyc_passed, ftd_received, ftt_made จาก v2
@@ -102,7 +102,7 @@ class ClientService
                 if (!empty($v2['client_status'])) {
                     $statusFoundCount++;
                 }
-                
+
                 $clientData = [
                     'client_uid' => $clientUid,
                     'partner_account' => $merged['partner_account'] ?? null,
@@ -120,11 +120,11 @@ class ClientService
                     'raw_data' => $merged,
                     'last_sync_at' => now()
                 ];
-                
+
                 Client::create($clientData);
                 $processedCount++;
                 $uniqueUids[$clientUid] = true;
-                
+
                 if ($processedCount <= 5) {
                     Log::info("Processed client {$processedCount}: {$clientUid} (Account: {$clientAccount})", [
                         'status' => $clientData['client_status'],
@@ -138,7 +138,7 @@ class ClientService
                     ]);
                 }
             }
-            
+
             Log::info('=== CLIENT DATA SYNC SUMMARY ===', [
                 'total_accounts' => $processedCount,
                 'unique_client_uids' => count($uniqueUids),
@@ -160,6 +160,15 @@ class ClientService
     public function getClients($filters = [])
     {
         try {
+            // Check cache first for filtered results
+            $cacheKey = 'clients_filtered_' . md5(serialize($filters));
+            $cachedData = \Cache::get($cacheKey);
+
+            if ($cachedData) {
+                Log::info('Using cached filtered clients data');
+                return $cachedData;
+            }
+
             $query = Client::query();
 
             if (!empty($filters['partner_account'])) {
@@ -189,6 +198,9 @@ class ClientService
                 'filters' => $filters
             ]);
 
+            // Cache the result for 2 minutes
+            \Cache::put($cacheKey, $clients, 120);
+
             return $clients;
 
         } catch (\Exception $e) {
@@ -203,6 +215,15 @@ class ClientService
     public function getClientStats()
     {
         try {
+            // Check cache first for stats
+            $cacheKey = 'client_stats';
+            $cachedStats = \Cache::get($cacheKey);
+
+            if ($cachedStats) {
+                Log::info('Using cached client stats');
+                return $cachedStats;
+            }
+
             $stats = [
                 'total_clients' => Client::count(),
                 'active_clients' => Client::active()->count(),
@@ -216,6 +237,9 @@ class ClientService
             ];
 
             Log::info('Retrieved client stats', $stats);
+
+            // Cache the stats for 5 minutes
+            \Cache::put($cacheKey, $stats, 300);
 
             return $stats;
 
@@ -232,13 +256,13 @@ class ClientService
     {
         try {
             Log::info('Fetching raw API data for debugging');
-            
+
             // Get data from both Exness API versions
             $v1Response = $this->exnessAuthService->getClientsFromUrl(
                 "https://my.exnessaffiliates.com/api/reports/clients/",
                 'v1'
             );
-            
+
             $v2Response = $this->exnessAuthService->getClientsFromUrl(
                 "https://my.exnessaffiliates.com/api/v2/reports/clients/",
                 'v2'
@@ -297,13 +321,13 @@ class ClientService
     {
         try {
             Log::info('=== STARTING NEW CLIENTS SYNC ===');
-            
+
             // Get data from both APIs
             $v1Response = $this->exnessAuthService->getClientsFromUrl(
                 "https://my.exnessaffiliates.com/api/reports/clients/",
                 'v1'
             );
-            
+
             $v2Response = $this->exnessAuthService->getClientsFromUrl(
                 "https://my.exnessaffiliates.com/api/v2/reports/clients/",
                 'v2'
@@ -334,7 +358,7 @@ class ClientService
 
             // Get existing client UIDs
             $existingUids = Client::pluck('client_uid')->toArray();
-            
+
             // Process only new clients
             $newCount = 0;
             foreach ($v1Clients as $v1Client) {
@@ -375,7 +399,7 @@ class ClientService
                 ]);
 
                 $newCount++;
-                
+
                 if ($newCount <= 5) {
                     Log::info("Added new client {$newCount}: {$clientUid}", [
                         'final_status' => $finalStatus,
@@ -445,4 +469,4 @@ class ClientService
             return [];
         }
     }
-} 
+}

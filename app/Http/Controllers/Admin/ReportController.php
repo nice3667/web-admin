@@ -26,56 +26,119 @@ class ReportController extends Controller
             // Try to get data from Exness API first, fallback to database
             $dataSource = 'Database';
             $apiError = null;
+            $userEmail = 'Janischa.trade@gmail.com';
 
-            try {
-                $apiResponse = $this->janischaExnessService->getClientsData();
+            // Check cache first to avoid repeated API calls
+            $cacheKey = 'janischa_clients_data_' . md5($userEmail);
+            $cachedData = \Cache::get($cacheKey);
 
-                if (isset($apiResponse['error'])) {
-                    throw new \Exception($apiResponse['error']);
-                }
+            if ($cachedData && !$request->has('refresh')) {
+                Log::info('Using cached Janischa data');
+                $clients = collect($cachedData);
+                $dataSource = 'Cached API';
+            } else {
+                try {
+                    $apiResponse = $this->janischaExnessService->getClientsData();
 
-                $apiClients = $apiResponse['data'] ?? [];
-                $dataSource = 'Exness API';
+                    if (isset($apiResponse['error'])) {
+                        throw new \Exception($apiResponse['error']);
+                    }
 
-                Log::info('Successfully fetched data from Exness API', [
-                    'count' => count($apiClients),
-                    'user' => 'Janischa.trade@gmail.com'
-                ]);
+                    $apiClients = $apiResponse['data'] ?? [];
+                    $dataSource = 'Exness API';
 
-                // Use API data
-                $clients = collect($apiClients);
+                    Log::info('Successfully fetched data from Exness API', [
+                        'count' => count($apiClients),
+                        'user' => 'Janischa.trade@gmail.com'
+                    ]);
 
-            } catch (\Exception $e) {
-                Log::warning('Failed to fetch from Exness API, using database data', [
-                    'error' => $e->getMessage(),
-                    'user' => 'Janischa.trade@gmail.com'
-                ]);
+                    // Cache the data for 5 minutes to reduce API calls
+                    \Cache::put($cacheKey, $apiClients, 300);
 
-                $apiError = $e->getMessage();
+                    // Use API data
+                    $clients = collect($apiClients);
 
-                // Fallback to database
-                $query = JanischaClient::query();
-                $clients = $query->get();
+                } catch (\Exception $e) {
+                    Log::warning('Failed to fetch from Exness API, using database data', [
+                        'error' => $e->getMessage(),
+                        'user' => 'Janischa.trade@gmail.com'
+                    ]);
 
-                // Convert to API format for consistency
-                $clients = $clients->map(function ($client) {
-                    return [
-                        'partner_account' => $client->partner_account,
-                        'client_uid' => $client->client_uid,
-                        'reg_date' => $client->reg_date,
-                        'client_country' => $client->client_country,
-                        'volume_lots' => $client->volume_lots,
-                        'volume_mln_usd' => $client->volume_mln_usd,
-                        'reward_usd' => $client->reward_usd,
-                        'client_status' => $client->client_status,
-                        'kyc_passed' => $client->kyc_passed,
-                        'ftd_received' => $client->ftd_received,
-                        'ftt_made' => $client->ftt_made,
+                    $apiError = $e->getMessage();
+
+                    // Fallback to database with pagination
+                    $query = JanischaClient::query();
+
+                    // Apply filters at database level for better performance
+                    if ($request->filled('search')) {
+                        $query->where('client_uid', 'like', '%' . $request->search . '%');
+                    }
+                    if ($request->filled('status') && $request->status !== 'all') {
+                        $query->where('client_status', $request->status);
+                    }
+                    if ($request->filled('start_date')) {
+                        $query->whereDate('reg_date', '>=', $request->start_date);
+                    }
+                    if ($request->filled('end_date')) {
+                        $query->whereDate('reg_date', '<=', $request->end_date);
+                    }
+
+                    // Use pagination at database level
+                    $perPage = 50; // Increased from 10 for better UX
+                    $clients = $query->paginate($perPage);
+
+                    // Convert to API format for consistency
+                    $clients->getCollection()->transform(function ($client) {
+                        return [
+                            'partner_account' => $client->partner_account,
+                            'client_uid' => $client->client_uid,
+                            'reg_date' => $client->reg_date,
+                            'client_country' => $client->client_country,
+                            'volume_lots' => $client->volume_lots,
+                            'volume_mln_usd' => $client->volume_mln_usd,
+                            'reward_usd' => $client->reward_usd,
+                            'client_status' => $client->client_status,
+                            'kyc_passed' => $client->kyc_passed,
+                            'ftd_received' => $client->ftd_received,
+                            'ftt_made' => $client->ftt_made,
+                        ];
+                    });
+
+                    // Calculate stats efficiently
+                    $statsQuery = JanischaClient::query();
+                    if ($request->filled('search')) {
+                        $statsQuery->where('client_uid', 'like', '%' . $request->search . '%');
+                    }
+                    if ($request->filled('status') && $request->status !== 'all') {
+                        $statsQuery->where('client_status', $request->status);
+                    }
+                    if ($request->filled('start_date')) {
+                        $statsQuery->whereDate('reg_date', '>=', $request->start_date);
+                    }
+                    if ($request->filled('end_date')) {
+                        $statsQuery->whereDate('reg_date', '<=', $request->end_date);
+                    }
+
+                    $stats = [
+                        'total_pending' => $statsQuery->count(),
+                        'total_amount' => $statsQuery->sum('volume_lots'),
+                        'due_today' => $statsQuery->sum('volume_mln_usd'),
+                        'overdue' => $statsQuery->sum('reward_usd'),
+                        'total_client_uids' => $statsQuery->distinct('client_uid')->count()
                     ];
-                });
+
+                    return Inertia::render('Admin/Report/Clients', [
+                        'clients' => $clients,
+                        'stats' => $stats,
+                        'filters' => $request->only(['search', 'status', 'start_date', 'end_date']),
+                        'data_source' => $dataSource,
+                        'user_email' => $userEmail,
+                        'error' => $apiError
+                    ]);
+                }
             }
 
-            // Apply filters
+            // Apply filters (only for API data)
             $filters = [];
 
             if ($request->filled('search')) {
@@ -129,7 +192,7 @@ class ReportController extends Controller
                 ];
             })->values();
 
-            // Calculate statistics
+            // Calculate statistics efficiently
             $stats = [
                 'total_pending' => $uniqueClients->count(),
                 'total_amount' => $uniqueClients->sum('volume_lots'),
@@ -175,8 +238,8 @@ class ReportController extends Controller
                 ]);
             }
 
-            // Convert to paginated collection
-            $perPage = 10;
+            // Convert to paginated collection with better performance
+            $perPage = 50; // Increased from 10 for better UX
             $currentPage = (int) $request->get('page', 1);
             if ($currentPage < 1) {
                 $currentPage = 1;
@@ -217,7 +280,7 @@ class ReportController extends Controller
                 'stats' => $stats,
                 'filters' => $filters,
                 'data_source' => $dataSource,
-                'user_email' => 'Janischa.trade@gmail.com',
+                'user_email' => $userEmail,
                 'error' => $apiError
             ]);
 
@@ -240,8 +303,8 @@ class ReportController extends Controller
                     'overdue' => 0,
                     'total_client_uids' => 0
                 ],
-                'filters' => $filters,
-                'data_source' => 'Error',
+                'filters' => [],
+                'data_source' => 'error',
                 'user_email' => 'Janischa.trade@gmail.com',
                 'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()
             ]);
@@ -256,56 +319,119 @@ class ReportController extends Controller
             // Try to get data from Exness API first, fallback to database
             $dataSource = 'Database';
             $apiError = null;
+            $userEmail = 'Janischa.trade@gmail.com';
 
-            try {
-                $apiResponse = $this->janischaExnessService->getClientsData();
+            // Check cache first to avoid repeated API calls
+            $cacheKey = 'janischa_client_account_data_' . md5($userEmail);
+            $cachedData = \Cache::get($cacheKey);
 
-                if (isset($apiResponse['error'])) {
-                    throw new \Exception($apiResponse['error']);
-                }
+            if ($cachedData && !$request->has('refresh')) {
+                Log::info('Using cached Janischa client account data');
+                $clients = collect($cachedData);
+                $dataSource = 'Cached API';
+            } else {
+                try {
+                    $apiResponse = $this->janischaExnessService->getClientsData();
 
-                $apiClients = $apiResponse['data'] ?? [];
-                $dataSource = 'Exness API';
+                    if (isset($apiResponse['error'])) {
+                        throw new \Exception($apiResponse['error']);
+                    }
 
-                Log::info('Successfully fetched data from Exness API', [
-                    'count' => count($apiClients),
-                    'user' => 'Janischa.trade@gmail.com'
-                ]);
+                    $apiClients = $apiResponse['data'] ?? [];
+                    $dataSource = 'Exness API';
 
-                // Use API data
-                $clients = collect($apiClients);
+                    Log::info('Successfully fetched data from Exness API', [
+                        'count' => count($apiClients),
+                        'user' => 'Janischa.trade@gmail.com'
+                    ]);
 
-            } catch (\Exception $e) {
-                Log::warning('Failed to fetch from Exness API, using database data', [
-                    'error' => $e->getMessage(),
-                    'user' => 'Janischa.trade@gmail.com'
-                ]);
+                    // Cache the data for 5 minutes to reduce API calls
+                    \Cache::put($cacheKey, $apiClients, 300);
 
-                $apiError = $e->getMessage();
+                    // Use API data
+                    $clients = collect($apiClients);
 
-                // Fallback to database
-                $query = JanischaClient::query();
-                $clients = $query->get();
+                } catch (\Exception $e) {
+                    Log::warning('Failed to fetch from Exness API, using database data', [
+                        'error' => $e->getMessage(),
+                        'user' => 'Janischa.trade@gmail.com'
+                    ]);
 
-                // Convert to API format for consistency
-                $clients = $clients->map(function ($client) {
-                    return [
-                        'partner_account' => $client->partner_account,
-                        'client_uid' => $client->client_uid,
-                        'reg_date' => $client->reg_date,
-                        'client_country' => $client->client_country,
-                        'volume_lots' => $client->volume_lots,
-                        'volume_mln_usd' => $client->volume_mln_usd,
-                        'reward_usd' => $client->reward_usd,
-                        'client_status' => $client->client_status,
-                        'kyc_passed' => $client->kyc_passed,
-                        'ftd_received' => $client->ftd_received,
-                        'ftt_made' => $client->ftt_made,
+                    $apiError = $e->getMessage();
+
+                    // Fallback to database with pagination
+                    $query = JanischaClient::query();
+
+                    // Apply filters at database level for better performance
+                    if ($request->filled('partner_account')) {
+                        $query->where('partner_account', 'like', '%' . $request->partner_account . '%');
+                    }
+                    if ($request->filled('client_uid')) {
+                        $query->where('client_uid', 'like', '%' . $request->client_uid . '%');
+                    }
+                    if ($request->filled('client_country')) {
+                        $query->where('client_country', $request->client_country);
+                    }
+                    if ($request->filled('reg_date')) {
+                        $query->whereDate('reg_date', $request->reg_date);
+                    }
+
+                    // Use pagination at database level
+                    $perPage = 50; // Increased from 10 for better UX
+                    $clients = $query->paginate($perPage);
+
+                    // Convert to API format for consistency
+                    $clients->getCollection()->transform(function ($client) {
+                        return [
+                            'partner_account' => $client->partner_account,
+                            'client_uid' => $client->client_uid,
+                            'reg_date' => $client->reg_date,
+                            'client_country' => $client->client_country,
+                            'volume_lots' => $client->volume_lots,
+                            'volume_mln_usd' => $client->volume_mln_usd,
+                            'reward_usd' => $client->reward_usd,
+                            'client_status' => $client->client_status,
+                            'kyc_passed' => $client->kyc_passed,
+                            'ftd_received' => $client->ftd_received,
+                            'ftt_made' => $client->ftt_made,
+                        ];
+                    });
+
+                    // Calculate stats efficiently
+                    $statsQuery = JanischaClient::query();
+                    if ($request->filled('partner_account')) {
+                        $statsQuery->where('partner_account', 'like', '%' . $request->partner_account . '%');
+                    }
+                    if ($request->filled('client_uid')) {
+                        $statsQuery->where('client_uid', 'like', '%' . $request->client_uid . '%');
+                    }
+                    if ($request->filled('client_country')) {
+                        $statsQuery->where('client_country', $request->client_country);
+                    }
+                    if ($request->filled('reg_date')) {
+                        $statsQuery->whereDate('reg_date', $request->reg_date);
+                    }
+
+                    $stats = [
+                        'total_accounts' => $statsQuery->count(),
+                        'total_volume_lots' => $statsQuery->sum('volume_lots'),
+                        'total_volume_usd' => $statsQuery->sum('volume_mln_usd'),
+                        'total_profit' => $statsQuery->sum('reward_usd'),
+                        'total_client_uids' => $statsQuery->distinct('client_uid')->count()
                     ];
-                });
+
+                    return Inertia::render('Admin/Report/ClientAccount', [
+                        'clients' => $clients,
+                        'stats' => $stats,
+                        'filters' => $request->only(['partner_account', 'client_uid', 'client_country', 'reg_date']),
+                        'data_source' => $dataSource,
+                        'user_email' => $userEmail,
+                        'error' => $apiError
+                    ]);
+                }
             }
 
-            // Apply filters (same as clients method)
+            // Apply filters (only for API data)
             $filters = [];
 
             if ($request->filled('partner_account')) {
@@ -346,7 +472,7 @@ class ReportController extends Controller
                 $filters['reg_date'] = $request->reg_date;
             }
 
-            // Calculate statistics
+            // Calculate statistics efficiently
             $stats = [
                 'total_accounts' => $clients->count(),
                 'total_volume_lots' => $clients->sum('volume_lots'),
@@ -400,8 +526,8 @@ class ReportController extends Controller
                 ]);
             }
 
-            // Convert to paginated collection
-            $perPage = 10;
+            // Convert to paginated collection with better performance
+            $perPage = 50; // Increased from 10 for better UX
             $currentPage = (int) $request->get('page', 1);
             if ($currentPage < 1) {
                 $currentPage = 1;
@@ -442,19 +568,13 @@ class ReportController extends Controller
                 'stats' => $stats,
                 'filters' => $filters,
                 'data_source' => $dataSource,
-                'user_email' => 'Janischa.trade@gmail.com',
+                'user_email' => $userEmail,
                 'error' => $apiError
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error in ReportController@clientAccount: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()
-                ], 500);
-            }
 
             return Inertia::render('Admin/Report/ClientAccount', [
                 'clients' => collect([]),
@@ -465,7 +585,7 @@ class ReportController extends Controller
                     'total_profit' => 0,
                     'total_client_uids' => 0
                 ],
-                'filters' => $filters,
+                'filters' => [],
                 'data_source' => 'Error',
                 'user_email' => 'Janischa.trade@gmail.com',
                 'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()

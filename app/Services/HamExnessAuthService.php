@@ -54,12 +54,21 @@ class HamExnessAuthService
     public function getClientsData(): array
     {
         try {
+            // Check cache first
+            $cacheKey = 'ham_exness_clients_data';
+            $cachedData = \Cache::get($cacheKey);
+
+            if ($cachedData) {
+                Log::info('Ham Using cached clients data');
+                return $cachedData;
+            }
+
             $token = $this->retrieveToken();
             if (!$token) {
                 return ['error' => 'ไม่สามารถรับ token ได้'];
             }
 
-            // Get data from both APIs to maximize client count
+            // Get data from both APIs with reduced timeout
             $dataV1 = $this->getClientsFromUrl(
                 "https://my.exnessaffiliates.com/api/reports/clients/",
                 'v1'
@@ -88,14 +97,14 @@ class HamExnessAuthService
 
             // Add V2 clients that are not in V1 (to maximize client count)
             $combined = $dataV1['data']; // Start with all V1 data
-            
+
             if (isset($dataV2['data'])) {
                 foreach ($dataV2['data'] as $v2Client) {
                     $v2Uid = $v2Client['client_uid'] ?? null;
                     if ($v2Uid) {
                         // Extract short UID from V2 UUID format
                         $shortUid = explode('-', $v2Uid)[0] ?? $v2Uid;
-                        
+
                         // Only add if this client is not in V1
                         if (!isset($v1ClientMap[$shortUid])) {
                             // Convert V2 format to match V1 format
@@ -121,7 +130,7 @@ class HamExnessAuthService
                                 'ftd_received' => $v2Client['ftd_received'] ?? false,
                                 'ftt_made' => $v2Client['ftt_made'] ?? false,
                             ];
-                            
+
                             $combined[] = $v2ClientConverted;
                         }
                     }
@@ -138,7 +147,12 @@ class HamExnessAuthService
                 'sample_data' => $combined[0] ?? null
             ]);
 
-            return ['data' => $combined];
+            $result = ['data' => $combined];
+
+            // Cache the result for 5 minutes
+            \Cache::put($cacheKey, $result, 300);
+
+            return $result;
 
         } catch (\Exception $e) {
             Log::error('Ham Clients data fetch error:', [
@@ -149,7 +163,7 @@ class HamExnessAuthService
         }
     }
 
-    public function getClientsFromUrl(string $url, string $label = 'api'): array
+    public function getClientsFromUrl(string $url, string $context = 'default'): array
     {
         try {
             $token = $this->retrieveToken();
@@ -157,46 +171,44 @@ class HamExnessAuthService
                 return ['error' => 'ไม่สามารถรับ token ได้'];
             }
 
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'Authorization' => 'JWT ' . $token
-            ])->get($url);
+            Log::info("Ham Fetching clients from URL ($context)", ['url' => $url]);
 
-            if (!$response->successful()) {
-                Log::error('Ham Failed to fetch clients data:', [
+            $response = Http::timeout(30) // Reduced from 60 to 30 seconds
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . $token,
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json'
+                ])
+                ->get($url);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                Log::info("Ham API response success ($context)", [
                     'url' => $url,
-                    'label' => $label,
-                    'status' => $response->status(),
-                    'response' => $response->json()
+                    'data_count' => isset($data['data']) ? count($data['data']) : 0,
+                    'has_data' => isset($data['data']),
+                    'response_keys' => array_keys($data)
                 ]);
-                return ['error' => 'API call failed: ' . $response->status()];
+
+                return $data;
+            } else {
+                Log::error("Ham API request failed ($context)", [
+                    'url' => $url,
+                    'status' => $response->status(),
+                    'response' => $response->body()
+                ]);
+
+                return ['error' => 'API request failed: ' . $response->status()];
             }
-
-            $data = $response->json()['data'] ?? [];
-
-            // Log the raw data for debugging
-            Log::info("Ham Raw {$label} data:", [
-                'url' => $url,
-                'count' => count($data),
-                'sample' => $data[0] ?? null,
-                'fields' => $data[0] ? array_keys($data[0]) : []
-            ]);
-
-            // Ensure country field is present
-            foreach ($data as &$item) {
-                if (!isset($item['client_country']) && isset($item['country'])) {
-                    $item['client_country'] = $item['country'];
-                }
-            }
-
-            return ['data' => $data];
 
         } catch (\Exception $e) {
-            Log::error("Ham Error fetching {$label} clients data:", [
+            Log::error("Ham API request error ($context)", [
                 'url' => $url,
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -205,7 +217,7 @@ class HamExnessAuthService
     {
         try {
             $token = $this->retrieveToken();
-            
+
             if (!$token) {
                 return [
                     'success' => false,
@@ -228,4 +240,4 @@ class HamExnessAuthService
             ];
         }
     }
-} 
+}

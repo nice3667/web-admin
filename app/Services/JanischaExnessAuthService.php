@@ -25,18 +25,18 @@ class JanischaExnessAuthService
 
             if ($response->successful()) {
                 $data = $response->json();
-                
+
                 if (isset($data['token'])) {
                     $token = $data['token'];
-                    
+
                     // Cache token for 50 minutes (expires in 60 minutes)
                     Cache::put($this->cacheKey, $token, now()->addMinutes(50));
-                    
+
                     Log::info('Janischa Exness authentication successful', [
                         'token_length' => strlen($token),
                         'expires_at' => now()->addMinutes(50)
                     ]);
-                    
+
                     return $token;
                 }
             }
@@ -45,7 +45,7 @@ class JanischaExnessAuthService
                 'status' => $response->status(),
                 'response' => $response->body()
             ]);
-            
+
             return null;
 
         } catch (\Exception $e) {
@@ -61,7 +61,7 @@ class JanischaExnessAuthService
     {
         // Try to get cached token first
         $token = Cache::get($this->cacheKey);
-        
+
         if ($token) {
             Log::info('Janischa Using cached Exness token');
             return $token;
@@ -81,7 +81,7 @@ class JanischaExnessAuthService
 
             Log::info("Janischa Fetching clients from URL ($context)", ['url' => $url]);
 
-            $response = Http::timeout(60)
+            $response = Http::timeout(30) // Reduced from 60 to 30 seconds
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . $token,
                     'Accept' => 'application/json',
@@ -91,7 +91,7 @@ class JanischaExnessAuthService
 
             if ($response->successful()) {
                 $data = $response->json();
-                
+
                 Log::info("Janischa API response success ($context)", [
                     'url' => $url,
                     'data_count' => isset($data['data']) ? count($data['data']) : 0,
@@ -106,7 +106,7 @@ class JanischaExnessAuthService
                     'status' => $response->status(),
                     'response' => $response->body()
                 ]);
-                
+
                 return ['error' => 'API request failed: ' . $response->status()];
             }
 
@@ -116,7 +116,7 @@ class JanischaExnessAuthService
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -124,12 +124,21 @@ class JanischaExnessAuthService
     public function getClientsData(): array
     {
         try {
+            // Check cache first
+            $cacheKey = 'janischa_exness_clients_data';
+            $cachedData = \Cache::get($cacheKey);
+
+            if ($cachedData) {
+                Log::info('Janischa Using cached clients data');
+                return $cachedData;
+            }
+
             $token = $this->retrieveToken();
             if (!$token) {
                 return ['error' => 'ไม่สามารถรับ token ได้'];
             }
 
-            // Get data from both APIs to maximize client count
+            // Get data from both APIs with reduced timeout
             $dataV1 = $this->getClientsFromUrl(
                 "https://my.exnessaffiliates.com/api/reports/clients/",
                 'v1'
@@ -151,7 +160,7 @@ class JanischaExnessAuthService
                 if (!isset($client['client_country']) && isset($client['country'])) {
                     $client['client_country'] = $client['country'];
                 }
-                
+
                 $uid = $client['client_uid'] ?? null;
                 if ($uid) {
                     if (!isset($v1ClientMap[$uid])) {
@@ -163,14 +172,14 @@ class JanischaExnessAuthService
 
             // Add V2 clients that are not in V1 (to maximize client count)
             $combined = $dataV1['data']; // Start with all V1 data
-            
+
             if (isset($dataV2['data'])) {
                 foreach ($dataV2['data'] as $v2Client) {
                     $v2Uid = $v2Client['client_uid'] ?? null;
                     if ($v2Uid) {
                         // Extract short UID from V2 UUID format
                         $shortUid = explode('-', $v2Uid)[0] ?? $v2Uid;
-                        
+
                         // Only add if this client is not in V1
                         if (!isset($v1ClientMap[$shortUid])) {
                             // Convert V2 format to match V1 format
@@ -196,7 +205,7 @@ class JanischaExnessAuthService
                                 'ftd_received' => $v2Client['ftd_received'] ?? false,
                                 'ftt_made' => $v2Client['ftt_made'] ?? false,
                             ];
-                            
+
                             $combined[] = $v2ClientConverted;
                         }
                     }
@@ -209,19 +218,24 @@ class JanischaExnessAuthService
                 'combined_count' => count($combined)
             ]);
 
-            return [
+            $result = [
                 'data' => $combined,
                 'v1_count' => count($dataV1['data']),
                 'v2_count' => isset($dataV2['data']) ? count($dataV2['data']) : 0,
                 'combined_count' => count($combined)
             ];
 
+            // Cache the result for 5 minutes
+            \Cache::put($cacheKey, $result, 300);
+
+            return $result;
+
         } catch (\Exception $e) {
             Log::error('Janischa Error getting clients data', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -230,7 +244,7 @@ class JanischaExnessAuthService
     {
         try {
             $token = $this->authenticate();
-            
+
             if (!$token) {
                 return [
                     'success' => false,
@@ -251,4 +265,4 @@ class JanischaExnessAuthService
             ];
         }
     }
-} 
+}

@@ -54,12 +54,21 @@ class ExnessAuthService
     public function getClientsData(): array
     {
         try {
+            // Check cache first
+            $cacheKey = 'exness_clients_data';
+            $cachedData = \Cache::get($cacheKey);
+
+            if ($cachedData) {
+                Log::info('Exness Using cached clients data');
+                return $cachedData;
+            }
+
             $token = $this->retrieveToken();
             if (!$token) {
                 return ['error' => 'ไม่สามารถรับ token ได้'];
             }
 
-            // Get data from both API versions without limit
+            // Get data from both API versions without limit with reduced timeout
             $dataV1 = $this->getClientsFromUrl(
                 "https://my.exnessaffiliates.com/api/reports/clients/",
                 'v1'
@@ -75,12 +84,12 @@ class ExnessAuthService
             foreach ($dataV2['data'] as $client) {
                 if (isset($client['client_uid'])) {
                     $v2Uid = $client['client_uid'];
-                    
+
                     // Extract short UID from V2 UUID format
                     // V2 format: "3bf4e479-a9df-422a-a0a9-2c1376488f15"
                     // V1 format: "3bf4e479"
                     $shortUid = explode('-', $v2Uid)[0] ?? $v2Uid;
-                    
+
                     // Store with short UID as key for matching with V1
                     $v2Map[$shortUid] = $client;
                 }
@@ -91,34 +100,28 @@ class ExnessAuthService
             foreach ($dataV1['data'] as $v1Client) {
                 $clientUid = $v1Client['client_uid'] ?? null;
                 $v2Data = $clientUid ? ($v2Map[$clientUid] ?? []) : [];
-                
+
                 $combined[] = array_merge($v1Client, $v2Data);
             }
 
-            // Add any v2 clients that weren't in v1
-            foreach ($dataV2['data'] as $v2Client) {
-                $clientUid = $v2Client['client_uid'] ?? null;
-                if ($clientUid) {
-                    $shortUid = explode('-', $clientUid)[0] ?? $clientUid;
-                    if (!isset($v2Map[$shortUid])) {
-                        $combined[] = $v2Client;
-                    }
-                }
-            }
-
-            // Log the data for debugging
-            Log::info('Combined clients data:', [
+            // Log the combined data
+            Log::info('Combined V1+V2 clients data:', [
                 'v1_count' => count($dataV1['data']),
                 'v2_count' => count($dataV2['data']),
-                'total_count' => count($combined),
-                'sample_data' => $combined[0] ?? null,
-                'v2_map_keys' => array_keys($v2Map)
+                'combined_count' => count($combined),
+                'unique_client_uids' => count(array_unique(array_column($combined, 'client_uid'))),
+                'sample_data' => $combined[0] ?? null
             ]);
 
-            return ['data' => $combined];
+            $result = ['data' => $combined];
+
+            // Cache the result for 5 minutes
+            \Cache::put($cacheKey, $result, 300);
+
+            return $result;
 
         } catch (\Exception $e) {
-            Log::error('Clients data fetch error:', [
+            Log::error('Error getting clients data:', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -134,10 +137,15 @@ class ExnessAuthService
                 return ['error' => 'ไม่สามารถรับ token ได้'];
             }
 
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'Authorization' => 'JWT ' . $token
-            ])->get($url);
+            Log::info("Fetching clients from URL ($label)", ['url' => $url]);
+
+            $response = Http::timeout(30) // Reduced from 60 to 30 seconds
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . $token,
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json'
+                ])
+                ->get($url);
 
             if (!$response->successful()) {
                 Log::error('Failed to fetch clients data:', [
@@ -177,4 +185,4 @@ class ExnessAuthService
             return ['error' => $e->getMessage()];
         }
     }
-} 
+}

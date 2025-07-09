@@ -15,12 +15,12 @@ class ClientController extends Controller
     {
         try {
             Log::info('Fetching clients data...');
-            
+
             $query = Client::query();
 
             // Apply filters
             $filters = [];
-            
+
             if ($request->filled('partner_account')) {
                 $query->where('partner_account', 'like', '%' . $request->partner_account . '%');
                 $filters['partner_account'] = $request->partner_account;
@@ -51,14 +51,15 @@ class ClientController extends Controller
                 $filters['kyc_passed'] = $request->kyc_passed;
             }
 
-            // Get all clients (no pagination)
-            $clients = $query->get();
+            // Use pagination at database level for better performance
+            $perPage = 50; // Increased from no pagination for better UX
+            $clients = $query->paginate($perPage);
 
             Log::info('Clients query result:', ['count' => $clients->count()]);
 
-            // Calculate statistics from the same filtered query (without pagination)
+            // Calculate statistics efficiently
             $statsQuery = Client::query();
-            
+
             // Apply the same filters to stats calculation
             if ($request->filled('partner_account')) {
                 $statsQuery->where('partner_account', 'like', '%' . $request->partner_account . '%');
@@ -90,17 +91,17 @@ class ClientController extends Controller
             Log::info('Stats calculated:', $stats);
 
             // Format client data
-            $formattedClients = $clients->map(function ($client) {
+            $clients->getCollection()->transform(function ($client) {
                 // Determine status from activity (same logic as Report1 but using database data)
                 $volumeLots = (float)($client->volume_lots ?? 0);
                 $rewardUsd = (float)($client->reward_usd ?? 0);
-                
+
                 // Use activity-based status determination instead of old client_status
                 $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
-                
+
                 // KYC estimation based on activity level (same as Report1)
                 $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
-                
+
                 return [
                     'partner_account' => $client->partner_account ?? '-',
                     'client_uid' => $client->client_uid ?? '-',
@@ -121,14 +122,14 @@ class ClientController extends Controller
             if ($request->wantsJson()) {
                 return response()->json([
                     'data' => [
-                        'clients' => $formattedClients,
+                        'clients' => $clients,
                         'stats' => $stats
                     ]
                 ]);
             }
 
-            return Inertia::render('Admin/Report/ClientAccount', [
-                'clients' => $formattedClients,
+            return Inertia::render('Admin/Client/Index', [
+                'clients' => $clients,
                 'stats' => $stats,
                 'filters' => $filters
             ]);
@@ -136,14 +137,14 @@ class ClientController extends Controller
         } catch (\Exception $e) {
             Log::error('Error in ClientController@index: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-            
+
             if ($request->wantsJson()) {
                 return response()->json([
                     'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()
                 ], 500);
             }
 
-            return Inertia::render('Admin/Report/ClientAccount', [
+            return Inertia::render('Admin/Client/Index', [
                 'clients' => collect([]),
                 'stats' => [
                     'total_accounts' => 0,
@@ -152,7 +153,7 @@ class ClientController extends Controller
                     'total_profit' => 0,
                     'total_client_uids' => 0
                 ],
-                'filters' => $filters,
+                'filters' => [],
                 'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()
             ]);
         }
@@ -162,12 +163,12 @@ class ClientController extends Controller
     {
         try {
             Log::info('Fetching clients data for reports/clients...');
-            
+
             $query = Client::query();
 
             // Apply filters
             $filters = [];
-            
+
             if ($request->filled('search')) {
                 $query->where('client_uid', 'like', '%' . $request->search . '%');
                 $filters['search'] = $request->search;
@@ -209,7 +210,7 @@ class ClientController extends Controller
 
             // Calculate statistics from the same filtered query
             $statsQuery = Client::query();
-            
+
             // Apply the same filters to stats calculation
             if ($request->filled('search')) {
                 $statsQuery->where('client_uid', 'like', '%' . $request->search . '%');
@@ -250,10 +251,10 @@ class ClientController extends Controller
                 // Determine status from activity (same logic as Report1 but using database data)
                 $volumeLots = (float)($client->total_volume_lots ?? 0);
                 $rewardUsd = (float)($client->total_reward_usd ?? 0);
-                
+
                 // Use activity-based status determination instead of old client_status
                 $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
-                
+
                 return [
                     'client_uid' => $client->client_uid ?? '-',
                     'client_status' => $clientStatus, // Use calculated status instead of database status
@@ -287,7 +288,7 @@ class ClientController extends Controller
         } catch (\Exception $e) {
             Log::error('Error in ClientController@clients: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-            
+
             if ($request->wantsJson()) {
                 return response()->json([
                     'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()
@@ -308,4 +309,4 @@ class ClientController extends Controller
             ]);
         }
     }
-} 
+}

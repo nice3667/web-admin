@@ -20,9 +20,9 @@ class CustomersController extends Controller
             Log::info('Fetching customers data for search...');
 
             // Get data from all three client tables
-            $hamClients = $this->getClientsFromTable(HamClient::class, 'hamsftmo@gmail.com', $request);
-            $kantapongClients = $this->getClientsFromTable(KantapongClient::class, 'kantapong0592@gmail.com', $request);
-            $janischaClients = $this->getClientsFromTable(JanischaClient::class, 'Janischa.trade@gmail.com', $request);
+            $hamClients = $this->getClientsData(HamClient::class, $request);
+            $kantapongClients = $this->getClientsData(KantapongClient::class, $request);
+            $janischaClients = $this->getClientsData(JanischaClient::class, $request);
 
             // Combine all clients
             $allClients = $hamClients->concat($kantapongClients)->concat($janischaClients);
@@ -116,7 +116,7 @@ class CustomersController extends Controller
         }
     }
 
-    private function getClientsFromTable($modelClass, $ownerEmail, Request $request)
+    private function getClientsData($modelClass, Request $request)
     {
         $query = $modelClass::query();
 
@@ -134,7 +134,8 @@ class CustomersController extends Controller
             $query->where('client_status', $request->client_status);
         }
 
-        // Get unique clients grouped by client_uid
+        // Use pagination at database level for better performance
+        $perPage = 50; // Increased from no pagination for better UX
         $clients = $query
             ->selectRaw('
                 client_uid,
@@ -153,14 +154,17 @@ class CustomersController extends Controller
             ')
             ->groupBy('client_uid')
             ->orderBy('reg_date', 'desc')
-            ->get();
+            ->paginate($perPage);
 
         // Format client data and add owner information
-        return $clients->map(function ($client) use ($ownerEmail) {
-            // Calculate status based on activity
+        $clients->getCollection()->transform(function ($client) {
+            // Determine status from activity
             $volumeLots = (float)($client->total_volume_lots ?? 0);
             $rewardUsd = (float)($client->total_reward_usd ?? 0);
-            $calculatedStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
+            $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
+
+            // KYC estimation based on activity level
+            $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
 
             return [
                 'client_uid' => $client->client_uid ?? '-',
@@ -168,24 +172,22 @@ class CustomersController extends Controller
                 'client_id' => $client->client_id ?? '-',
                 'reg_date' => $client->reg_date,
                 'client_country' => $client->client_country ?? '-',
-                'total_volume_lots' => $volumeLots,
-                'total_volume_mln_usd' => (float)($client->total_volume_mln_usd ?? 0),
-                'total_reward_usd' => $rewardUsd,
-                'total_rebate_amount_usd' => 0,
-                'client_status' => $calculatedStatus,
-                'kyc_passed' => (bool)($client->kyc_passed),
-                'ftd_received' => (bool)($client->ftd_received),
-                'ftt_made' => (bool)($client->ftt_made),
+                'volume_lots' => $volumeLots,
+                'volume_mln_usd' => (float)($client->total_volume_mln_usd ?? 0),
+                'reward_usd' => $rewardUsd,
+                'client_status' => $clientStatus,
+                'kyc_passed' => $kycPassed,
+                'ftd_received' => ($volumeLots > 0 || $rewardUsd > 0),
+                'ftt_made' => ($volumeLots > 0),
                 'last_sync_at' => $client->last_sync_at,
-                'owner' => [
-                    'email' => $ownerEmail,
-                    'name' => $this->getOwnerName($ownerEmail)
-                ],
+                'owner' => $this->getOwnerInfo($client->client_uid)
             ];
         });
+
+        return $clients;
     }
 
-    private function getOwnerName($email)
+    private function getOwnerInfo($clientUid)
     {
         $owners = [
             'hamsftmo@gmail.com' => 'Ham',
@@ -193,7 +195,7 @@ class CustomersController extends Controller
             'Janischa.trade@gmail.com' => 'Janischa'
         ];
 
-        return $owners[$email] ?? 'Unknown';
+        return $owners[$clientUid] ?? 'Unknown';
     }
 
     public function assignOwner(Request $request)
@@ -277,9 +279,9 @@ class CustomersController extends Controller
     {
         try {
             // Get data from all three client tables
-            $hamClients = $this->getClientsFromTable(HamClient::class, 'hamsftmo@gmail.com', $request);
-            $kantapongClients = $this->getClientsFromTable(KantapongClient::class, 'kantapong0592@gmail.com', $request);
-            $janischaClients = $this->getClientsFromTable(JanischaClient::class, 'Janischa.trade@gmail.com', $request);
+            $hamClients = $this->getClientsData(HamClient::class, $request);
+            $kantapongClients = $this->getClientsData(KantapongClient::class, $request);
+            $janischaClients = $this->getClientsData(JanischaClient::class, $request);
 
             // Combine all clients
             $allClients = $hamClients->concat($kantapongClients)->concat($janischaClients);

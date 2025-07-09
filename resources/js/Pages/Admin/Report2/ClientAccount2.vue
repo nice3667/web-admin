@@ -63,6 +63,7 @@ const props = defineProps({
 });
 
 const showAdvancedSearch = ref(false);
+const isLoading = ref(false);
 
 const filters = ref({
   partner_account: props.filters.partner_account || "",
@@ -85,12 +86,16 @@ const accounts = computed(() => {
 
 // Apply search filters
 const applyFilters = () => {
+  isLoading.value = true;
   router.get(
     "/admin/reports2/client-account2",
     { ...filters.value },
     {
       preserveState: true,
       preserveScroll: true,
+      onFinish: () => {
+        isLoading.value = false;
+      }
     }
   );
   showAdvancedSearch.value = false;
@@ -98,6 +103,7 @@ const applyFilters = () => {
 
 // Reset filters
 const resetFilters = () => {
+  isLoading.value = true;
   filters.value = {
     partner_account: "",
     client_uid: "",
@@ -112,6 +118,9 @@ const resetFilters = () => {
     {
       preserveState: true,
       preserveScroll: true,
+      onFinish: () => {
+        isLoading.value = false;
+      }
     }
   );
 };
@@ -310,6 +319,7 @@ watch(
               :icon="mdiRefresh"
               label="อัปเดตข้อมูล"
               color="success"
+              :loading="isLoading"
               @click="router.get('/admin/reports2/client-account2')"
             />
           </div>
@@ -479,6 +489,7 @@ watch(
                 label="ค้นหาขั้นสูง"
                 :icon="mdiFilterVariant"
                 color="info"
+                :loading="isLoading"
                 @click="showAdvancedSearch = !showAdvancedSearch"
                 class="font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 border-0 px-6 py-4 rounded-2xl"
               />
@@ -486,6 +497,7 @@ watch(
                 label="รีเซ็ต"
                 :icon="mdiRefresh"
                 color="gray"
+                :loading="isLoading"
                 @click="resetFilters"
                 class="font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 border-0 px-6 py-4 rounded-2xl"
               />
@@ -628,12 +640,14 @@ watch(
             <BaseButton
               label="ยกเลิก"
               color="light"
+              :loading="isLoading"
               @click="showAdvancedSearch = false"
               class="font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 border-0 px-8 py-4 rounded-2xl backdrop-blur-sm"
             />
             <BaseButton
               label="ใช้ตัวกรอง"
               color="success"
+              :loading="isLoading"
               @click="applyFilters"
               class="font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 border-0 px-8 py-4 rounded-2xl backdrop-blur-sm"
             />
@@ -642,7 +656,16 @@ watch(
       </div>
 
       <!-- Enhanced Data Table -->
-      <CardBox class="shadow-2xl border-0 overflow-hidden transform hover:shadow-3xl transition-all duration-300" has-table>
+      <CardBox class="shadow-2xl border-0 overflow-hidden transform hover:shadow-3xl transition-all duration-300 relative" has-table>
+        <!-- Loading Overlay -->
+        <div v-if="isLoading" class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div class="text-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p class="text-lg font-semibold text-gray-700 dark:text-gray-300">กำลังโหลดข้อมูล...</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">กรุณารอสักครู่</p>
+          </div>
+        </div>
+
         <div class="flex items-center justify-between mb-6 p-8 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
           <div class="flex items-center space-x-4">
             <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">

@@ -16,36 +16,53 @@ class KantapongExnessAuthService
     public function authenticate(): ?string
     {
         try {
-            Log::info('Kantapong Exness authentication attempt');
+            Log::info('Kantapong Exness authentication attempt', [
+                'email' => $this->email,
+                'base_url' => $this->baseUrl,
+                'auth_url' => $this->baseUrl . '/api/v2/auth/'
+            ]);
 
             $response = Http::timeout(30)->post($this->baseUrl . '/api/v2/auth/', [
                 'login' => $this->email,
                 'password' => $this->password
             ]);
 
+            Log::info('Kantapong API response received', [
+                'status' => $response->status(),
+                'successful' => $response->successful(),
+                'body_length' => strlen($response->body())
+            ]);
+
             if ($response->successful()) {
                 $data = $response->json();
-                
+
+                Log::info('Kantapong API response data', [
+                    'has_token' => isset($data['token']),
+                    'response_keys' => array_keys($data),
+                    'token_length' => isset($data['token']) ? strlen($data['token']) : 0
+                ]);
+
                 if (isset($data['token'])) {
                     $token = $data['token'];
-                    
+
                     // Cache token for 50 minutes (expires in 60 minutes)
                     Cache::put($this->cacheKey, $token, now()->addMinutes(50));
-                    
+
                     Log::info('Kantapong Exness authentication successful', [
                         'token_length' => strlen($token),
                         'expires_at' => now()->addMinutes(50)
                     ]);
-                    
+
                     return $token;
                 }
             }
 
             Log::error('Kantapong Exness authentication failed', [
                 'status' => $response->status(),
-                'response' => $response->body()
+                'response' => $response->body(),
+                'headers' => $response->headers()
             ]);
-            
+
             return null;
 
         } catch (\Exception $e) {
@@ -61,7 +78,7 @@ class KantapongExnessAuthService
     {
         // Try to get cached token first
         $token = Cache::get($this->cacheKey);
-        
+
         if ($token) {
             Log::info('Kantapong Using cached Exness token');
             return $token;
@@ -81,7 +98,7 @@ class KantapongExnessAuthService
 
             Log::info("Kantapong Fetching clients from URL ($context)", ['url' => $url]);
 
-            $response = Http::timeout(60)
+            $response = Http::timeout(30) // Reduced from 60 to 30 seconds
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . $token,
                     'Accept' => 'application/json',
@@ -91,7 +108,7 @@ class KantapongExnessAuthService
 
             if ($response->successful()) {
                 $data = $response->json();
-                
+
                 Log::info("Kantapong API response success ($context)", [
                     'url' => $url,
                     'data_count' => isset($data['data']) ? count($data['data']) : 0,
@@ -106,7 +123,7 @@ class KantapongExnessAuthService
                     'status' => $response->status(),
                     'response' => $response->body()
                 ]);
-                
+
                 return ['error' => 'API request failed: ' . $response->status()];
             }
 
@@ -116,7 +133,7 @@ class KantapongExnessAuthService
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -124,12 +141,28 @@ class KantapongExnessAuthService
     public function getClientsData(): array
     {
         try {
+            Log::info('Kantapong getClientsData started');
+
+            // Check cache first
+            $cacheKey = 'kantapong_exness_clients_data';
+            $cachedData = \Cache::get($cacheKey);
+
+            if ($cachedData) {
+                Log::info('Kantapong Using cached clients data');
+                return $cachedData;
+            }
+
+            Log::info('Kantapong No cached data, retrieving token...');
             $token = $this->retrieveToken();
+
             if (!$token) {
+                Log::error('Kantapong Failed to retrieve token');
                 return ['error' => 'ไม่สามารถรับ token ได้'];
             }
 
-            // Get data from both APIs to maximize client count
+            Log::info('Kantapong Token retrieved successfully, fetching data from APIs...');
+
+            // Get data from both APIs with reduced timeout
             $dataV1 = $this->getClientsFromUrl(
                 "https://my.exnessaffiliates.com/api/reports/clients/",
                 'v1'
@@ -140,7 +173,15 @@ class KantapongExnessAuthService
                 'v2'
             );
 
+            Log::info('Kantapong API responses received', [
+                'v1_has_error' => isset($dataV1['error']),
+                'v2_has_error' => isset($dataV2['error']),
+                'v1_data_count' => isset($dataV1['data']) ? count($dataV1['data']) : 0,
+                'v2_data_count' => isset($dataV2['data']) ? count($dataV2['data']) : 0
+            ]);
+
             if (isset($dataV1['error'])) {
+                Log::error('Kantapong V1 API error', ['error' => $dataV1['error']]);
                 return ['error' => $dataV1['error']];
             }
 
@@ -158,14 +199,14 @@ class KantapongExnessAuthService
 
             // Add V2 clients that are not in V1 (to maximize client count)
             $combined = $dataV1['data']; // Start with all V1 data
-            
+
             if (isset($dataV2['data'])) {
                 foreach ($dataV2['data'] as $v2Client) {
                     $v2Uid = $v2Client['client_uid'] ?? null;
                     if ($v2Uid) {
                         // Extract short UID from V2 UUID format
                         $shortUid = explode('-', $v2Uid)[0] ?? $v2Uid;
-                        
+
                         // Only add if this client is not in V1
                         if (!isset($v1ClientMap[$shortUid])) {
                             // Convert V2 format to match V1 format
@@ -191,7 +232,7 @@ class KantapongExnessAuthService
                                 'ftd_received' => $v2Client['ftd_received'] ?? false,
                                 'ftt_made' => $v2Client['ftt_made'] ?? false,
                             ];
-                            
+
                             $combined[] = $v2ClientConverted;
                         }
                     }
@@ -208,7 +249,14 @@ class KantapongExnessAuthService
                 'sample_data' => $combined[0] ?? null
             ]);
 
-            return ['data' => $combined];
+            $result = ['data' => $combined];
+
+            // Cache the result for 5 minutes
+            \Cache::put($cacheKey, $result, 300);
+
+            Log::info('Kantapong getClientsData completed successfully');
+
+            return $result;
 
         } catch (\Exception $e) {
             Log::error('Kantapong Clients data fetch error:', [
@@ -223,7 +271,7 @@ class KantapongExnessAuthService
     {
         try {
             $token = $this->retrieveToken();
-            
+
             if (!$token) {
                 return [
                     'success' => false,
@@ -260,4 +308,4 @@ class KantapongExnessAuthService
             ];
         }
     }
-} 
+}
