@@ -767,32 +767,12 @@ watch(
                 </th>
                 <th class="px-8 py-6 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                   <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
                       <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                       </svg>
                     </div>
-                    <span class="text-sm font-bold">KYC</span>
-                  </div>
-                </th>
-                <th class="px-8 py-6 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                  <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg">
-                      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                    </div>
-                    <span class="text-sm font-bold">FTD</span>
-                  </div>
-                </th>
-                <th class="px-8 py-6 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                  <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-lime-500 to-lime-600 rounded-xl flex items-center justify-center shadow-lg">
-                      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                    </div>
-                    <span class="text-sm font-bold">FTT</span>
+                    <span class="text-sm font-bold">Client Account</span>
                   </div>
                 </th>
               </tr>
@@ -846,32 +826,9 @@ watch(
                   </span>
                 </td>
                 <td class="px-8 py-8 whitespace-nowrap">
-                  <span :class="[
-                    'inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold shadow-lg',
-                    account?.kyc_passed === true ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 dark:from-green-900 dark:to-green-800 dark:text-green-200' :
-                    account?.kyc_passed === false ? 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 dark:from-red-900 dark:to-red-800 dark:text-red-200' :
-                    'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 dark:from-gray-900 dark:to-gray-800 dark:text-gray-200'
-                  ]">
-                    {{ account?.kyc_passed === true ? "ผ่าน" : account?.kyc_passed === false ? "ไม่ผ่าน" : "ไม่ทราบ" }}
-                  </span>
-                </td>
-                <td class="px-8 py-8 whitespace-nowrap">
-                  <span :class="[
-                    'inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold shadow-lg',
-                    account?.ftd_received ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 dark:from-green-900 dark:to-green-800 dark:text-green-200' :
-                    'bg-gradient-to-r from-red-100 to-red-200 text-red-800 dark:from-red-900 dark:to-red-800 dark:text-red-200'
-                  ]">
-                    {{ account?.ftd_received ? "มี" : "ไม่มี" }}
-                  </span>
-                </td>
-                <td class="px-8 py-8 whitespace-nowrap">
-                  <span :class="[
-                    'inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold shadow-lg',
-                    account?.ftt_made ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 dark:from-green-900 dark:to-green-800 dark:text-green-200' :
-                    'bg-gradient-to-r from-red-100 to-red-200 text-red-800 dark:from-red-900 dark:to-red-800 dark:text-red-200'
-                  ]">
-                    {{ account?.ftt_made ? "มี" : "ไม่มี" }}
-                  </span>
+                  <div class="text-sm font-bold text-blue-600 dark:text-blue-400">
+                    {{ account?.client_name || account?.client_email || account?.client_id || "-" }}
+                  </div>
                 </td>
               </tr>
             </tbody>

@@ -390,6 +390,9 @@ class Report2Controller extends Controller
                         return [
                             'partner_account' => $client->partner_account,
                             'client_uid' => $client->client_uid,
+                            'client_name' => $client->raw_data['client_account'] ?? $client->raw_data['client_name'] ?? $client->client_id ?? $client->client_uid ?? null,
+                            'client_email' => $client->raw_data['client_email'] ?? null,
+                            'client_id' => $client->client_id ?? $client->client_uid ?? null,
                             'reg_date' => $client->reg_date,
                             'client_country' => $client->client_country,
                             'volume_lots' => $client->volume_lots,
@@ -500,6 +503,9 @@ class Report2Controller extends Controller
                 return [
                     'partner_account' => $client['partner_account'] ?? '-',
                     'client_uid' => $client['client_uid'] ?? '-',
+                    'client_name' => $client['client_account'] ?? $client['client_id'] ?? $client['client_uid'] ?? null,
+                    'client_email' => $client['client_email'] ?? null,
+                    'client_id' => $client['client_id'] ?? $client['client_uid'] ?? null,
                     'reg_date' => $client['reg_date'],
                     'client_country' => $client['client_country'] ?? '-',
                     'volume_lots' => $volumeLots,
