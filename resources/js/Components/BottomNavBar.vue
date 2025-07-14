@@ -32,22 +32,7 @@ const menuItems = [
         to: "/admin/reports/client-account",
         icon: mdiAccountDetails
         }
-    //     ,
-    //   {
-    //     label: "Client Transaction",
-    //     to: "/admin/reports/client-transaction",
-    //     icon: mdiCashMultiple
-    //   },
-    //   {
-    //     label: "Transactions Pending",
-    //     to: "/admin/reports/transactions-pending",
-    //     icon: mdiClockOutline
-    //   },
-    //   {
-    //     label: "Reward History",
-    //     to: "/admin/reports/reward-history",
-    //     icon: mdiGift
-    //   }
+
     ]
   }
   ,
@@ -191,28 +176,28 @@ const isActive = (path) => {
 </script>
 
 <template>
-  <nav class="fixed top-16 left-0 right-0 z-20 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 h-16 border-b border-blue-200 dark:border-slate-700 shadow-lg backdrop-blur-sm">
-    <div class="flex items-center justify-between h-16 px-6">
+  <nav class="fixed top-12 sm:top-14 md:top-16 left-0 right-0 z-20 bg-gradient-to-r from-gray-900 via-black to-gray-900 h-12 sm:h-14 md:h-16 border-b border-blue-500/30 shadow-2xl backdrop-blur-sm">
+    <div class="flex items-center justify-between h-12 sm:h-14 md:h-16 px-2 sm:px-4 md:px-6">
       <!-- Desktop Navigation -->
-      <div class="hidden lg:flex items-center space-x-2">
+      <div class="hidden lg:flex items-center space-x-1 md:space-x-2">
         <template v-for="(item, index) in menuItems" :key="item.to || item.label">
           <!-- Regular Menu Item -->
           <Link
             v-if="!item.dropdown"
             :href="item.to"
             :class="[
-              'flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105',
+              'flex items-center px-2 md:px-4 py-1 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-semibold transition-all duration-300 transform hover:scale-105',
               isActive(item.to)
-                ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
-                : 'text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 hover:bg-white/50 dark:hover:bg-slate-700/50'
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg ring-2 ring-blue-400/50'
+                : 'text-gray-300 hover:text-blue-400 hover:bg-gray-800/50'
             ]"
           >
             <BaseIcon
               :path="item.icon"
-              class="flex-shrink-0"
-              :size="18"
+              class="flex-shrink-0 md:text-lg"
+              :size="16"
             />
-            <span class="ml-2">{{ item.label }}</span>
+            <span class="ml-1 md:ml-2 hidden xl:block">{{ item.label }}</span>
           </Link>
 
           <!-- Dropdown Menu Item -->
@@ -220,47 +205,47 @@ const isActive = (path) => {
             <button
               @click="toggleDropdown(index)"
               :class="[
-                'flex items-center px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105',
+                'flex items-center px-2 md:px-4 py-1 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-semibold transition-all duration-300 transform hover:scale-105',
                 item.items.some(subItem => isActive(subItem.to))
-                  ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
-                  : 'text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 hover:bg-white/50 dark:hover:bg-slate-700/50'
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg ring-2 ring-blue-400/50'
+                  : 'text-gray-300 hover:text-blue-400 hover:bg-gray-800/50'
               ]"
             >
               <BaseIcon
                 :path="item.icon"
-                class="flex-shrink-0"
-                :size="18"
+                class="flex-shrink-0 md:text-lg"
+                :size="16"
               />
-              <span class="ml-2">{{ item.label }}</span>
+              <span class="ml-1 md:ml-2 hidden xl:block">{{ item.label }}</span>
               <BaseIcon
                 :path="mdiChevronDown"
-                class="ml-1 flex-shrink-0 transition-transform duration-300"
+                class="ml-1 flex-shrink-0 transition-transform duration-300 hidden xl:block md:text-lg"
                 :class="{ 'rotate-180': activeDropdown === index }"
-                :size="18"
+                :size="16"
               />
             </button>
 
             <!-- Dropdown Content -->
             <div
               v-if="activeDropdown === index"
-              class="absolute left-0 mt-3 w-56 rounded-2xl shadow-2xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm ring-1 ring-blue-200 dark:ring-slate-700 border border-blue-100 dark:border-slate-600 animate-fadeIn"
+              class="absolute left-0 mt-2 md:mt-3 w-48 md:w-56 rounded-xl md:rounded-2xl shadow-2xl bg-gray-900/95 backdrop-blur-sm ring-1 ring-blue-500/30 border border-blue-500/20 animate-fadeIn"
             >
-              <div class="py-2">
+              <div class="py-1 md:py-2">
                 <Link
                   v-for="subItem in item.items"
                   :key="subItem.to"
                   :href="subItem.to"
                   :class="[
-                    'flex items-center px-4 py-3 text-sm font-medium transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-slate-700 dark:hover:to-slate-600',
+                    'flex items-center px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium transition-all duration-200 hover:bg-gray-800/50',
                     isActive(subItem.to)
-                      ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 dark:from-slate-700 dark:to-slate-600 dark:text-blue-300'
-                      : 'text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
+                      ? 'bg-gradient-to-r from-blue-600/20 to-blue-500/20 text-blue-400 border-l-2 border-blue-500'
+                      : 'text-gray-300 hover:text-blue-400'
                   ]"
                 >
                   <BaseIcon
                     :path="subItem.icon"
-                    class="flex-shrink-0 mr-3"
-                    :size="18"
+                    class="flex-shrink-0 mr-2 md:mr-3 md:text-lg"
+                    :size="16"
                   />
                   {{ subItem.label }}
                 </Link>
@@ -275,35 +260,35 @@ const isActive = (path) => {
         <!-- Mobile Menu Button -->
         <button
           @click="isMenuNavBarActive = !isMenuNavBarActive"
-          class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+          class="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-lg sm:rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ring-2 ring-blue-400/50"
         >
-          <BaseIcon :path="mdiMenu" size="20" />
+          <BaseIcon :path="mdiMenu" size="16" class="sm:text-lg md:text-xl" />
         </button>
 
         <!-- Mobile Menu -->
         <div
           v-if="isMenuNavBarActive"
-          class="absolute top-16 left-0 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm border-b border-blue-200 dark:border-slate-700 shadow-2xl animate-slideDown"
+          class="absolute top-12 sm:top-14 md:top-16 left-0 right-0 bg-gray-900/95 backdrop-blur-sm border-b border-blue-500/30 shadow-2xl animate-slideDown max-h-[calc(100vh-6rem)] overflow-y-auto"
         >
-          <div class="px-4 pt-4 pb-6 space-y-2">
+          <div class="px-2 sm:px-4 pt-2 sm:pt-4 pb-4 sm:pb-6 space-y-1 sm:space-y-2">
             <template v-for="(item, index) in menuItems" :key="item.to || item.label">
               <!-- Regular Menu Item -->
               <Link
                 v-if="!item.dropdown"
                 :href="item.to"
                 :class="[
-                  'flex items-center px-4 py-3 rounded-xl text-base font-semibold transition-all duration-300',
+                  'flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base font-semibold transition-all duration-300',
                   isActive(item.to)
-                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
-                    : 'text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg ring-2 ring-blue-400/50'
+                    : 'text-gray-300 hover:text-blue-400 hover:bg-gray-800/50'
                 ]"
               >
                 <BaseIcon
                   :path="item.icon"
-                  class="flex-shrink-0"
-                  :size="20"
+                  class="flex-shrink-0 sm:text-xl"
+                  :size="18"
                 />
-                <span class="ml-3">{{ item.label }}</span>
+                <span class="ml-2 sm:ml-3">{{ item.label }}</span>
               </Link>
 
               <!-- Dropdown Menu Item -->
@@ -311,41 +296,41 @@ const isActive = (path) => {
                 <button
                   @click="toggleDropdown(index)"
                   :class="[
-                    'flex items-center w-full px-4 py-3 rounded-xl text-base font-semibold transition-all duration-300',
+                    'flex items-center w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base font-semibold transition-all duration-300',
                     item.items.some(subItem => isActive(subItem.to))
-                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
-                      : 'text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700'
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg ring-2 ring-blue-400/50'
+                      : 'text-gray-300 hover:text-blue-400 hover:bg-gray-800/50'
                   ]"
                 >
                   <BaseIcon
                     :path="item.icon"
-                    class="flex-shrink-0"
-                    :size="20"
+                    class="flex-shrink-0 sm:text-xl"
+                    :size="18"
                   />
-                  <span class="ml-3">{{ item.label }}</span>
+                  <span class="ml-2 sm:ml-3 flex-1 text-left">{{ item.label }}</span>
                   <BaseIcon
                     :path="mdiChevronDown"
-                    class="ml-auto flex-shrink-0 transition-transform duration-300"
+                    class="flex-shrink-0 transition-transform duration-300 sm:text-xl"
                     :class="{ 'rotate-180': activeDropdown === index }"
-                    :size="20"
+                    :size="18"
                   />
                 </button>
-                <div v-if="activeDropdown === index" class="mt-2 ml-4 pl-4 border-l-2 border-blue-200 dark:border-slate-700 space-y-1">
+                <div v-if="activeDropdown === index" class="mt-1 sm:mt-2 ml-3 sm:ml-4 pl-3 sm:pl-4 border-l-2 border-blue-500/50 space-y-1">
                   <Link
                     v-for="subItem in item.items"
                     :key="subItem.to"
                     :href="subItem.to"
                     :class="[
-                      'flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+                      'flex items-center px-3 sm:px-4 py-2 rounded-md sm:rounded-lg text-xs sm:text-sm font-medium transition-all duration-200',
                       isActive(subItem.to)
-                        ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 dark:from-slate-700 dark:to-slate-600 dark:text-blue-300'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700'
+                        ? 'bg-gradient-to-r from-blue-600/20 to-blue-500/20 text-blue-400'
+                        : 'text-gray-400 hover:text-blue-400 hover:bg-gray-800/50'
                     ]"
                   >
                     <BaseIcon
                       :path="subItem.icon"
-                      class="flex-shrink-0 mr-3"
-                      :size="18"
+                      class="flex-shrink-0 mr-2 sm:mr-3 sm:text-lg"
+                      :size="16"
                     />
                     {{ subItem.label }}
                   </Link>
@@ -388,5 +373,37 @@ const isActive = (path) => {
 
 .animate-slideDown {
   animation: slideDown 0.3s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .text-xs {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+
+  .text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 768px) {
+  .text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .text-base {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+}
+
+/* Custom breakpoint for extra large screens */
+@media (min-width: 1280px) {
+  .xl\:block {
+    display: block;
+  }
 }
 </style>

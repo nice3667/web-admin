@@ -11,8 +11,8 @@ const showingNavigationDropdown = ref(false);
 </script>
 
 <template>
-    <div>
-        <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div class="style-bluewhiteblack">
+        <div>
             <!-- First Navigation Bar -->
             <nav class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
                 <!-- Primary Navigation Menu -->
@@ -23,14 +23,14 @@ const showingNavigationDropdown = ref(false);
                             <div class="shrink-0 flex items-center">
                                 <Link :href="route('dashboard')">
                                     <ApplicationLogo
-                                        class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200"
+                                        class="block h-9 w-auto"
                                     />
                                 </Link>
                             </div>
 
                             <!-- Text on the left -->
                             <div class="flex items-center ml-4">
-                                <span class="text-lg font-semibold text-gray-700 dark:text-gray-200">Admin Dashboard</span>
+                                <span class="text-lg font-semibold">Admin Dashboard</span>
                             </div>
 
                             <!-- Navigation Links -->
