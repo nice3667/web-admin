@@ -1,18 +1,11 @@
 <script setup>
-import { mdiLogout, mdiWeatherNight, mdiWeatherSunny, mdiAccount } from "@mdi/js";
+import { mdiLogout, mdiAccount } from "@mdi/js";
 import { containerMaxW } from "@/config.js";
 import BaseIcon from "@/Components/BaseIcon.vue";
-import { useDarkModeStore } from "@/Stores/darkMode.js";
 import { router, usePage } from "@inertiajs/vue3";
-
-const darkModeStore = useDarkModeStore();
 
 // Get user data from Inertia page props
 const user = usePage().props.auth?.user || { name: 'Admin' };
-
-const toggleDarkMode = () => {
-  darkModeStore.set();
-};
 
 const logout = () => {
   router.post(route("logout"));
@@ -21,57 +14,40 @@ const logout = () => {
 
 <template>
   <nav
-    class="fixed inset-x-0 z-30 w-screen bg-gradient-to-r from-white to-blue-50 h-16 transition-position lg:w-auto dark:from-slate-900 dark:to-slate-800 shadow-lg backdrop-blur-sm border-b border-blue-200 dark:border-slate-700"
+    class="fixed inset-x-0 z-30 w-screen bg-black h-12 sm:h-14 md:h-16 transition-position lg:w-auto shadow-2xl border-b border-blue-500/30"
   >
     <div class="flex lg:items-stretch" :class="containerMaxW">
-      <div class="flex items-stretch flex-1 h-16">
+      <div class="flex items-stretch flex-1 h-12 sm:h-14 md:h-16">
         <!-- Logo and Brand -->
-        <div class="flex items-center px-8">
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-              </svg>
-            </div>
-            <div>
-              <span class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Exness Dashboard</span>
-              <div class="text-xs text-gray-500 dark:text-gray-400 font-medium">Admin Panel</div>
+        <div class="flex items-center px-2 sm:px-4 md:px-8">
+          <div class="flex items-center space-x-2 sm:space-x-3">
+            <!-- Removed blue right arrow SVG here -->
+            <div class="hidden xs:block">
+              <span class="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-300 bg-clip-text text-transparent">Admin Dashboard</span>
             </div>
           </div>
         </div>
         <slot />
       </div>
-      
-      <!-- Right Side Controls -->
-      <div class="flex items-center space-x-4 px-6">
-        <!-- Dark Mode Toggle -->
-        <button
-          @click="toggleDarkMode"
-          class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-          :title="darkModeStore.isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-        >
-          <BaseIcon
-            :path="darkModeStore.isDark ? mdiWeatherSunny : mdiWeatherNight"
-            size="20"
-          />
-        </button>
 
+      <!-- Right Side Controls -->
+      <div class="flex items-center space-x-2 sm:space-x-3 md:space-x-4 px-2 sm:px-4 md:px-6">
         <!-- User Profile & Logout -->
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-2 sm:space-x-3">
           <!-- User Avatar & Name -->
-          <div class="flex items-center space-x-3 bg-white/50 dark:bg-slate-700/50 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/20 dark:border-slate-600/20">
-            <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+          <div class="flex items-center space-x-2 sm:space-x-3 bg-gray-800/80 px-2 sm:px-3 md:px-4 py-1 sm:py-2 rounded-lg sm:rounded-xl backdrop-blur-sm border border-blue-500/20 shadow-lg">
+            <div class="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-md sm:rounded-lg flex items-center justify-center shadow-lg ring-1 ring-blue-400/50">
               <BaseIcon
                 :path="mdiAccount"
-                size="16"
-                class="text-white"
+                size="12"
+                class="sm:text-sm md:text-base text-white"
               />
             </div>
             <div class="hidden sm:block">
-              <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+              <div class="text-xs sm:text-sm font-semibold text-white truncate max-w-20 sm:max-w-24 md:max-w-32">
                 {{ user.name || 'Admin' }}
               </div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">
+              <div class="text-xs text-gray-400 hidden md:block truncate max-w-20 sm:max-w-24 md:max-w-32">
                 {{ user.email || 'admin@exness.com' }}
               </div>
             </div>
@@ -80,12 +56,13 @@ const logout = () => {
           <!-- Logout Button -->
           <button
             @click="logout"
-            class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-red-500 to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+            class="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-lg sm:rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ring-2 ring-red-400/50"
             title="Logout"
           >
             <BaseIcon
               :path="mdiLogout"
-              size="20"
+              size="16"
+              class="sm:text-lg md:text-xl"
             />
           </button>
         </div>
@@ -119,4 +96,26 @@ button:hover {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
-</style> 
+
+/* Custom breakpoint for extra small screens */
+@media (min-width: 475px) {
+  .xs\:block {
+    display: block;
+  }
+}
+
+/* Responsive text sizing */
+@media (max-width: 640px) {
+  .text-lg {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 768px) {
+  .text-xl {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+}
+</style>

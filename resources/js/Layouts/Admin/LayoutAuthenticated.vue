@@ -3,7 +3,6 @@ import { mdiForwardburger, mdiBackburger, mdiMenu } from "@mdi/js";
 import { computed, reactive, ref } from "vue";
 import { usePage, router } from "@inertiajs/vue3";
 import menuNavBar from "@/menuNavBar.js";
-import { useDarkModeStore } from "@/Stores/darkMode.js";
 import BaseIcon from "@/Components/BaseIcon.vue";
 import FormControl from "@/Components/FormControl.vue";
 import TopNavBar from "@/Components/TopNavBar.vue";
@@ -13,19 +12,10 @@ import FooterBar from "@/Components/FooterBar.vue";
 
 const layoutAsidePadding = "";
 
-const darkModeStore = useDarkModeStore();
-
-const isAsideMobileExpanded = ref(false);
-const isAsideLgActive = ref(false);
-
 let menuAside = reactive({});
 menuAside = computed(() => usePage().props.menu);
 
 const menuClick = (event, item) => {
-  if (item.isToggleLightDark) {
-    darkModeStore.set();
-  }
-
   if (item.isLogout) {
     router.post(route("logout"));
   }
@@ -33,8 +23,8 @@ const menuClick = (event, item) => {
 </script>
 
 <template>
-  <div>
-    <div class="w-screen min-h-screen bg-gray-50 dark:bg-slate-800 dark:text-slate-100">
+  <div class="style-bluewhiteblack">
+    <div>
       <!-- Top NavBar -->
       <TopNavBar
         :menu="menuNavBar"
@@ -50,14 +40,12 @@ const menuClick = (event, item) => {
           />
         </NavBarItemPlain>
       </TopNavBar>
-
       <!-- Bottom NavBar -->
       <BottomNavBar
         :menu="menuNavBar"
         @menu-click="menuClick"
       />
-
-      <div class="flex flex-col flex-1 w-full pt-32">
+      <div class="flex flex-col flex-1 w-full pt-12 sm:pt-14 md:pt-16 lg:pt-20">
         <main class="flex-1">
           <slot />
         </main>

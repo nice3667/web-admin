@@ -9,7 +9,6 @@ export default {
     './resources/js/**/*.vue',
     './resources/js/**/*.js',
   ],
-  darkMode: 'class', // or 'media' or 'class'
   theme: {
     asideScrollbars: {
       light: 'light',

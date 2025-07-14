@@ -1,7 +1,6 @@
 <script setup>
 import { mdiCog } from '@mdi/js'
 import { useSlots, computed } from 'vue'
-import { useDarkModeStore } from '@/Stores/darkMode.js'
 import BaseIcon from '@/Components/BaseIcon.vue'
 import BaseButton from '@/Components/BaseButton.vue'
 import IconRounded from '@/Components/IconRounded.vue'
@@ -19,7 +18,6 @@ defineProps({
 })
 
 const hasSlot = computed(() => useSlots().default)
-const darkModeStore = useDarkModeStore()
 </script>
 
 <template>
