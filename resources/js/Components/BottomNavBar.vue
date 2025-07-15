@@ -18,6 +18,11 @@ const menuItems = [
     icon: mdiAccountGroup
   },
   {
+    label: "XM",
+    to: "/admin/xm",
+    icon: mdiChartBar
+  },
+  {
     label: "Exness 1",
     icon: mdiChartBar,
     dropdown: true,

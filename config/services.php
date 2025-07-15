@@ -31,4 +31,9 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'xm' => [
+        'base_url' => env('XM_BASE_URL', 'https://mypartners.xm.com/api'),
+        'api_token' => env('XM_API_TOKEN', 'cb3Sq0knGOc1Vq8yxNz1oeXoG8MonNGfAbinMBSJVV0='),
+    ],
+
 ];

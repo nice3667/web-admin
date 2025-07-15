@@ -12,9 +12,15 @@ import {
     mdiPalette,
     mdiReact,
     mdiChartLine,
+    mdiCurrencyUsd,
 } from "@mdi/js";
 
 export default [
+    {
+        to: "/admin/xm",
+        icon: mdiCurrencyUsd,
+        label: "XM Report",
+    },
     {
         to: "/admin/reports1/client-account1",
         icon: mdiChartLine,
