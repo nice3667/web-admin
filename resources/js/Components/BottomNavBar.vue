@@ -24,7 +24,7 @@ const menuItems = [
   },
   {
     label: "Exness 1",
-    icon: mdiChartBar,
+    icon: '/images/ex-logo.jpg',
     dropdown: true,
     items: [
       {
@@ -36,14 +36,12 @@ const menuItems = [
         label: "Client Account",
         to: "/admin/reports/client-account",
         icon: mdiAccountDetails
-        }
-
+      }
     ]
-  }
-  ,
+  },
   {
     label: "Exness 2",
-    icon: mdiChartBar,
+    icon: '/images/ex-logo.jpg',
     dropdown: true,
     items: [
       {
@@ -55,28 +53,12 @@ const menuItems = [
         label: "Client Account",
         to: "/admin/reports1/client-account1",
         icon: mdiAccountDetails
-        }
-    //     ,
-    //   {
-    //     label: "Client Transaction",
-    //     to: "/admin/reports1/client-transaction1",
-    //     icon: mdiCashMultiple
-    //   },
-    //   {
-    //     label: "Transactions Pending",
-    //     to: "/admin/reports1/transactions-pending1",
-    //     icon: mdiClockOutline
-    //   },
-    //   {
-    //     label: "Reward History",
-    //     to: "/admin/reports1/reward-history1",
-    //     icon: mdiGift
-    //   }
+      }
     ]
   },
   {
     label: "Exness 3",
-    icon: mdiChartBar,
+    icon: '/images/ex-logo.jpg',
     dropdown: true,
     items: [
       {
@@ -88,25 +70,9 @@ const menuItems = [
         label: "Client Account",
         to: "/admin/reports2/client-account2",
         icon: mdiAccountDetails
-        }
-    //     ,
-    //   {
-    //     label: "Client Transaction",
-    //     to: "/admin/reports2/client-transaction2",
-    //     icon: mdiCashMultiple
-    //   },
-    //   {
-    //     label: "Transactions Pending",
-    //     to: "/admin/reports2/transactions-pending2",
-    //     icon: mdiClockOutline
-    //   },
-    //   {
-    //     label: "Reward History",
-    //     to: "/admin/reports2/reward-history2",
-    //     icon: mdiGift
-    //   }
+      }
     ]
-    }
+  },
 //     ,
 //   {
 //     label: "Rebate",
@@ -197,11 +163,12 @@ const isActive = (path) => {
                 : 'text-gray-300 hover:text-blue-400 hover:bg-gray-800/50'
             ]"
           >
-            <BaseIcon
-              :path="item.icon"
-              class="flex-shrink-0 md:text-lg"
-              :size="16"
-            />
+            <template v-if="item.icon && (item.icon.endsWith('.jpg') || item.icon.endsWith('.png') || item.icon.endsWith('.jpeg'))">
+              <img :src="item.icon" alt="exness logo" class="flex-shrink-0" style="width: 18px; height: 18px; border-radius: 3px;" />
+            </template>
+            <template v-else>
+              <BaseIcon :path="item.icon" class="flex-shrink-0 md:text-lg" :size="16" />
+            </template>
             <span class="ml-1 md:ml-2 hidden xl:block">{{ item.label }}</span>
           </Link>
 
@@ -247,11 +214,12 @@ const isActive = (path) => {
                       : 'text-gray-300 hover:text-blue-400'
                   ]"
                 >
-                  <BaseIcon
-                    :path="subItem.icon"
-                    class="flex-shrink-0 mr-2 md:mr-3 md:text-lg"
-                    :size="16"
-                  />
+                  <template v-if="subItem.icon && (subItem.icon.endsWith && (subItem.icon.endsWith('.jpg') || subItem.icon.endsWith('.png') || subItem.icon.endsWith('.jpeg')))">
+                    <img :src="subItem.icon" alt="icon" class="flex-shrink-0 mr-2 md:mr-3 md:text-lg" style="width: 16px; height: 16px; border-radius: 3px;" />
+                  </template>
+                  <template v-else>
+                    <BaseIcon :path="subItem.icon" class="flex-shrink-0 mr-2 md:mr-3 md:text-lg" :size="16" />
+                  </template>
                   {{ subItem.label }}
                 </Link>
               </div>
