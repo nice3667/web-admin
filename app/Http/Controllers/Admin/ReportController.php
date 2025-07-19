@@ -360,77 +360,97 @@ class ReportController extends Controller
                     $apiError = $e->getMessage();
 
                     // Fallback to database with pagination
-                    $query = JanischaClient::query();
+                    try {
+                        $query = JanischaClient::query();
 
-                    // Apply filters at database level for better performance
-                    if ($request->filled('partner_account')) {
-                        $query->where('partner_account', 'like', '%' . $request->partner_account . '%');
-                    }
-                    if ($request->filled('client_uid')) {
-                        $query->where('client_uid', 'like', '%' . $request->client_uid . '%');
-                    }
-                    if ($request->filled('client_country')) {
-                        $query->where('client_country', $request->client_country);
-                    }
-                    if ($request->filled('reg_date')) {
-                        $query->whereDate('reg_date', $request->reg_date);
-                    }
+                        // Apply filters at database level for better performance
+                        if ($request->filled('partner_account')) {
+                            $query->where('partner_account', 'like', '%' . $request->partner_account . '%');
+                        }
+                        if ($request->filled('client_uid')) {
+                            $query->where('client_uid', 'like', '%' . $request->client_uid . '%');
+                        }
+                        if ($request->filled('client_country')) {
+                            $query->where('client_country', $request->client_country);
+                        }
+                        if ($request->filled('reg_date')) {
+                            $query->whereDate('reg_date', $request->reg_date);
+                        }
 
-                    // Use pagination at database level
-                    $perPage = 50; // Increased from 10 for better UX
-                    $clients = $query->paginate($perPage);
+                        // Use pagination at database level
+                        $perPage = 50; // Increased from 10 for better UX
+                        $clients = $query->paginate($perPage);
 
-                    // Convert to API format for consistency
-                    $clients->getCollection()->transform(function ($client) {
-                        return [
-                            'partner_account' => $client->partner_account,
-                            'client_uid' => $client->client_uid,
-                            'client_name' => $client->raw_data['client_account'] ?? $client->raw_data['client_name'] ?? $client->client_id ?? $client->client_uid ?? null,
-                            'client_email' => $client->raw_data['client_email'] ?? null,
-                            'client_id' => $client->client_id ?? $client->client_uid ?? null,
-                            'reg_date' => $client->reg_date,
-                            'client_country' => $client->client_country,
-                            'volume_lots' => $client->volume_lots,
-                            'volume_mln_usd' => $client->volume_mln_usd,
-                            'reward_usd' => $client->reward_usd,
-                            'client_status' => $client->client_status,
-                            'kyc_passed' => $client->kyc_passed,
-                            'ftd_received' => $client->ftd_received,
-                            'ftt_made' => $client->ftt_made,
+                        // Convert to API format for consistency
+                        $clients->getCollection()->transform(function ($client) {
+                            return [
+                                'partner_account' => $client->partner_account,
+                                'client_uid' => $client->client_uid,
+                                'client_name' => $client->raw_data['client_account'] ?? $client->raw_data['client_name'] ?? $client->client_id ?? $client->client_uid ?? null,
+                                'client_email' => $client->raw_data['client_email'] ?? null,
+                                'client_id' => $client->client_id ?? $client->client_uid ?? null,
+                                'reg_date' => $client->reg_date,
+                                'client_country' => $client->client_country,
+                                'volume_lots' => $client->volume_lots,
+                                'volume_mln_usd' => $client->volume_mln_usd,
+                                'reward_usd' => $client->reward_usd,
+                                'client_status' => $client->client_status,
+                                'kyc_passed' => $client->kyc_passed,
+                                'ftd_received' => $client->ftd_received,
+                                'ftt_made' => $client->ftt_made,
+                            ];
+                        });
+
+                        // Calculate stats efficiently
+                        $statsQuery = JanischaClient::query();
+                        if ($request->filled('partner_account')) {
+                            $statsQuery->where('partner_account', 'like', '%' . $request->partner_account . '%');
+                        }
+                        if ($request->filled('client_uid')) {
+                            $statsQuery->where('client_uid', 'like', '%' . $request->client_uid . '%');
+                        }
+                        if ($request->filled('client_country')) {
+                            $statsQuery->where('client_country', $request->client_country);
+                        }
+                        if ($request->filled('reg_date')) {
+                            $statsQuery->whereDate('reg_date', $request->reg_date);
+                        }
+
+                        $stats = [
+                            'total_accounts' => $statsQuery->count(),
+                            'total_volume_lots' => $statsQuery->sum('volume_lots'),
+                            'total_volume_usd' => $statsQuery->sum('volume_mln_usd'),
+                            'total_profit' => $statsQuery->sum('reward_usd'),
+                            'total_client_uids' => $statsQuery->distinct('client_uid')->count()
                         ];
-                    });
 
-                    // Calculate stats efficiently
-                    $statsQuery = JanischaClient::query();
-                    if ($request->filled('partner_account')) {
-                        $statsQuery->where('partner_account', 'like', '%' . $request->partner_account . '%');
-                    }
-                    if ($request->filled('client_uid')) {
-                        $statsQuery->where('client_uid', 'like', '%' . $request->client_uid . '%');
-                    }
-                    if ($request->filled('client_country')) {
-                        $statsQuery->where('client_country', $request->client_country);
-                    }
-                    if ($request->filled('reg_date')) {
-                        $statsQuery->whereDate('reg_date', $request->reg_date);
-                    }
+                        return Inertia::render('Admin/Report/ClientAccount', [
+                            'clients' => $clients,
+                            'stats' => $stats,
+                            'filters' => $request->only(['partner_account', 'client_uid', 'client_country', 'reg_date']),
+                            'data_source' => $dataSource,
+                            'user_email' => $userEmail,
+                            'error' => $apiError
+                        ]);
+                    } catch (\Exception $dbError) {
+                        Log::error('Database error in clientAccount: ' . $dbError->getMessage());
 
-                    $stats = [
-                        'total_accounts' => $statsQuery->count(),
-                        'total_volume_lots' => $statsQuery->sum('volume_lots'),
-                        'total_volume_usd' => $statsQuery->sum('volume_mln_usd'),
-                        'total_profit' => $statsQuery->sum('reward_usd'),
-                        'total_client_uids' => $statsQuery->distinct('client_uid')->count()
-                    ];
-
-                    return Inertia::render('Admin/Report/ClientAccount', [
-                        'clients' => $clients,
-                        'stats' => $stats,
-                        'filters' => $request->only(['partner_account', 'client_uid', 'client_country', 'reg_date']),
-                        'data_source' => $dataSource,
-                        'user_email' => $userEmail,
-                        'error' => $apiError
-                    ]);
+                        // Return empty data with error message
+                        return Inertia::render('Admin/Report/ClientAccount', [
+                            'clients' => collect([]),
+                            'stats' => [
+                                'total_accounts' => 0,
+                                'total_volume_lots' => 0,
+                                'total_volume_usd' => 0,
+                                'total_profit' => 0,
+                                'total_client_uids' => 0
+                            ],
+                            'filters' => [],
+                            'data_source' => 'Error',
+                            'user_email' => $userEmail,
+                            'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $dbError->getMessage()
+                        ]);
+                    }
                 }
             }
 

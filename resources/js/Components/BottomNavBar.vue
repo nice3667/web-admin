@@ -24,7 +24,7 @@ const menuItems = [
   },
   {
     label: "Exness 1",
-    icon: '/images/ex-logo.jpg',
+    icon: mdiAccountGroup,
     dropdown: true,
     items: [
       {
@@ -41,7 +41,7 @@ const menuItems = [
   },
   {
     label: "Exness 2",
-    icon: '/images/ex-logo.jpg',
+    icon: mdiAccountGroup,
     dropdown: true,
     items: [
       {
@@ -58,7 +58,7 @@ const menuItems = [
   },
   {
     label: "Exness 3",
-    icon: '/images/ex-logo.jpg',
+    icon: mdiAccountGroup,
     dropdown: true,
     items: [
       {
