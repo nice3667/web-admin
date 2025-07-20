@@ -40,7 +40,7 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         Log::info('Login attempt started', ['email' => $request->email]);
-        
+
         $request->authenticate();
         $request->session()->regenerate();
 
@@ -51,14 +51,14 @@ class AuthenticatedSessionController extends Controller
         // Get Exness token
         try {
             Log::info('Getting Exness token for user', ['user_id' => $user->id]);
-            
+
             $requestData = [
                 'login' => $request->email,
                 'password' => $request->password
             ];
 
             Log::info('Sending request to Exness API', ['request_data' => $requestData]);
-            
+
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json'
@@ -76,7 +76,7 @@ class AuthenticatedSessionController extends Controller
 
             if ($response->successful()) {
                 $token = $response->json()['token'];
-                
+
                 // Get client data from both APIs
                 $v1Response = Http::withHeaders([
                     'Authorization' => 'Bearer ' . $token,
@@ -108,14 +108,14 @@ class AuthenticatedSessionController extends Controller
             if ($response->successful()) {
                 $tokenData = $response->json();
                 $token = $tokenData['token'] ?? null;
-                
+
                 // Log token data
                 Log::info('Exness Token Response:', [
                     'user_id' => $user->id,
                     'status' => $response->status(),
                     'token' => $token
                 ]);
-                
+
                 if ($token) {
                     // Get clients data using the service
                     $this->exnessClientService->setToken($token);
@@ -137,7 +137,7 @@ class AuthenticatedSessionController extends Controller
                         'v2_clients_count' => count($clientsData['v2']['data'] ?? [])
                     ]);
 
-                    return redirect()->route('admin.dashboard')->with([
+                    return redirect('/admin/customers')->with([
                         'api_domain' => request()->getSchemeAndHttpHost(),
                         'message' => 'ล็อกอินสำเร็จ',
                         'clients_data' => $clientsData
@@ -168,7 +168,7 @@ class AuthenticatedSessionController extends Controller
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
             ]);
-            
+
             session([
                 'exness_sync_status' => 'error',
                 'exness_sync_message' => 'เกิดข้อผิดพลาดในการเชื่อมต่อกับ Exness'
@@ -179,8 +179,8 @@ class AuthenticatedSessionController extends Controller
         Config::set('app.url', request()->getSchemeAndHttpHost());
 
         Log::info('Login completed, redirecting to dashboard', ['user_id' => $user->id]);
-        
-        return redirect()->route('admin.dashboard')->with([
+
+        return redirect('/admin/customers')->with([
             'api_domain' => request()->getSchemeAndHttpHost(),
             'message' => 'ล็อกอินสำเร็จ'
         ]);
@@ -192,7 +192,7 @@ class AuthenticatedSessionController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         Log::info('User logging out', ['user_id' => Auth::id()]);
-        
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

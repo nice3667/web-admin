@@ -7,11 +7,11 @@ import NavBarItemPlain from "@/Components/NavBarItemPlain.vue";
 import { Link, usePage } from "@inertiajs/vue3";
 
 const menuItems = [
-  {
-    label: "Dashboard",
-    to: "/admin",
-    icon: mdiViewDashboard
-  },
+//   {
+//     label: "Dashboard",
+//     to: "/admin",
+//     icon: mdiViewDashboard
+//   },
   {
     label: "Customers",
     to: "/admin/customers",

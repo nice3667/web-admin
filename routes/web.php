@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\RealtimeSyncController;
+use App\Http\Controllers\Admin\CustomersController;
 
 
 Route::get('/', function () {
@@ -62,7 +63,7 @@ Route::get('/debug/test-exness/{email}/{password}', function ($email, $password)
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
-        return redirect()->route('admin.dashboard');
+        return redirect('/admin/customers');
     })->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -80,18 +81,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/exness/wallets', [ExnessController::class, 'getWallets']);
     Route::get('/api/wallet/accounts', [ExnessController::class, 'getWalletAccounts']);
     Route::post('/api/exness/credentials', [ExnessController::class, 'saveCredentials']);
-    
+
     // Debug route for API analysis
     Route::get('/api/exness/debug', [ExnessController::class, 'debugApiResponses']);
     Route::get('/api/exness/debug-db', [ExnessController::class, 'debugDatabaseStatus']);
-    
+
     // Client sync route
     Route::post('/api/clients/sync', [ClientController::class, 'sync']);
     Route::post('/api/clients/sync-new', [ClientController::class, 'syncNewClients']);
     Route::get('/api/clients/sync-stats', [ClientController::class, 'syncStats']);
     Route::get('/api/clients/debug', [ClientController::class, 'debugApi']);
     Route::get('/api/clients/debug-db', [ClientController::class, 'debugDatabase']);
-    
+
     // Real-time sync routes
     Route::prefix('api/realtime-sync')->group(function () {
         Route::post('/start', [RealtimeSyncController::class, 'startMonitoring']);
@@ -101,7 +102,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/history', [RealtimeSyncController::class, 'getSyncHistory']);
         Route::get('/websocket', [RealtimeSyncController::class, 'websocketEndpoint']);
     });
-    
+
     // Exness credentials management
     Route::get('/exness/credentials', [ExnessController::class, 'credentials'])->name('exness.credentials');
     Route::post('/exness/credentials', [ExnessController::class, 'updateCredentials'])->name('exness.credentials.update');
@@ -153,6 +154,8 @@ Route::get('/reports/client-account', [\App\Http\Controllers\Admin\ReportControl
     Route::get('/reports/transactions-pending', function () {
         return Inertia::render('Admin/Report/TransactionsPending');
     })->name('admin.reports.transactions-pending');
+
+    Route::get('/all-customers', [CustomersController::class, 'allCustomers']);
 });
 
 // Route::get('/exness/test', [ExnessController::class, 'test']);
