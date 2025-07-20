@@ -320,35 +320,31 @@ const goToPage = (page) => {
 };
 
 const displayedPages = computed(() => {
-  if (!props.clients || !props.clients.last_page) return [];
-  const totalPages = props.clients.last_page;
-  const currentPage = props.clients.current_page;
+  const totalPages = Math.ceil(accounts.value.length / itemsPerPage);
+  const currentPageValue = currentPage.value;
   const pages = [];
 
-  if (totalPages <= 7) {
+  if (totalPages <= 5) {
+    // ถ้ามีหน้าไม่เกิน 5 หน้า ให้แสดงทุกหน้า
     for (let i = 1; i <= totalPages; i++) {
       pages.push(i);
     }
   } else {
-    let start = Math.max(currentPage - 3, 1);
-    let end = Math.min(currentPage + 3, totalPages);
+    // ถ้ามีมากกว่า 5 หน้า ให้แสดงแค่ 5 หน้า
+    let start = Math.max(currentPageValue - 2, 1);
+    let end = Math.min(currentPageValue + 2, totalPages);
 
-    if (start > 1) {
-      pages.push(1);
-      if (start > 2) {
-        pages.push('...');
+    // ปรับให้แสดง 5 หน้าเสมอ
+    if (end - start + 1 < 5) {
+      if (start === 1) {
+        end = Math.min(5, totalPages);
+      } else {
+        start = Math.max(totalPages - 4, 1);
       }
     }
 
     for (let i = start; i <= end; i++) {
       pages.push(i);
-    }
-
-    if (end < totalPages) {
-      if (end < totalPages - 1) {
-        pages.push('...');
-      }
-      pages.push(totalPages);
     }
   }
   return pages;
@@ -396,12 +392,7 @@ const displayedPages = computed(() => {
               <span class="text-blue-600 dark:text-blue-400">อีเมล:</span> {{ user_email }}
             </div>
           </div>
-          <BaseButton
-            :icon="mdiRefresh"
-            label="รีเฟรช"
-            @click="applyFilters"
-            class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-          />
+
         </div>
       </div>
 
@@ -584,7 +575,7 @@ const displayedPages = computed(() => {
                       ไม่พบข้อมูลบัญชีลูกค้า
                     </td>
                   </tr>
-                  <tr v-for="account in accounts" :key="account?.client_uid || Math.random()" class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-colors duration-200">
+                  <tr v-for="account in paginatedAccounts" :key="account?.client_uid || Math.random()" class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-colors duration-200">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ account?.partner_account || "-" }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ account?.client_uid || "-" }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600 dark:text-blue-400">{{ account?.client_name || account?.client_email || account?.client_id || "-" }}</td>
@@ -645,12 +636,15 @@ const displayedPages = computed(() => {
                 </button>
                 <div class="flex items-center gap-1">
                   <button
-                    v-for="page in Math.ceil(accounts.length / itemsPerPage)"
+                    v-for="page in displayedPages"
                     :key="page"
-                    @click="goToPage(page)"
+                    @click="page !== '...' ? goToPage(page) : null"
+                    :disabled="page === '...'"
                     :class="[
                       'px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200',
-                      currentPage === page
+                      page === '...'
+                        ? 'bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-default'
+                        : currentPage === page
                         ? 'bg-blue-500 text-white hover:bg-blue-600'
                         : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600'
                     ]"

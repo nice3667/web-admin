@@ -194,6 +194,51 @@ watch(() => props.filters, (newFilters) => {
     },
   };
 }, { immediate: true });
+
+// Pagination logic
+const itemsPerPage = 10;
+const currentPage = ref(1);
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage);
+const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage, filteredAccounts.value.length));
+const paginatedAccounts = computed(() => {
+  return filteredAccounts.value.slice(startIndex.value, endIndex.value);
+});
+
+const goToPage = (page) => {
+  if (page < 1 || page > Math.ceil(filteredAccounts.value.length / itemsPerPage)) return;
+  currentPage.value = page;
+};
+
+const displayedPages = computed(() => {
+  const totalPages = Math.ceil(filteredAccounts.value.length / itemsPerPage);
+  const currentPageValue = currentPage.value;
+  const pages = [];
+
+  if (totalPages <= 5) {
+    // ถ้ามีหน้าไม่เกิน 5 หน้า ให้แสดงทุกหน้า
+    for (let i = 1; i <= totalPages; i++) {
+      pages.push(i);
+    }
+  } else {
+    // ถ้ามีมากกว่า 5 หน้า ให้แสดงแค่ 5 หน้า
+    let start = Math.max(currentPageValue - 2, 1);
+    let end = Math.min(currentPageValue + 2, totalPages);
+
+    // ปรับให้แสดง 5 หน้าเสมอ
+    if (end - start + 1 < 5) {
+      if (start === 1) {
+        end = Math.min(5, totalPages);
+      } else {
+        start = Math.max(totalPages - 4, 1);
+      }
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+  }
+  return pages;
+});
 </script>
 
 <template>
@@ -419,7 +464,7 @@ watch(() => props.filters, (newFilters) => {
                     ไม่พบข้อมูลบัญชีลูกค้า
                   </td>
                 </tr>
-                <tr v-for="account in filteredAccounts" :key="account?.client_uid || Math.random()" class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-colors duration-200">
+                <tr v-for="account in paginatedAccounts" :key="account?.client_uid || Math.random()" class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-colors duration-200">
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ account?.partner_account || "-" }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ account?.client_uid || "-" }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600 dark:text-blue-400">{{ account?.client_name || account?.client_email || account?.client_id || "-" }}</td>
@@ -455,6 +500,58 @@ watch(() => props.filters, (newFilters) => {
                 </tr>
               </tbody>
             </table>
+          </div>
+          <!-- Pagination Controls -->
+          <div class="px-6 py-4 bg-white/50 dark:bg-slate-800/50 border-t border-blue-100/20 dark:border-slate-700/20">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <span>Showing</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ startIndex + 1 }}</span>
+                <span>to</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ endIndex }}</span>
+                <span>of</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ filteredAccounts.length }}</span>
+                <span>entries</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  @click="goToPage(currentPage - 1)"
+                  :disabled="currentPage === 1"
+                  class="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+                    bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600
+                    border border-blue-100 dark:border-slate-600"
+                >
+                  Previous
+                </button>
+                <div class="flex items-center gap-1">
+                  <button
+                    v-for="page in displayedPages"
+                    :key="page"
+                    @click="page !== '...' ? goToPage(page) : null"
+                    :disabled="page === '...'"
+                    :class="[
+                      'px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200',
+                      page === '...'
+                        ? 'bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-default'
+                        : currentPage === page
+                        ? 'bg-blue-500 text-white hover:bg-blue-600'
+                        : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600'
+                    ]"
+                  >
+                    {{ page }}
+                  </button>
+                </div>
+                <button
+                  @click="goToPage(currentPage + 1)"
+                  :disabled="currentPage === Math.ceil(filteredAccounts.length / itemsPerPage)"
+                  class="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+                    bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600
+                    border border-blue-100 dark:border-slate-600"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
