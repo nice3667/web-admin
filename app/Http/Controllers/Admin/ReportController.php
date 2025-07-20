@@ -84,7 +84,7 @@ class ReportController extends Controller
                     }
 
                     // Use pagination at database level
-                    $perPage = 50; // Increased from 10 for better UX
+                    $perPage = 1000; // Increased to show more data
                     $clients = $query->paginate($perPage);
 
                     // Convert to API format for consistency
@@ -239,7 +239,7 @@ class ReportController extends Controller
             }
 
             // Convert to paginated collection with better performance
-            $perPage = 50; // Increased from 10 for better UX
+            $perPage = 1000; // Increased to show more data
             $currentPage = (int) $request->get('page', 1);
             if ($currentPage < 1) {
                 $currentPage = 1;
@@ -378,7 +378,7 @@ class ReportController extends Controller
                         }
 
                         // Use pagination at database level
-                        $perPage = 50; // Increased from 10 for better UX
+                        $perPage = 1000; // Increased to show more data
                         $clients = $query->paginate($perPage);
 
                         // Convert to API format for consistency
@@ -553,7 +553,7 @@ class ReportController extends Controller
             }
 
             // Convert to paginated collection with better performance
-            $perPage = 50; // Increased from 10 for better UX
+            $perPage = 1000; // Increased to show more data
             $currentPage = (int) $request->get('page', 1);
             if ($currentPage < 1) {
                 $currentPage = 1;

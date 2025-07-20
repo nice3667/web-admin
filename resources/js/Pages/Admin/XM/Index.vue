@@ -1,7 +1,7 @@
 <template>
   <TopNavBar />
   <div class="min-h-screen py-4 sm:py-8 lg:py-12 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class=" mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Page Title with Animation -->
       <div class="mb-6 lg:mb-8 text-center animate-fade-in">
         <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
@@ -16,7 +16,7 @@
       <div class="mb-4 lg:mb-2 text-xl sm:text-2xl lg:text-3xl font-extrabold text-blue-700 dark:text-blue-300 animate-fade-in text-center lg:text-left">
         XM Partner
       </div>
-      
+
       <!-- Date Range Selector -->
       <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-2xl rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 mb-6 lg:mb-8 border border-white/20 dark:border-slate-700/20 transform hover:scale-[1.01] lg:hover:scale-[1.02] transition-all duration-300">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-6 items-end">
@@ -87,7 +87,25 @@
               <option value="custom">เลือกวันที่เอง</option>
             </select>
           </div>
-          
+
+          <!-- Reset Button -->
+          <div class="col-span-1">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <span class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Actions
+              </span>
+            </label>
+            <button
+              @click="resetFilters"
+              class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-gray-300 via-gray-200 to-gray-100 text-gray-700 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800 text-sm sm:text-base"
+            >
+              Reset
+            </button>
+          </div>
+
           <!-- Custom Date Range (Mobile: Full width) -->
           <div v-if="signUpDateFilter === 'custom'" class="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-5">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -122,16 +140,6 @@
                 >
               </div>
             </div>
-          </div>
-          
-          <!-- Reset Button (Mobile: Full width) -->
-          <div class="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-5 flex justify-center lg:justify-end">
-            <button
-              @click="resetFilters"
-              class="w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-xl bg-gradient-to-r from-gray-300 via-gray-200 to-gray-100 text-gray-700 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800 text-sm sm:text-base"
-            >
-              Reset
-            </button>
           </div>
         </div>
       </div>
