@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class HamExnessAuthService
 {
@@ -13,7 +14,12 @@ class HamExnessAuthService
     public function retrieveToken(): ?string
     {
         try {
-            $response = Http::withHeaders([
+            Log::info('Ham: Attempting to retrieve token', [
+                'email' => $this->email,
+                'timestamp' => now()->toISOString()
+            ]);
+
+            $response = Http::timeout(30)->withHeaders([
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -24,20 +30,34 @@ class HamExnessAuthService
                 'password' => $this->password
             ]);
 
-            Log::info('Ham Token request:', [
+            Log::info('Ham Token request response:', [
                 'url' => 'https://my.exnessaffiliates.com/api/v2/auth/',
                 'login' => $this->email,
                 'status' => $response->status(),
-                'response' => $response->json()
+                'has_token' => isset($response->json()['token']),
+                'response_keys' => array_keys($response->json() ?? [])
             ]);
 
             if ($response->successful()) {
-                return $response->json()['token'] ?? null;
+                $token = $response->json()['token'] ?? null;
+                if ($token) {
+                    Log::info('Ham: Token retrieved successfully', [
+                        'token_length' => strlen($token),
+                        'token_preview' => substr($token, 0, 20) . '...'
+                    ]);
+                    return $token;
+                } else {
+                    Log::error('Ham: Token not found in successful response', [
+                        'response' => $response->json()
+                    ]);
+                    return null;
+                }
             }
 
             Log::error('Ham Token fetch failed:', [
                 'status' => $response->status(),
-                'body' => $response->json()
+                'body' => $response->body(),
+                'json' => $response->json()
             ]);
 
             return null;
@@ -45,7 +65,8 @@ class HamExnessAuthService
         } catch (\Exception $e) {
             Log::error('Ham Token fetch error:', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'email' => $this->email
             ]);
             return null;
         }
@@ -56,7 +77,7 @@ class HamExnessAuthService
         try {
             // Check cache first
             $cacheKey = 'ham_exness_clients_data';
-            $cachedData = \Cache::get($cacheKey);
+            $cachedData = Cache::get($cacheKey);
 
             if ($cachedData) {
                 Log::info('Ham Using cached clients data');
@@ -150,7 +171,7 @@ class HamExnessAuthService
             $result = ['data' => $combined];
 
             // Cache the result for 5 minutes
-            \Cache::put($cacheKey, $result, 300);
+            Cache::put($cacheKey, $result, 300);
 
             return $result;
 

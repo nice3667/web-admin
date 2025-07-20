@@ -233,12 +233,12 @@ async function copyPartnerInfo3() {
                       ทดสอบ update git web
                     </h1>
                     <h1 class="mb-2 sm:mb-3 text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-white drop-shadow-lg leading-tight break-words">
-                      ยินดีต้อนรับสู่ Admin Dashboard
-                    </h1>
+                    ยินดีต้อนรับสู่ Admin Dashboard
+                  </h1>
                     <p class="text-sm sm:text-base lg:text-lg text-blue-200 font-semibold leading-relaxed break-words">
-                      จัดการระบบและติดตามข้อมูลลูกค้า Exness
-                    </p>
-                  </div>
+                    จัดการระบบและติดตามข้อมูลลูกค้า Exness
+                  </p>
+                </div>
                 </div>
                 <div class="flex-shrink-0 flex items-center justify-center">
                   <div class="flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full bg-white/10 backdrop-blur-xl border border-white/10 shadow-xl">

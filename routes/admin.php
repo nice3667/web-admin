@@ -62,6 +62,8 @@ Route::group([
         Route::get('test-connection', 'Report1Controller@testConnection')->name('test-connection');
     });
 
+
+
     // Report2 Routes
     Route::group([
         'prefix' => 'reports2',

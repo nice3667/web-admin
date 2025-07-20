@@ -366,7 +366,7 @@ class Report1Controller extends Controller
             ]);
 
             // Convert to paginated collection
-            $perPage = 10;
+            $perPage = 50; // เพิ่มจำนวนรายการต่อหน้าเป็น 50
             $currentPage = $request->get('page', 1);
             $offset = ($currentPage - 1) * $perPage;
             $paginatedClients = $formattedClients->slice($offset, $perPage)->values();
@@ -389,11 +389,49 @@ class Report1Controller extends Controller
             $totalPages = ceil($formattedClients->count() / $perPage);
             $pagination['links'][] = ['url' => $pagination['prev_page_url'], 'label' => '&laquo; Previous', 'active' => false];
             
-            for ($i = 1; $i <= $totalPages; $i++) {
+            // แสดงปุ่มตัวเลขหน้าแบบฉลาด
+            $maxButtons = 5; // จำนวนปุ่มตัวเลขที่จะแสดง
+            $start = max(1, min($currentPage - floor($maxButtons / 2), $totalPages - $maxButtons + 1));
+            $end = min($start + $maxButtons - 1, $totalPages);
+            
+            // เพิ่มปุ่มหน้าแรกถ้าไม่ได้อยู่ที่จุดเริ่มต้น
+            if ($start > 1) {
+                $pagination['links'][] = [
+                    'url' => $request->fullUrlWithQuery(['page' => 1]),
+                    'label' => '1',
+                    'active' => false
+                ];
+                if ($start > 2) {
+                    $pagination['links'][] = [
+                        'url' => null,
+                        'label' => '...',
+                        'active' => false
+                    ];
+                }
+            }
+            
+            // เพิ่มปุ่มตัวเลขหน้า
+            for ($i = $start; $i <= $end; $i++) {
                 $pagination['links'][] = [
                     'url' => $request->fullUrlWithQuery(['page' => $i]),
                     'label' => (string)$i,
                     'active' => $i == $currentPage
+                ];
+            }
+            
+            // เพิ่มปุ่มหน้าสุดท้ายถ้าไม่ได้อยู่ที่จุดสิ้นสุด
+            if ($end < $totalPages) {
+                if ($end < $totalPages - 1) {
+                    $pagination['links'][] = [
+                        'url' => null,
+                        'label' => '...',
+                        'active' => false
+                    ];
+                }
+                $pagination['links'][] = [
+                    'url' => $request->fullUrlWithQuery(['page' => $totalPages]),
+                    'label' => (string)$totalPages,
+                    'active' => false
                 ];
             }
             

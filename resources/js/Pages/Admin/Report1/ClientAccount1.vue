@@ -1,12 +1,12 @@
 <script setup>
-import { Head, router } from "@inertiajs/vue3";
+import { Head, router, Link } from "@inertiajs/vue3";
 import { mdiClockOutline, mdiAlertBoxOutline, mdiAccountGroup, mdiChartLine, mdiCurrencyUsd, mdiGift } from "@mdi/js";
 import TopNavBar from '@/Components/TopNavBar.vue';
 import BottomNavBar from '@/Components/BottomNavBar.vue';
 import { ref, computed, watch } from "vue";
 
 const props = defineProps({
-  accounts: {
+  clients: {
     type: Object,
     required: true,
     default: () => ({})
@@ -15,10 +15,10 @@ const props = defineProps({
     type: Object,
     required: true,
     default: () => ({
-      total_pending: 0,
-      total_amount: 0,
-      due_today: 0,
-      overdue: 0,
+      total_accounts: 0,
+      total_volume_lots: 0,
+      total_volume_usd: 0,
+      total_profit: 0,
       total_client_uids: 0
     })
   },
@@ -94,7 +94,7 @@ const resetFilters = () => {
 
 // Computed properties for filtered data
 const filteredAccounts = computed(() => {
-  let result = props.accounts.data || [];
+  let result = props.clients?.data || [];
 
   // ค้นหา (เฉพาะ client_uid)
   if (filters.value.search) {
@@ -137,10 +137,11 @@ const filteredAccounts = computed(() => {
 const computedStats = computed(() => {
   console.log('Props stats:', props.stats); // Debug log
   return {
-    total_pending: props.stats.total_pending || props.stats.total_client_uids || 0,
-    total_amount: Number(props.stats.total_amount || 0).toFixed(4),
-    due_today: Number(props.stats.due_today || 0).toFixed(4),
-    overdue: Number(props.stats.overdue || 0).toFixed(4),
+    total_accounts: props.stats.total_accounts || 0,
+    total_volume_lots: Number(props.stats.total_volume_lots || 0).toFixed(2),
+    total_volume_usd: Number(props.stats.total_volume_usd || 0).toFixed(2),
+    total_profit: Number(props.stats.total_profit || 0).toFixed(2),
+    total_client_uids: props.stats.total_client_uids || 0,
   };
 });
 
@@ -326,9 +327,9 @@ watch(() => props.filters, (newFilters) => {
         <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">จำนวน Client UID</p>
+              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">จำนวนบัญชี</p>
               <p class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                {{ computedStats.total_pending }}
+                {{ computedStats.total_accounts }}
               </p>
             </div>
             <div class="p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl rotate-3 transform transition-transform duration-300 hover:rotate-6">
@@ -343,7 +344,7 @@ watch(() => props.filters, (newFilters) => {
             <div>
               <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Volume (lots)</p>
               <p class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                {{ computedStats.total_amount }}
+                {{ computedStats.total_volume_lots }}
               </p>
             </div>
             <div class="p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl rotate-3 transform transition-transform duration-300 hover:rotate-6">
@@ -358,7 +359,7 @@ watch(() => props.filters, (newFilters) => {
             <div>
               <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Volume (USD)</p>
               <p class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                {{ computedStats.due_today }}
+                ${{ computedStats.total_volume_usd }}
               </p>
             </div>
             <div class="p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl rotate-3 transform transition-transform duration-300 hover:rotate-6">
@@ -373,7 +374,7 @@ watch(() => props.filters, (newFilters) => {
             <div>
               <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Reward (USD)</p>
               <p class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                {{ computedStats.overdue }}
+                ${{ computedStats.total_profit }}
               </p>
             </div>
             <div class="p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl rotate-3 transform transition-transform duration-300 hover:rotate-6">
@@ -455,6 +456,60 @@ watch(() => props.filters, (newFilters) => {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+      <!-- Pagination -->
+      <div v-if="props.clients?.data?.length > 0" class="px-6 py-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg border-t border-blue-100/20 dark:border-slate-700/20">
+        <div class="flex items-center justify-between">
+          <!-- Pagination Info -->
+          <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+            <span>แสดง {{ props.clients.from }} ถึง {{ props.clients.to }} จากทั้งหมด {{ props.clients.total }} รายการ</span>
+          </div>
+          
+          <!-- Pagination Navigation -->
+          <div class="flex items-center space-x-2">
+            <!-- Previous Page -->
+            <Link
+              v-if="props.clients.prev_page_url"
+              :href="props.clients.prev_page_url"
+              class="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700"
+              preserve-scroll
+            >
+              ก่อนหน้า
+            </Link>
+            <span v-else class="px-4 py-2 text-sm font-medium text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg cursor-not-allowed">
+              ก่อนหน้า
+            </span>
+
+            <!-- Page Numbers -->
+            <template v-for="(link, i) in props.clients.links" :key="i">
+              <Link
+                v-if="link.url && !link.label.includes('Previous') && !link.label.includes('Next')"
+                :href="link.url"
+                class="px-4 py-2 text-sm font-medium rounded-lg"
+                :class="{
+                  'text-white bg-blue-600 dark:bg-blue-500': link.active,
+                  'text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-slate-700': !link.active
+                }"
+                preserve-scroll
+              >
+                {{ link.label }}
+              </Link>
+            </template>
+
+            <!-- Next Page -->
+            <Link
+              v-if="props.clients.next_page_url"
+              :href="props.clients.next_page_url"
+              class="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700"
+              preserve-scroll
+            >
+              ถัดไป
+            </Link>
+            <span v-else class="px-4 py-2 text-sm font-medium text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg cursor-not-allowed">
+              ถัดไป
+            </span>
           </div>
         </div>
       </div>

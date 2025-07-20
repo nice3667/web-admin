@@ -1,35 +1,29 @@
 <template>
-  <LayoutAuthenticated>
-    <Head title="ค้นหาข้อมูลลูกค้า" />
-    <div class="min-h-screen relative overflow-hidden">
-      <!-- Background gradients, floating elements, animated dots (เหมือน Dashboard.vue) -->
-      <div class="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900"></div>
-      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/30 via-transparent to-transparent"></div>
-      <div class="absolute inset-0 opacity-10">
-        <div class="w-full h-full animate-grid-subtle"
-             style="background-image: linear-gradient(rgba(59, 130, 246, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.3) 1px, transparent 1px); background-size: 60px 60px;"></div>
-      </div>
-      <!-- ... floating blur, animated dots ... -->
-      <div class="relative z-10 min-h-screen flex flex-col items-stretch justify-start p-3 sm:p-4 lg:p-6 bg-slate-900">
-        <SectionMain class="w-full">
-          <SectionTitleLineWithButton title="ค้นหาข้อมูลลูกค้า" main>
-            <template #button>
-              <BaseButton
-                color="success"
-                :icon="mdiReload"
-                label="รีเฟรช"
-                :disabled="loading"
-                @click="refreshData"
-                class="text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-2.5"
-              />
-            </template>
-          </SectionTitleLineWithButton>
+  <TopNavBar />
+  <Head title="ค้นหาข้อมูลลูกค้า" />
+    <div class="min-h-screen py-4 sm:py-8 lg:py-12 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <!-- Page Title with Animation -->
+          <div class="mb-6 lg:mb-8 text-center animate-fade-in">
+            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              Customer Dashboard
+            </h1>
+            <p class="mt-2 lg:mt-3 text-sm sm:text-base lg:text-lg text-gray-400">
+              View and analyze customer statistics and performance metrics
+            </p>
+          </div>
+
+          <!-- Customer Partner Label -->
+          <div class="mb-4 lg:mb-2 text-xl sm:text-2xl lg:text-3xl font-extrabold text-blue-300 animate-fade-in text-center">
+            Customer Management
+          </div>
+
           <NotificationBar v-if="error" color="danger" :icon="mdiAlertBoxOutline">
             {{ error }}
           </NotificationBar>
           
           <!-- Statistics Cards -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
             <CardBox class="bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-xl rounded-xl lg:rounded-2xl relative text-white min-h-[120px] sm:min-h-[140px] lg:min-h-[160px] flex flex-col justify-center">
               <div class="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-600 opacity-10"></div>
               <div class="relative flex items-center justify-between p-4 lg:p-6">
@@ -123,7 +117,8 @@
                 </span>
               </div>
             </div>
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-4">
+            <!-- Main Filters -->
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div class="space-y-3">
                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
                   <svg class="inline w-4 h-4 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -162,6 +157,36 @@
                   <option value="ACTIVE">ACTIVE</option>
                   <option value="INACTIVE">INACTIVE</option>
                 </select>
+              </div>
+            </div>
+
+            <!-- Date Range and Reset -->
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-3 mt-6">
+              <div class="space-y-3">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  <svg class="inline w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  วันที่เริ่มต้น
+                </label>
+                <input
+                  type="date"
+                  v-model="filters.start_date"
+                  class="w-full px-4 py-4 border-2 border-gray-200 rounded-xl shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-300 hover:border-indigo-300"
+                />
+              </div>
+              <div class="space-y-3">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  <svg class="inline w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  วันที่สิ้นสุด
+                </label>
+                <input
+                  type="date"
+                  v-model="filters.end_date"
+                  class="w-full px-4 py-4 border-2 border-gray-200 rounded-xl shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all duration-300 hover:border-indigo-300"
+                />
               </div>
               <div class="flex items-end">
                 <BaseButton
@@ -350,21 +375,18 @@
             </svg>
             <p class="mt-2 text-sm text-blue-500 dark:text-blue-200">กำลังโหลดข้อมูล...</p>
           </CardBox>
-        </SectionMain>
-      </div>
     </div>
-  </LayoutAuthenticated>
+  </div>
+  <BottomNavBar :menu="menuItems" />
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { Head } from '@inertiajs/vue3'
-import LayoutAuthenticated from '@/Layouts/Admin/LayoutAuthenticated.vue'
-import SectionMain from '@/Components/SectionMain.vue'
-import SectionTitleLineWithButton from '@/Components/SectionTitleLineWithButton.vue'
+import TopNavBar from '@/Components/TopNavBar.vue'
+import BottomNavBar from '@/Components/BottomNavBar.vue'
 import CardBox from '@/Components/CardBox.vue'
 import NotificationBar from '@/Components/NotificationBar.vue'
-import BaseButton from '@/Components/BaseButton.vue'
 import { mdiReload, mdiAlertBoxOutline, mdiAccountGroup, mdiChartLine } from '@mdi/js'
 import axios from 'axios'
 
@@ -408,13 +430,6 @@ const users = ref(props.users)
 const filters = ref({ ...props.filters })
 
 // Methods
-const formatNumber = (value) => {
-  if (!value) return '0'
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value)
-}
 
 const searchCustomers = async () => {
   loading.value = true
@@ -472,6 +487,34 @@ const showAssignOwnerModal = (customer) => {
   alert('ฟีเจอร์กำหนดเจ้าของจะเพิ่มในภายหลัง')
 }
 
+// Format number
+const formatNumber = (number) => {
+  return new Intl.NumberFormat('en-US').format(number);
+}
+
+const menuItems = [
+  {
+    label: "Dashboard",
+    to: "/admin",
+    icon: 'mdiViewDashboard'
+  },
+  {
+    label: "Client Account",
+    to: "/client-account",
+    icon: 'mdiAccountGroup'
+  },
+  {
+    label: "Customers",
+    to: "/admin/customers",
+    icon: 'mdiAccountGroup'
+  },
+  {
+    label: "XM Reports",
+    to: "/admin/xm",
+    icon: 'mdiChartBar'
+  }
+]
+
 const showCustomerDetails = (customer) => {
   alert('ฟีเจอร์ดูรายละเอียดจะเพิ่มในภายหลัง')
 }
@@ -497,4 +540,21 @@ const loadStats = async () => {
   }
 }
 </script>
+
+<style scoped>
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.6s ease-out forwards;
+}
+</style>
 

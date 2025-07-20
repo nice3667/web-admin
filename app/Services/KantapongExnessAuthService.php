@@ -9,66 +9,75 @@ use Illuminate\Support\Facades\Cache;
 class KantapongExnessAuthService
 {
     private $baseUrl = 'https://my.exnessaffiliates.com';
-    private $email = 'kantapong0592@gmail.com';
-    private $password = 'Kantapong.0592z';
+    private $email = 'kantapong0592@gmail.com'; // Use actual Kantapong email
+    private $password = 'Kantapong.0592z'; // Use actual Kantapong password
     private $cacheKey = 'kantapong_exness_token';
+
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
 
     public function authenticate(): ?string
     {
         try {
-            Log::info('Kantapong Exness authentication attempt', [
+            Log::info('Kantapong: Attempting to retrieve token', [
                 'email' => $this->email,
-                'base_url' => $this->baseUrl,
-                'auth_url' => $this->baseUrl . '/api/v2/auth/'
+                'timestamp' => now()->toISOString()
             ]);
 
-            $response = Http::timeout(30)->post($this->baseUrl . '/api/v2/auth/', [
+            $response = Http::timeout(30)->withHeaders([
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Origin' => 'https://my.exnessaffiliates.com',
+                'Referer' => 'https://my.exnessaffiliates.com/'
+            ])->post('https://my.exnessaffiliates.com/api/v2/auth/', [
                 'login' => $this->email,
                 'password' => $this->password
             ]);
 
-            Log::info('Kantapong API response received', [
+            Log::info('Kantapong Token request response:', [
+                'url' => 'https://my.exnessaffiliates.com/api/v2/auth/',
+                'login' => $this->email,
                 'status' => $response->status(),
-                'successful' => $response->successful(),
-                'body_length' => strlen($response->body())
+                'has_token' => isset($response->json()['token']),
+                'response_keys' => array_keys($response->json() ?? [])
             ]);
 
             if ($response->successful()) {
-                $data = $response->json();
-
-                Log::info('Kantapong API response data', [
-                    'has_token' => isset($data['token']),
-                    'response_keys' => array_keys($data),
-                    'token_length' => isset($data['token']) ? strlen($data['token']) : 0
-                ]);
-
-                if (isset($data['token'])) {
-                    $token = $data['token'];
-
-                    // Cache token for 50 minutes (expires in 60 minutes)
-                    Cache::put($this->cacheKey, $token, now()->addMinutes(50));
-
-                    Log::info('Kantapong Exness authentication successful', [
+                $token = $response->json()['token'] ?? null;
+                if ($token) {
+                    Log::info('Kantapong: Token retrieved successfully', [
                         'token_length' => strlen($token),
-                        'expires_at' => now()->addMinutes(50)
+                        'token_preview' => substr($token, 0, 20) . '...'
                     ]);
-
+                    
+                    // Cache token for 50 minutes
+                    Cache::put($this->cacheKey, $token, now()->addMinutes(50));
+                    
                     return $token;
+                } else {
+                    Log::error('Kantapong: Token not found in successful response', [
+                        'response' => $response->json()
+                    ]);
+                    return null;
                 }
             }
 
-            Log::error('Kantapong Exness authentication failed', [
+            Log::error('Kantapong Token fetch failed:', [
                 'status' => $response->status(),
-                'response' => $response->body(),
-                'headers' => $response->headers()
+                'body' => $response->body(),
+                'json' => $response->json()
             ]);
 
             return null;
 
         } catch (\Exception $e) {
-            Log::error('Kantapong Exness authentication error', [
+            Log::error('Kantapong Token fetch error:', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'email' => $this->email
             ]);
             return null;
         }
@@ -157,7 +166,7 @@ class KantapongExnessAuthService
 
             if (!$token) {
                 Log::error('Kantapong Failed to retrieve token');
-                return ['error' => 'ไม่สามารถรับ token ได้'];
+                return ['error' => 'ไม่สามารถรับ token ได้ - ตรวจสอบ credentials'];
             }
 
             Log::info('Kantapong Token retrieved successfully, fetching data from APIs...');
