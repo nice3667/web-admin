@@ -158,19 +158,38 @@ class XMReportController extends Controller
             $traders = collect($data)->map(function ($trader) {
                 // Extract and clean country data
                 $country = isset($trader['country']) ? trim($trader['country']) : null;
+                $finalCountry = null;
+                $countrySource = 'api';
                 
-                // Log problematic country data
                 if (empty($country)) {
-                    Log::info('Trader with missing country:', [
+                    // Log problematic country data
+                    Log::info('Trader with missing country - attempting detection:', [
                         'trader_id' => $trader['traderId'] ?? 'unknown',
-                        'raw_country_value' => $trader['country'] ?? 'null'
+                        'raw_country_value' => $trader['country'] ?? 'null',
+                        'campaign' => $trader['campaign'] ?? 'none'
                     ]);
+                    
+                    // Try to detect country from other data
+                    $detectedCountry = $this->detectCountryFromTraderData($trader);
+                    $finalCountry = $detectedCountry['country_name'];
+                    $countrySource = 'detected';
+                    
+                    // Log the detection result
+                    Log::info('Country detection result:', [
+                        'trader_id' => $trader['traderId'] ?? 'unknown',
+                        'detected_country' => $detectedCountry['country_code'],
+                        'confidence' => $detectedCountry['confidence'],
+                        'method' => $detectedCountry['detection_method']
+                    ]);
+                } else {
+                    $finalCountry = $this->getCountryName($country);
                 }
 
                 return [
                     'traderId' => $trader['traderId'] ?? null,
                     'clientId' => $trader['clientId'] ?? null,
-                    'country' => $this->getCountryName($country),
+                    'country' => $finalCountry,
+                    'countrySource' => $countrySource, // เพิ่มข้อมูลแหล่งที่มาของประเทศ
                     'accountType' => $trader['accountType'] ?? 'ไม่ระบุ',
                     'campaign' => $trader['campaign'] ?? 'ไม่มี',
                     'tradingPlatform' => $trader['tradingPlatform'] ?? 'ไม่ระบุ',
@@ -322,5 +341,263 @@ class XMReportController extends Controller
                 'debug_message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function checkMissingCountryData(Request $request)
+    {
+        try {
+            $startTime = $request->get('startTime', date('Y-m-d', strtotime('-30 days')));
+            $endTime = $request->get('endTime', date('Y-m-d'));
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiToken,
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ])->timeout(30)->get($this->baseUrl . '/trader-statistics/trader-list', [
+                'startTime' => $startTime,
+                'endTime' => $endTime,
+            ]);
+
+            if (!$response->successful()) {
+                return response()->json([
+                    'error' => 'Failed to fetch data from XM API',
+                    'message' => $response->json()['message'] ?? 'Authentication failed.',
+                    'status' => $response->status()
+                ], $response->status());
+            }
+
+            $data = $response->json();
+            
+            // Find users with missing country data
+            $missingCountryUsers = [];
+            $totalUsers = count($data);
+            $missingCount = 0;
+
+            foreach ($data as $trader) {
+                $country = isset($trader['country']) ? trim($trader['country']) : null;
+                
+                if (empty($country)) {
+                    $missingCount++;
+                    
+                    // Try to detect country from other data
+                    $detectedCountry = $this->detectCountryFromTraderData($trader);
+                    
+                    $missingCountryUsers[] = [
+                        'traderId' => $trader['traderId'] ?? 'unknown',
+                        'clientId' => $trader['clientId'] ?? 'unknown',
+                        'originalCountry' => $trader['country'] ?? null,
+                        'detectedCountry' => $detectedCountry,
+                        'accountType' => $trader['accountType'] ?? 'ไม่ระบุ',
+                        'campaign' => $trader['campaign'] ?? 'ไม่มี',
+                        'tradingPlatform' => $trader['tradingPlatform'] ?? 'ไม่ระบุ',
+                        'signUpDate' => $trader['signUpDate'] ?? null,
+                        'activationDate' => $trader['activationDate'] ?? null,
+                        'allData' => $trader // เก็บข้อมูลทั้งหมดเพื่อตรวจสอบ
+                    ];
+                }
+            }
+
+            // Log detailed information
+            Log::info('Missing country data analysis', [
+                'total_users' => $totalUsers,
+                'missing_country_count' => $missingCount,
+                'percentage' => round(($missingCount / $totalUsers) * 100, 2) . '%',
+                'date_range' => $startTime . ' to ' . $endTime
+            ]);
+
+            return response()->json([
+                'summary' => [
+                    'total_users' => $totalUsers,
+                    'missing_country_count' => $missingCount,
+                    'percentage' => round(($missingCount / $totalUsers) * 100, 2),
+                    'date_range' => $startTime . ' to ' . $endTime
+                ],
+                'missing_country_users' => $missingCountryUsers,
+                'country_detection_stats' => $this->getCountryDetectionStats($missingCountryUsers)
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Missing country check failed: ' . $e->getMessage(), [
+                'exception' => $e,
+                'startTime' => $request->get('startTime'),
+                'endTime' => $request->get('endTime')
+            ]);
+            
+            return response()->json([
+                'error' => 'Failed to check missing country data',
+                'message' => 'An unexpected error occurred. Please try again later.',
+                'debug_message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function detectCountryFromTraderData($trader)
+    {
+        $detectedCountry = null;
+        $confidence = 0;
+        $method = null;
+
+        // Method 1: Check campaign data for country hints
+        if (isset($trader['campaign']) && !empty($trader['campaign'])) {
+            $campaign = strtoupper($trader['campaign']);
+            
+            // Enhanced campaign patterns with more specific Thai indicators
+            $campaignPatterns = [
+                'TH' => [
+                    'THAILAND', 'THAI', 'TH_', '_TH',
+                    'KAENG', 'KAN', 'K.KAN', 'KAENGIB', // Thai names/patterns
+                    'PROFIT', 'LOW', 'RB YOU', 'AUTO CONNECT' // Common Thai campaigns
+                ],
+                'MY' => ['MALAYSIA', 'MALAYSIAN', 'MY_', '_MY'],
+                'SG' => ['SINGAPORE', 'SG_', '_SG'],
+                'ID' => ['INDONESIA', 'INDONESIAN', 'ID_', '_ID'],
+                'VN' => ['VIETNAM', 'VIETNAMESE', 'VN_', '_VN'],
+                'PH' => ['PHILIPPINES', 'FILIPINO', 'PH_', '_PH']
+            ];
+
+            foreach ($campaignPatterns as $countryCode => $patterns) {
+                foreach ($patterns as $pattern) {
+                    if (strpos($campaign, $pattern) !== false) {
+                        $detectedCountry = $countryCode;
+                        $confidence = 70;
+                        $method = 'campaign_analysis';
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        // Method 2: Check for Thai-specific patterns in campaign names
+        if (!$detectedCountry && isset($trader['campaign']) && !empty($trader['campaign'])) {
+            $campaign = strtolower($trader['campaign']);
+            
+            // Thai-specific patterns
+            $thaiPatterns = [
+                'kaeng', 'kan', 'profit', 'low', 'rb you', 'auto connect'
+            ];
+            
+            foreach ($thaiPatterns as $pattern) {
+                if (strpos($campaign, $pattern) !== false) {
+                    $detectedCountry = 'TH';
+                    $confidence = 65;
+                    $method = 'thai_campaign_pattern';
+                    break;
+                }
+            }
+        }
+
+        // Method 3: Check trading platform for regional hints
+        if (!$detectedCountry && isset($trader['tradingPlatform'])) {
+            $platform = strtoupper($trader['tradingPlatform']);
+            
+            // Some platforms might have regional indicators
+            if (strpos($platform, 'ASIA') !== false) {
+                // Default to Thailand for Asian platforms (most common in our system)
+                $detectedCountry = 'TH';
+                $confidence = 30;
+                $method = 'platform_region';
+            }
+        }
+
+        // Method 4: Check account type for regional patterns
+        if (!$detectedCountry && isset($trader['accountType'])) {
+            $accountType = strtoupper($trader['accountType']);
+            
+            // Some account types might have regional patterns
+            if (strpos($accountType, 'MICRO') !== false) {
+                // Micro accounts are popular in Southeast Asia
+                $detectedCountry = 'TH';
+                $confidence = 20;
+                $method = 'account_type_pattern';
+            }
+        }
+
+        // Method 5: Check client ID patterns (if any regional encoding exists)
+        if (!$detectedCountry && isset($trader['clientId'])) {
+            $clientId = $trader['clientId'];
+            
+            // Check if client ID has any regional patterns
+            if (preg_match('/^66/', $clientId)) { // 66 is Thailand country code
+                $detectedCountry = 'TH';
+                $confidence = 60;
+                $method = 'client_id_pattern';
+            } elseif (preg_match('/^60/', $clientId)) { // 60 is Malaysia country code
+                $detectedCountry = 'MY';
+                $confidence = 60;
+                $method = 'client_id_pattern';
+            }
+        }
+
+        // Method 6: Default assumption for Southeast Asian region
+        if (!$detectedCountry) {
+            // Based on the data pattern, most users without country info seem to be from Thailand
+            $detectedCountry = 'TH';
+            $confidence = 15;
+            $method = 'regional_default';
+        }
+
+        return [
+            'country_code' => $detectedCountry,
+            'country_name' => $detectedCountry ? $this->getCountryName($detectedCountry) : 'ไม่สามารถตรวจหาได้',
+            'confidence' => $confidence,
+            'detection_method' => $method,
+            'raw_data_analyzed' => [
+                'campaign' => $trader['campaign'] ?? null,
+                'tradingPlatform' => $trader['tradingPlatform'] ?? null,
+                'accountType' => $trader['accountType'] ?? null,
+                'clientId' => $trader['clientId'] ?? null
+            ]
+        ];
+    }
+
+    private function getCountryDetectionStats($missingCountryUsers)
+    {
+        $stats = [
+            'total_missing' => count($missingCountryUsers),
+            'detected_countries' => [],
+            'detection_methods' => [],
+            'confidence_levels' => [
+                'high' => 0,    // 60+ confidence
+                'medium' => 0,  // 30-59 confidence
+                'low' => 0,     // 1-29 confidence
+                'none' => 0     // 0 confidence
+            ]
+        ];
+
+        foreach ($missingCountryUsers as $user) {
+            $detection = $user['detectedCountry'];
+            
+            if ($detection['country_code']) {
+                // Count detected countries
+                $country = $detection['country_code'];
+                if (!isset($stats['detected_countries'][$country])) {
+                    $stats['detected_countries'][$country] = 0;
+                }
+                $stats['detected_countries'][$country]++;
+
+                // Count detection methods
+                $method = $detection['detection_method'];
+                if (!isset($stats['detection_methods'][$method])) {
+                    $stats['detection_methods'][$method] = 0;
+                }
+                $stats['detection_methods'][$method]++;
+
+                // Count confidence levels
+                $confidence = $detection['confidence'];
+                if ($confidence >= 60) {
+                    $stats['confidence_levels']['high']++;
+                } elseif ($confidence >= 30) {
+                    $stats['confidence_levels']['medium']++;
+                } elseif ($confidence > 0) {
+                    $stats['confidence_levels']['low']++;
+                } else {
+                    $stats['confidence_levels']['none']++;
+                }
+            } else {
+                $stats['confidence_levels']['none']++;
+            }
+        }
+
+        return $stats;
     }
 } 

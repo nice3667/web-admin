@@ -81,5 +81,6 @@ Route::group([
         Route::get('/traders', [XMReportController::class, 'getTraderList'])->name('xm.traders');
         Route::get('/transactions', [XMReportController::class, 'getTraderTransactions'])->name('xm.transactions');
         Route::get('/rebate', [XMReportController::class, 'getLotRebateStatistics'])->name('xm.rebate');
+        Route::get('/check-missing-country', [XMReportController::class, 'checkMissingCountryData'])->name('xm.check-missing-country');
     });
 });
