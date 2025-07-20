@@ -220,25 +220,27 @@ async function copyPartnerInfo3() {
         </div>
       </div>
       <!-- Main Content -->
-      <div class="relative z-10 min-h-screen flex flex-col items-center justify-start p-2 sm:p-3 md:p-4 bg-slate-900">
-        <SectionMain class="w-full max-w-full">
+      <div class="relative z-10 min-h-screen flex flex-col items-center justify-start p-2 sm:p-3 lg:p-4 bg-slate-900">
+        <SectionMain class="w-full max-w-none mx-auto px-2 sm:px-4 lg:px-6">
           <!-- Welcome Section -->
-          <div class="mb-3 sm:mb-5">
-            <div class="p-3 sm:p-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl rounded-2xl relative overflow-hidden">
+          <div class="mb-4 sm:mb-6 lg:mb-8 w-full">
+            <div class="p-4 sm:p-6 lg:p-8 bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl rounded-2xl relative w-full">
               <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-blue-400"></div>
-              <div class="flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0">
-                <div class="text-center md:text-left">
-                  <h1 class="mb-1 text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-lg">ทดสอบ update git web</h1>
-                  <h1 class="mb-1 text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-lg">
+              <div class="flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-6 w-full">
+                <div class="text-center lg:text-left flex-1 min-w-0 w-full">
+                  <h1 class="mb-2 sm:mb-3 text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-white drop-shadow-lg leading-tight break-words">
+                    ทดสอบ update git web
+                  </h1>
+                  <h1 class="mb-2 sm:mb-3 text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-white drop-shadow-lg leading-tight break-words">
                     ยินดีต้อนรับสู่ Admin Dashboard
                   </h1>
-                  <p class="text-xs sm:text-sm md:text-base text-blue-200 font-semibold">
+                  <p class="text-sm sm:text-base lg:text-lg text-blue-200 font-semibold leading-relaxed break-words">
                     จัดการระบบและติดตามข้อมูลลูกค้า Exness
                   </p>
                 </div>
-                <div class="flex-shrink-0 mt-2 md:mt-0">
-                  <div class="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-white/10 backdrop-blur-xl border border-white/10 shadow-xl">
-                    <svg class="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex-shrink-0 flex items-center justify-center">
+                  <div class="flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full bg-white/10 backdrop-blur-xl border border-white/10 shadow-xl">
+                    <svg class="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                   </div>
@@ -249,13 +251,13 @@ async function copyPartnerInfo3() {
           <!-- Exness Error Notification -->
           <NotificationBar v-if="exnessError" color="danger" :icon="mdiAlertBoxOutline" class="mb-4 sm:mb-6" />
           <!-- Enhanced Statistics Cards -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-4 sm:mb-6 lg:mb-8">
             <div class="flex flex-col gap-4 sm:gap-6">
               <CardBox class="bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-xl rounded-2xl relative overflow-hidden">
-                <div class="flex items-center justify-between mb-2">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-2 gap-2">
                   <div class="flex items-center">
                     <svg
-                      class="w-5 h-5 mr-2 text-gray-400"
+                      class="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-gray-400"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -267,59 +269,61 @@ async function copyPartnerInfo3() {
                         d="M13.828 14.828a4 4 0 01-5.656-5.656m1.414-1.414a4 4 0 015.656 5.656m-6.364 6.364a9 9 0 1112.728-12.728 9 9 0 01-12.728 12.728z"
                       />
                     </svg>
-                    <span class="font-medium text-gray-700">Your Partner Link</span>
+                    <span class="font-medium text-gray-700 text-sm sm:text-base">Your Partner Link</span>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex flex-wrap items-center gap-1 sm:gap-2">
                     <button
                       @click="partnerTab = 'link'"
                       :class="[
-                        'px-4 py-2 rounded-full font-medium text-base border shadow-sm focus:outline-none transition',
+                        'px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-full font-medium text-xs sm:text-sm lg:text-base border shadow-sm focus:outline-none transition',
                         partnerTab === 'link'
                           ? 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 active:bg-violet-300'
                           : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200',
                       ]"
                     >
-                      Partner link
+                      <span class="hidden sm:inline">Partner link</span>
+                      <span class="sm:hidden">Link</span>
                     </button>
                     <button
                       @click="partnerTab = 'code'"
                       :class="[
-                        'px-4 py-2 rounded-full font-medium text-base border shadow-sm focus:outline-none transition',
+                        'px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-full font-medium text-xs sm:text-sm lg:text-base border shadow-sm focus:outline-none transition',
                         partnerTab === 'code'
                           ? 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 active:bg-violet-300'
                           : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 active:bg-gray-200',
                       ]"
                     >
-                      Partner code
+                      <span class="hidden sm:inline">Partner code</span>
+                      <span class="sm:hidden">Code</span>
                     </button>
                   </div>
                 </div>
-                <div class="mb-2">
+                <div class="mb-3 sm:mb-2">
                   <span v-if="partnerTab === 'link'">
                     <a
                       :href="partnerLink"
                       target="_blank"
-                      class="block text-lg font-medium text-center text-blue-600 break-all hover:underline"
+                      class="block text-sm sm:text-base lg:text-lg font-medium text-center text-blue-600 break-all hover:underline p-2 rounded hover:bg-blue-50"
                     >
                       {{ partnerLink }}
                     </a>
                   </span>
                   <span
                     v-else
-                    class="block p-2 text-lg font-medium text-center text-blue-600 break-all rounded cursor-pointer select-all hover:bg-blue-50"
+                    class="block p-2 text-sm sm:text-base lg:text-lg font-medium text-center text-blue-600 break-all rounded cursor-pointer select-all hover:bg-blue-50"
                     @click="copyPartnerInfo"
                   >
                     {{ partnerCode }}
                   </span>
                 </div>
-                <div class="flex items-center justify-center gap-4 mt-4 mb-1">
-                  <div class="relative flex items-center">
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mt-3 sm:mt-4 mb-1">
+                  <div class="relative flex items-center w-full sm:w-auto">
                     <button
                       @click="copyPartnerInfo"
-                      class="flex items-center gap-2 px-4 py-2 text-base font-medium text-gray-700 transition bg-white border border-gray-200 rounded-full shadow hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      class="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base font-medium text-gray-700 transition bg-white border border-gray-200 rounded-full shadow hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     >
                       <svg
-                        class="w-5 h-5"
+                        class="w-4 h-4 sm:w-5 sm:h-5"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -344,10 +348,10 @@ async function copyPartnerInfo3() {
                   </div>
                   <button
                     @click="openQrModal"
-                    class="flex items-center gap-2 px-4 py-2 text-base font-medium text-blue-700 transition border border-blue-200 rounded-full shadow bg-blue-50 hover:bg-blue-100 active:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    class="w-full sm:w-auto flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base font-medium text-blue-700 transition border border-blue-200 rounded-full shadow bg-blue-50 hover:bg-blue-100 active:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   >
                     <svg
-                      class="w-5 h-5"
+                      class="w-4 h-4 sm:w-5 sm:h-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -689,18 +693,18 @@ async function copyPartnerInfo3() {
               </CardBox>
             </div>
             <div class="flex flex-col gap-4 sm:gap-6">
-              <CardBox class="bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-xl rounded-2xl relative overflow-hidden min-h-[150px] sm:min-h-[200px] flex flex-col justify-center">
+              <CardBox class="bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-xl rounded-2xl relative min-h-[120px] sm:min-h-[150px] lg:min-h-[180px] flex flex-col justify-center">
                 <div
                   class="absolute inset-0 bg-gradient-to-br from-orange-500 to-orange-600 opacity-10"
                 ></div>
                 <div class="relative flex items-center justify-between">
-                  <div class="flex flex-col">
+                  <div class="flex flex-col flex-1 min-w-0">
                     <span
-                      class="mb-1 text-sm font-medium text-gray-600"
+                      class="mb-1 text-xs sm:text-sm font-medium text-gray-600 truncate"
                       >Active Users</span
                     >
                     <span
-                      class="text-3xl font-bold text-orange-600"
+                      class="text-xl sm:text-2xl lg:text-3xl font-bold text-orange-600"
                       >{{ stats.activeUsers }}</span
                     >
                     <div class="flex items-center mt-2">
@@ -722,10 +726,10 @@ async function copyPartnerInfo3() {
                   </div>
                   <div class="flex-shrink-0">
                     <div
-                      class="flex items-center justify-center w-16 h-16 transition-transform duration-200 transform shadow-lg bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl hover:scale-110"
+                      class="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 transition-transform duration-200 transform shadow-lg bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl lg:rounded-2xl hover:scale-110"
                     >
                       <svg
-                        class="w-8 h-8 text-white"
+                        class="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-white"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -741,18 +745,18 @@ async function copyPartnerInfo3() {
                   </div>
                 </div>
               </CardBox>
-              <CardBox class="bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-xl rounded-2xl relative overflow-hidden min-h-[150px] sm:min-h-[200px] flex flex-col justify-center">
+              <CardBox class="bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-xl rounded-2xl relative min-h-[120px] sm:min-h-[150px] lg:min-h-[180px] flex flex-col justify-center">
                 <div
                   class="absolute inset-0 bg-gradient-to-br from-pink-500 to-pink-600 opacity-10"
                 ></div>
                 <div class="relative flex items-center justify-between">
-                  <div class="flex flex-col">
+                  <div class="flex flex-col flex-1 min-w-0">
                     <span
-                      class="mb-1 text-sm font-medium text-gray-600"
+                      class="mb-1 text-xs sm:text-sm font-medium text-gray-600 truncate"
                       >Example 5</span
                     >
                     <span
-                      class="text-3xl font-bold text-pink-600"
+                      class="text-xl sm:text-2xl lg:text-3xl font-bold text-pink-600"
                       >123</span
                     >
                     <div class="flex items-center mt-2">
@@ -761,10 +765,10 @@ async function copyPartnerInfo3() {
                   </div>
                   <div class="flex-shrink-0">
                     <div
-                      class="flex items-center justify-center w-16 h-16 transition-transform duration-200 transform shadow-lg bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl hover:scale-110"
+                      class="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 transition-transform duration-200 transform shadow-lg bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl lg:rounded-2xl hover:scale-110"
                     >
                       <svg
-                        class="w-8 h-8 text-white"
+                        class="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-white"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -782,18 +786,18 @@ async function copyPartnerInfo3() {
                   </div>
                 </div>
               </CardBox>
-              <CardBox class="bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-xl rounded-2xl relative overflow-hidden min-h-[150px] sm:min-h-[200px] flex flex-col justify-center">
+              <CardBox class="bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-xl rounded-2xl relative min-h-[120px] sm:min-h-[150px] lg:min-h-[180px] flex flex-col justify-center">
                 <div
                   class="absolute inset-0 bg-gradient-to-br from-gray-500 to-gray-600 opacity-10"
                 ></div>
                 <div class="relative flex items-center justify-between">
-                  <div class="flex flex-col">
+                  <div class="flex flex-col flex-1 min-w-0">
                     <span
-                      class="mb-1 text-sm font-medium text-gray-600"
+                      class="mb-1 text-xs sm:text-sm font-medium text-gray-600 truncate"
                       >Example 6</span
                     >
                     <span
-                      class="text-3xl font-bold text-gray-600"
+                      class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-600"
                       >456</span
                     >
                     <div class="flex items-center mt-2">
@@ -802,10 +806,10 @@ async function copyPartnerInfo3() {
                   </div>
                   <div class="flex-shrink-0">
                     <div
-                      class="flex items-center justify-center w-16 h-16 transition-transform duration-200 transform shadow-lg bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl hover:scale-110"
+                      class="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 transition-transform duration-200 transform shadow-lg bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl lg:rounded-2xl hover:scale-110"
                     >
                       <svg
-                        class="w-8 h-8 text-white"
+                        class="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-white"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -828,9 +832,9 @@ async function copyPartnerInfo3() {
             </div>
           </div>
           <!-- Quick Actions -->
-          <div class="mb-3 sm:mb-6">
-            <h2 class="mb-2 sm:mb-3 text-base sm:text-lg font-semibold text-blue-200">Quick Actions</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4">
+          <div class="mb-4 sm:mb-6 lg:mb-8">
+            <h2 class="mb-3 sm:mb-4 lg:mb-6 text-lg sm:text-xl lg:text-2xl font-semibold text-blue-200">Quick Actions</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
               <div class="bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl rounded-2xl p-3 sm:p-4 md:p-6 cursor-pointer hover:shadow-2xl hover:scale-105 transition-all">
                 <div class="flex items-center space-x-3 sm:space-x-4">
                   <div class="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
