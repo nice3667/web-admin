@@ -310,4 +310,108 @@ class CustomersController extends Controller
             ], 500);
         }
     }
+
+    // Unified customer search from all sources
+    public function allCustomers(Request $request)
+    {
+        $all = collect();
+
+        // 1. Local DB clients
+        $ham = HamClient::all();
+        $kantapong = KantapongClient::all();
+        $janischa = JanischaClient::all();
+        $all = $all->concat($ham)->concat($kantapong)->concat($janischa);
+
+        // 2. Exness/Janischa (ReportController)
+        try {
+            $exness = app(\App\Http\Controllers\Admin\ReportController::class)->clients($request);
+            if (method_exists($exness, 'getData')) {
+                $exnessData = $exness->getData();
+                if (isset($exnessData['data']['clients'])) {
+                    $all = $all->concat($exnessData['data']['clients']);
+                }
+            } elseif (is_a($exness, 'Illuminate\Http\JsonResponse')) {
+                $data = $exness->getData(true);
+                if (isset($data['data']['clients'])) {
+                    $all = $all->concat($data['data']['clients']);
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        // 3. Exness/Ham (Report1Controller)
+        try {
+            $exness1 = app(\App\Http\Controllers\Admin\Report1Controller::class)->clients1($request);
+            if (method_exists($exness1, 'getData')) {
+                $exnessData1 = $exness1->getData();
+                if (isset($exnessData1['data']['clients'])) {
+                    $all = $all->concat($exnessData1['data']['clients']);
+                }
+            } elseif (is_a($exness1, 'Illuminate\Http\JsonResponse')) {
+                $data = $exness1->getData(true);
+                if (isset($data['data']['clients'])) {
+                    $all = $all->concat($data['data']['clients']);
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        // 4. Exness/Kantapong (Report2Controller)
+        try {
+            $exness2 = app(\App\Http\Controllers\Admin\Report2Controller::class)->clients2($request);
+            if (method_exists($exness2, 'getData')) {
+                $exnessData2 = $exness2->getData();
+                if (isset($exnessData2['data']['clients'])) {
+                    $all = $all->concat($exnessData2['data']['clients']);
+                }
+            } elseif (is_a($exness2, 'Illuminate\Http\JsonResponse')) {
+                $data = $exness2->getData(true);
+                if (isset($data['data']['clients'])) {
+                    $all = $all->concat($data['data']['clients']);
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        // 5. XM (XMReportController)
+        try {
+            $xm = app(\App\Http\Controllers\Admin\XMReportController::class)->getTraderList($request);
+            if (method_exists($xm, 'getData')) {
+                $xmData = $xm->getData();
+                if (is_array($xmData)) {
+                    $all = $all->concat($xmData);
+                }
+            } elseif (is_a($xm, 'Illuminate\Http\JsonResponse')) {
+                $data = $xm->getData(true);
+                if (is_array($data)) {
+                    $all = $all->concat($data);
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        // Normalize fields for frontend search
+        $normalized = $all->map(function ($c) {
+            $arr = is_array($c) ? $c : (array)$c;
+            return [
+                'client_uid' => $arr['client_uid'] ?? $arr['clientId'] ?? $arr['traderId'] ?? $arr['account'] ?? $arr['login'] ?? null,
+                'client_id' => $arr['client_id'] ?? $arr['clientId'] ?? $arr['traderId'] ?? $arr['account'] ?? $arr['login'] ?? null,
+                'client_account' => $arr['client_account'] ?? $arr['account'] ?? $arr['login'] ?? $arr['traderId'] ?? null,
+                'partner_account' => $arr['partner_account'] ?? $arr['campaign'] ?? null,
+                'traderId' => $arr['traderId'] ?? null,
+                'client_name' => $arr['client_name'] ?? $arr['name'] ?? null,
+                'account_number' => $arr['account_number'] ?? $arr['account'] ?? $arr['login'] ?? null,
+                'login' => $arr['login'] ?? null,
+                'exness_id' => $arr['exness_id'] ?? null,
+                'country' => $arr['client_country'] ?? $arr['country'] ?? null,
+                'status' => $arr['client_status'] ?? $arr['status'] ?? $arr['valid'] ?? null,
+                'reg_date' => $arr['reg_date'] ?? $arr['signUpDate'] ?? null,
+                'reward_usd' => $arr['reward_usd'] ?? $arr['total_reward_usd'] ?? null,
+                'rebate_amount_usd' => $arr['rebate_amount_usd'] ?? null,
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'customers' => $normalized,
+            ]
+        ]);
+    }
 }
