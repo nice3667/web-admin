@@ -220,23 +220,25 @@ async function copyPartnerInfo3() {
         </div>
       </div>
       <!-- Main Content -->
-      <div class="relative z-10 min-h-screen flex flex-col items-center justify-start p-2 sm:p-3 lg:p-4 bg-slate-900">
-        <SectionMain class="w-full max-w-none mx-auto px-2 sm:px-4 lg:px-6">
+      <div class="relative z-10 min-h-screen flex flex-col items-stretch justify-start p-3 sm:p-4 lg:p-6 bg-slate-900">
+        <SectionMain class="w-full">
           <!-- Welcome Section -->
           <div class="mb-4 sm:mb-6 lg:mb-8 w-full">
-            <div class="p-4 sm:p-6 lg:p-8 bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl rounded-2xl relative w-full">
+            <div class="p-4 sm:p-6 lg:p-8 bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl rounded-2xl relative w-full max-w-none">
               <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-blue-400"></div>
               <div class="flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-6 w-full">
                 <div class="text-center lg:text-left flex-1 min-w-0 w-full">
-                  <h1 class="mb-2 sm:mb-3 text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-white drop-shadow-lg leading-tight break-words">
-                    ทดสอบ update git web
-                  </h1>
-                  <h1 class="mb-2 sm:mb-3 text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-white drop-shadow-lg leading-tight break-words">
-                    ยินดีต้อนรับสู่ Admin Dashboard
-                  </h1>
-                  <p class="text-sm sm:text-base lg:text-lg text-blue-200 font-semibold leading-relaxed break-words">
-                    จัดการระบบและติดตามข้อมูลลูกค้า Exness
-                  </p>
+                  <div class="max-w-4xl mx-auto lg:mx-0">
+                    <h1 class="mb-2 sm:mb-3 text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-white drop-shadow-lg leading-tight break-words">
+                      ทดสอบ update git web
+                    </h1>
+                    <h1 class="mb-2 sm:mb-3 text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-white drop-shadow-lg leading-tight break-words">
+                      ยินดีต้อนรับสู่ Admin Dashboard
+                    </h1>
+                    <p class="text-sm sm:text-base lg:text-lg text-blue-200 font-semibold leading-relaxed break-words">
+                      จัดการระบบและติดตามข้อมูลลูกค้า Exness
+                    </p>
+                  </div>
                 </div>
                 <div class="flex-shrink-0 flex items-center justify-center">
                   <div class="flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full bg-white/10 backdrop-blur-xl border border-white/10 shadow-xl">
