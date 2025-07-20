@@ -1,6 +1,6 @@
 <template>
   <TopNavBar />
-  <Head title="ค้นหาข้อมูลลูกค้า" />
+    <Head title="ค้นหาข้อมูลลูกค้า" />
     <div class="min-h-screen py-4 sm:py-8 lg:py-12 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <!-- Page Title with Animation -->
@@ -16,7 +16,7 @@
           <!-- Customer Partner Label -->
           <div class="mb-4 lg:mb-2 text-xl sm:text-2xl lg:text-3xl font-extrabold text-blue-300 animate-fade-in text-center">
             Customer Management
-          </div>
+      </div>
 
           <NotificationBar v-if="error" color="danger" :icon="mdiAlertBoxOutline">
             {{ error }}

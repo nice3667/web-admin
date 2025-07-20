@@ -103,33 +103,34 @@ const resetFilters = () => {
 
 // Computed properties for filtered data
 const filteredAccounts = computed(() => {
-  let result = props.accounts.data || [];
+  let result = props.clients?.data || [];
 
   // ค้นหา (เฉพาะ client_uid)
-  if (filters.value.search) {
+  if (filters.value?.search) {
     const searchLower = filters.value.search.toLowerCase();
     result = result.filter((account) =>
-      account.client_uid?.toLowerCase().includes(searchLower)
+      (account?.client_uid || '').toLowerCase().includes(searchLower)
     );
   }
 
   // กรองตามสถานะ
-  if (filters.value.status !== "all") {
+  if (filters.value?.status && filters.value.status !== "all") {
     const statusFilter = filters.value.status.toUpperCase();
     result = result.filter((account) => {
-      const accountStatus = (account.client_status || "").toUpperCase();
+      const accountStatus = (account?.client_status || '').toUpperCase();
       return accountStatus === statusFilter;
     });
   }
 
   // กรองตามช่วงวันที่
-  if (filters.value.date_range.start || filters.value.date_range.end) {
+  if (filters.value?.date_range?.start || filters.value?.date_range?.end) {
     result = result.filter((account) => {
+      if (!account?.reg_date) return false;
       const regDate = new Date(account.reg_date);
-      const start = filters.value.date_range.start
+      const start = filters.value?.date_range?.start
         ? new Date(filters.value.date_range.start)
         : null;
-      const end = filters.value.date_range.end
+      const end = filters.value?.date_range?.end
         ? new Date(filters.value.date_range.end)
         : null;
 
@@ -142,19 +143,18 @@ const filteredAccounts = computed(() => {
   return result;
 });
 
-// Computed properties for stats
-const formattedStats = computed(() => {
-  return {
-    total_pending: props.stats.total_pending || props.stats.total_client_uids || 0,
-    total_amount: Number(props.stats.total_amount || 0).toFixed(4),
-    due_today: Number(props.stats.due_today || 0).toFixed(4),
-    overdue: Number(props.stats.overdue || 0).toFixed(4),
-  };
-});
+// Computed properties for stats with safe defaults
+const computedStats = computed(() => ({
+  total_pending: props.stats?.total_pending || props.stats?.total_client_uids || 0,
+  total_amount: Number(props.stats?.total_amount || 0).toFixed(4),
+  due_today: Number(props.stats?.due_today || 0).toFixed(4),
+  overdue: Number(props.stats?.overdue || 0).toFixed(4)
+}));
 
 // Helper functions for status display
 const getStatusColor = (status) => {
-  switch (status?.toUpperCase()) {
+  const statusUpper = (status || '').toUpperCase();
+  switch (statusUpper) {
     case "ACTIVE":
       return "text-green-600";
     case "INACTIVE":
@@ -165,18 +165,22 @@ const getStatusColor = (status) => {
 };
 
 const getStatusText = (status) => {
-  return status?.toUpperCase() || "UNKNOWN";
+  return (status || 'UNKNOWN').toUpperCase();
 };
 
 // Helper functions for formatting
 const formatDate = (dateString) => {
   if (!dateString) return "-";
-  const date = new Date(dateString);
-  return date.toLocaleDateString("th-TH", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("th-TH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  } catch (e) {
+    return "-";
+  }
 };
 
 const formatCountry = (code) => {
@@ -283,18 +287,18 @@ watch(
 const itemsPerPage = 10;
 const currentPage = ref(1);
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage);
-const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage, accounts.value.length));
+const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage, filteredAccounts.value.length));
 const paginatedAccounts = computed(() => {
-  return accounts.value.slice(startIndex.value, endIndex.value);
+  return filteredAccounts.value.slice(startIndex.value, endIndex.value);
 });
 
 const goToPage = (page) => {
-  if (page < 1 || page > Math.ceil(accounts.value.length / itemsPerPage)) return;
+  if (page < 1 || page > Math.ceil(filteredAccounts.value.length / itemsPerPage)) return;
   currentPage.value = page;
 };
 
 const displayedPages = computed(() => {
-  const totalPages = Math.ceil(accounts.value.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredAccounts.value.length / itemsPerPage);
   const currentPageValue = currentPage.value;
   const pages = [];
 
@@ -730,7 +734,7 @@ const displayedPages = computed(() => {
               <tbody
                 class="divide-y bg-white/50 dark:bg-slate-800/50 divide-blue-100/20 dark:divide-slate-700/20"
               >
-                <tr v-if="accounts.length === 0">
+                <tr v-if="filteredAccounts.length === 0">
                   <td
                     colspan="9"
                     class="px-6 py-12 text-sm text-center text-gray-600 dark:text-gray-400"
@@ -856,7 +860,7 @@ const displayedPages = computed(() => {
                 <span>to</span>
                 <span class="font-semibold text-gray-900 dark:text-white">{{ endIndex }}</span>
                 <span>of</span>
-                <span class="font-semibold text-gray-900 dark:text-white">{{ accounts.length }}</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ filteredAccounts.length }}</span>
                 <span>entries</span>
               </div>
               <div class="flex items-center gap-2">
@@ -889,7 +893,7 @@ const displayedPages = computed(() => {
                 </div>
                 <button
                   @click="goToPage(currentPage + 1)"
-                  :disabled="currentPage === Math.ceil(accounts.length / itemsPerPage)"
+                  :disabled="currentPage === Math.ceil(filteredAccounts.length / itemsPerPage)"
                   class="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
                     bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600
                     border border-blue-100 dark:border-slate-600"

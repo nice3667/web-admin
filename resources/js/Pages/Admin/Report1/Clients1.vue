@@ -133,9 +133,23 @@ const filteredClients = computed(() => {
   return result;
 });
 
+// Add client-side pagination
+const itemsPerPage = 10;
+const currentPage = ref(1);
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage);
+const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage, filteredClients.value.length));
+const paginatedClients = computed(() => {
+  return filteredClients.value.slice(startIndex.value, endIndex.value);
+});
+
+// Pagination logic
+const goToPage = (page) => {
+  if (page < 1 || page > Math.ceil(filteredClients.value.length / itemsPerPage)) return;
+  currentPage.value = page;
+};
+
 // Computed properties for stats
 const computedStats = computed(() => {
-  console.log('Props stats:', props.stats); // Debug log
   return {
     total_pending: props.stats.total_pending || props.stats.total_client_uids || 0,
     total_amount: Number(props.stats.total_amount || 0).toFixed(4),
@@ -386,12 +400,12 @@ watch(() => props.filters, (newFilters) => {
                 </tr>
               </thead>
               <tbody class="bg-white/50 dark:bg-slate-800/50 divide-y divide-blue-100/20 dark:divide-slate-700/20">
-                <tr v-if="filteredClients.length === 0">
+                <tr v-if="paginatedClients.length === 0">
                   <td colspan="4" class="px-6 py-12 text-center text-sm text-gray-600 dark:text-gray-400">
                     ไม่พบข้อมูลลูกค้า
                   </td>
                 </tr>
-                <tr v-for="client in filteredClients" :key="client.client_uid" class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-colors duration-200">
+                <tr v-for="client in paginatedClients" :key="client.client_uid" class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-colors duration-200">
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ client.client_uid }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm" :class="getStatusColor(client.client_status)">
                     <span
@@ -422,6 +436,55 @@ watch(() => props.filters, (newFilters) => {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+        <!-- Pagination Controls (XM style) -->
+        <div class="px-6 py-4 bg-white/50 dark:bg-slate-800/50 border-t border-blue-100/20 dark:border-slate-700/20">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <span>Showing</span>
+              <span class="font-semibold text-gray-900 dark:text-white">{{ startIndex + 1 }}</span>
+              <span>to</span>
+              <span class="font-semibold text-gray-900 dark:text-white">{{ endIndex }}</span>
+              <span>of</span>
+              <span class="font-semibold text-gray-900 dark:text-white">{{ filteredClients.length }}</span>
+              <span>entries</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                @click="goToPage(currentPage - 1)"
+                :disabled="currentPage === 1"
+                class="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+                  bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600
+                  border border-blue-100 dark:border-slate-600"
+              >
+                Previous
+              </button>
+              <div class="flex items-center gap-1">
+                <button
+                  v-for="page in Math.ceil(filteredClients.length / itemsPerPage)"
+                  :key="page"
+                  @click="goToPage(page)"
+                  :class="[
+                    'px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200',
+                    currentPage === page
+                      ? 'bg-blue-500 text-white hover:bg-blue-600'
+                      : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600'
+                  ]"
+                >
+                  {{ page }}
+                </button>
+              </div>
+              <button
+                @click="goToPage(currentPage + 1)"
+                :disabled="currentPage === Math.ceil(filteredClients.length / itemsPerPage)"
+                class="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+                  bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600
+                  border border-blue-100 dark:border-slate-600"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       </div>

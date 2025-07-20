@@ -162,41 +162,20 @@ class Report1Controller extends Controller
                 'data_source' => $dataSource
             ]);
 
-            // Convert to paginated collection
-            $perPage = 10;
-            $currentPage = $request->get('page', 1);
-            $offset = ($currentPage - 1) * $perPage;
-            $paginatedClients = $formattedClients->slice($offset, $perPage)->values();
-            
-            // Create pagination data manually
+            // Send all data for client-side pagination
             $pagination = [
-                'data' => $paginatedClients,
-                'current_page' => $currentPage,
-                'per_page' => $perPage,
+                'data' => $formattedClients->values(),
+                'current_page' => 1,
+                'per_page' => 10,
                 'total' => $formattedClients->count(),
-                'last_page' => ceil($formattedClients->count() / $perPage),
-                'from' => $offset + 1,
-                'to' => min($offset + $perPage, $formattedClients->count()),
-                'prev_page_url' => $currentPage > 1 ? $request->fullUrlWithQuery(['page' => $currentPage - 1]) : null,
-                'next_page_url' => $currentPage < ceil($formattedClients->count() / $perPage) ? $request->fullUrlWithQuery(['page' => $currentPage + 1]) : null,
-                'links' => []
+                'last_page' => 1,
+                'from' => 1,
+                'to' => $formattedClients->count(),
             ];
-            
-            // Generate pagination links
-            $totalPages = ceil($formattedClients->count() / $perPage);
-            $pagination['links'][] = ['url' => $pagination['prev_page_url'], 'label' => '&laquo; Previous', 'active' => false];
-            
-            for ($i = 1; $i <= $totalPages; $i++) {
-                $pagination['links'][] = [
-                    'url' => $request->fullUrlWithQuery(['page' => $i]),
-                    'label' => (string)$i,
-                    'active' => $i == $currentPage
-                ];
-            }
-            
-            $pagination['links'][] = ['url' => $pagination['next_page_url'], 'label' => 'Next &raquo;', 'active' => false];
 
-            return Inertia::render('Admin/Report1/Clients1', [
+
+
+        return Inertia::render('Admin/Report1/Clients1', [
                 'clients' => $pagination,
                 'stats' => $stats,
                 'filters' => $filters,
