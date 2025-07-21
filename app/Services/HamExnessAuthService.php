@@ -118,6 +118,13 @@ class HamExnessAuthService
 
             // Add V2 clients that are not in V1 (to maximize client count)
             $combined = $dataV1['data']; // Start with all V1 data
+            
+            // Ensure V1 data has client_country field
+            foreach ($combined as &$client) {
+                if (isset($client['country']) && !isset($client['client_country'])) {
+                    $client['client_country'] = $client['country'];
+                }
+            }
 
             if (isset($dataV2['data'])) {
                 foreach ($dataV2['data'] as $v2Client) {

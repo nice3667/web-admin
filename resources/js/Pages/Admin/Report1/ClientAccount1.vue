@@ -1,5 +1,5 @@
 <script setup>
-import { Head, router } from "@inertiajs/vue3";
+import { Head, router, Link } from "@inertiajs/vue3";
 import { mdiClockOutline, mdiAlertBoxOutline, mdiAccountGroup, mdiChartLine, mdiCurrencyUsd, mdiGift } from "@mdi/js";
 import TopNavBar from '@/Components/TopNavBar.vue';
 import BottomNavBar from '@/Components/BottomNavBar.vue';
@@ -45,6 +45,9 @@ console.log("Clients data:", props.clients);
 
 // Local filters for UI
 const filters = ref({
+  client_account: props.filters.client_account || "",
+  account_type: props.filters.account_type || "",
+  platform: props.filters.platform || "",
   partner_account: props.filters.partner_account || "",
   client_uid: props.filters.client_uid || "",
   client_country: props.filters.client_country || "",
@@ -52,38 +55,41 @@ const filters = ref({
   reg_date: props.filters.reg_date || "",
 });
 
-// Apply filters and navigate
+// XM-style filter options
+const signUpDateFilter = ref("all");
+const startDate = ref("");
+const endDate = ref("");
+
+// Account type options (placeholder - you can customize based on your data)
+const accountTypeOptions = computed(() => {
+  const types = new Set();
+  if (props.clients?.data) {
+    props.clients.data.forEach(account => {
+      if (account.account_type) {
+        types.add(account.account_type);
+      }
+    });
+  }
+  return Array.from(types).sort();
+});
+
+// Platform options (MT4, MT5 like XM page)
+const platformOptions = computed(() => {
+  return ["MT4", "MT5"];
+});
+
+// Apply filters (client-side filtering - no page refresh)
 const applyFilters = () => {
-  const params = {};
-
-  if (filters.value.partner_account) {
-    params.partner_account = filters.value.partner_account;
-  }
-
-  if (filters.value.client_uid) {
-    params.client_uid = filters.value.client_uid;
-  }
-
-  if (filters.value.client_country) {
-    params.client_country = filters.value.client_country;
-  }
-
-  if (filters.value.client_status) {
-    params.client_status = filters.value.client_status;
-  }
-
-  if (filters.value.reg_date) {
-    params.reg_date = filters.value.reg_date;
-  }
-
-  router.get("/admin/reports1/client-account1", params, {
-    preserveState: true,
-    preserveScroll: true,
-  });
+  // No router navigation - just update local filters
+  // The filteredAccounts computed property will handle the filtering
+  console.log('Filters applied:', filters.value);
 };
 
 const resetFilters = () => {
   filters.value = {
+    client_account: "",
+    account_type: "",
+    platform: "",
     partner_account: "",
     client_uid: "",
     client_country: "",
@@ -91,53 +97,105 @@ const resetFilters = () => {
     reg_date: "",
   };
 
-  router.get(
-    "/admin/reports1/client-account1",
-    {},
-    {
-      preserveState: true,
-      preserveScroll: true,
-    }
-  );
+  signUpDateFilter.value = "all";
+  startDate.value = "";
+  endDate.value = "";
+
+  console.log('Filters reset');
 };
 
 // Computed properties for filtered data
 const filteredAccounts = computed(() => {
   let result = props.clients?.data || [];
 
-  // ค้นหา (เฉพาะ client_uid)
-  if (filters.value?.search) {
-    const searchLower = filters.value.search.toLowerCase();
+  // Filter by Client Account
+  if (filters.value?.client_account) {
+    const searchLower = filters.value.client_account.toLowerCase();
+    result = result.filter((account) =>
+      (account?.client_account || '').toLowerCase().includes(searchLower) ||
+      (account?.client_uid || '').toLowerCase().includes(searchLower) ||
+      (account?.partner_account || '').toLowerCase().includes(searchLower)
+    );
+  }
+
+  // Filter by Account Type
+  if (filters.value?.account_type) {
+    result = result.filter((account) =>
+      (account?.account_type || '').toLowerCase() === filters.value.account_type.toLowerCase()
+    );
+  }
+
+  // Filter by Platform
+  if (filters.value?.platform) {
+    result = result.filter((account) =>
+      (account?.platform || '').toLowerCase() === filters.value.platform.toLowerCase()
+    );
+  }
+
+  // Filter by Partner Account
+  if (filters.value?.partner_account) {
+    const searchLower = filters.value.partner_account.toLowerCase();
+    result = result.filter((account) =>
+      (account?.partner_account || '').toLowerCase().includes(searchLower)
+    );
+  }
+
+  // Filter by Client UID
+  if (filters.value?.client_uid) {
+    const searchLower = filters.value.client_uid.toLowerCase();
     result = result.filter((account) =>
       (account?.client_uid || '').toLowerCase().includes(searchLower)
     );
   }
 
-  // กรองตามสถานะ
-  if (filters.value?.status && filters.value.status !== "all") {
-    const statusFilter = filters.value.status.toUpperCase();
+  // Filter by Country
+  if (filters.value?.client_country) {
+    const searchLower = filters.value.client_country.toLowerCase();
+    result = result.filter((account) =>
+      (account?.client_country || '').toLowerCase().includes(searchLower)
+    );
+  }
+
+  // Filter by Status
+  if (filters.value?.client_status) {
+    result = result.filter((account) =>
+      (account?.client_status || '').toLowerCase() === filters.value.client_status.toLowerCase()
+    );
+  }
+
+  // Filter by Registration Date
+  if (filters.value?.reg_date) {
     result = result.filter((account) => {
-      const accountStatus = (account?.client_status || '').toUpperCase();
-      return accountStatus === statusFilter;
+      if (!account?.reg_date) return false;
+      const accountDate = new Date(account.reg_date).toISOString().split('T')[0];
+      return accountDate === filters.value.reg_date;
     });
   }
 
-  // กรองตามช่วงวันที่
-  if (filters.value?.date_range?.start || filters.value?.date_range?.end) {
-    result = result.filter((account) => {
-      if (!account?.reg_date) return false;
-      const regDate = new Date(account.reg_date);
-      const start = filters.value?.date_range?.start
-        ? new Date(filters.value.date_range.start)
-        : null;
-      const end = filters.value?.date_range?.end
-        ? new Date(filters.value.date_range.end)
-        : null;
+  // Filter by Sign Up Date Range
+  if (signUpDateFilter.value !== "all") {
+    const now = new Date();
+    let startDate = null;
+    let endDate = null;
 
-      if (start && regDate < start) return false;
-      if (end && regDate > end) return false;
-      return true;
-    });
+    if (signUpDateFilter.value === "1m") {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      endDate = now;
+    } else if (signUpDateFilter.value === "2m") {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
+      endDate = now;
+    } else if (signUpDateFilter.value === "custom" && startDate.value && endDate.value) {
+      startDate = new Date(startDate.value);
+      endDate = new Date(endDate.value);
+    }
+
+    if (startDate && endDate) {
+      result = result.filter((account) => {
+        if (!account?.reg_date) return false;
+        const regDate = new Date(account.reg_date);
+        return regDate >= startDate && regDate <= endDate;
+      });
+    }
   }
 
   return result;
@@ -273,60 +331,37 @@ watch(
   () => props.filters,
   (newFilters) => {
     filters.value = {
+      client_account: newFilters.client_account || "",
+      account_type: newFilters.account_type || "",
+      platform: newFilters.platform || "",
       partner_account: newFilters.partner_account || "",
       client_uid: newFilters.client_uid || "",
       client_country: newFilters.client_country || "",
       client_status: newFilters.client_status || "",
       reg_date: newFilters.reg_date || "",
     };
+
+    // Update sign up date filter
+    if (newFilters.sign_up_date_filter) {
+      signUpDateFilter.value = newFilters.sign_up_date_filter;
+    }
+    if (newFilters.start_date) {
+      startDate.value = newFilters.start_date;
+    }
+    if (newFilters.end_date) {
+      endDate.value = newFilters.end_date;
+    }
   },
   { immediate: true }
 );
 
-// Pagination logic
-const itemsPerPage = 10;
-const currentPage = ref(1);
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage);
-const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage, filteredAccounts.value.length));
+// Use filtered accounts for display
 const paginatedAccounts = computed(() => {
-  return filteredAccounts.value.slice(startIndex.value, endIndex.value);
+  return filteredAccounts.value;
 });
 
-const goToPage = (page) => {
-  if (page < 1 || page > Math.ceil(filteredAccounts.value.length / itemsPerPage)) return;
-  currentPage.value = page;
-};
-
-const displayedPages = computed(() => {
-  const totalPages = Math.ceil(filteredAccounts.value.length / itemsPerPage);
-  const currentPageValue = currentPage.value;
-  const pages = [];
-
-  if (totalPages <= 5) {
-    // ถ้ามีหน้าไม่เกิน 5 หน้า ให้แสดงทุกหน้า
-    for (let i = 1; i <= totalPages; i++) {
-      pages.push(i);
-    }
-  } else {
-    // ถ้ามีมากกว่า 5 หน้า ให้แสดงแค่ 5 หน้า
-    let start = Math.max(currentPageValue - 2, 1);
-    let end = Math.min(currentPageValue + 2, totalPages);
-
-    // ปรับให้แสดง 5 หน้าเสมอ
-    if (end - start + 1 < 5) {
-      if (start === 1) {
-        end = Math.min(5, totalPages);
-      } else {
-        start = Math.max(totalPages - 4, 1);
-      }
-    }
-
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-  }
-  return pages;
-});
+const startIndex = computed(() => 1);
+const endIndex = computed(() => filteredAccounts.value.length);
 </script>
 
 <template>
@@ -400,132 +435,131 @@ const displayedPages = computed(() => {
       </div>
 
       <!-- Filter Box (XM style) -->
-      <div
-        class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-2xl rounded-2xl p-8 mb-8 border border-white/20 dark:border-slate-700/20 transform hover:scale-[1.02] transition-all duration-300"
-      >
-        <div class="flex flex-wrap items-end gap-6">
-          <div class="flex-1 min-w-[200px]">
-            <label
-              class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
-            >
+      <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-2xl rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 mb-6 lg:mb-8 border border-white/20 dark:border-slate-700/20 transform hover:scale-[1.01] lg:hover:scale-[1.02] transition-all duration-300">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-6 items-end">
+          <div class="col-span-1">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="flex items-center gap-2">
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  ></path>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 9h2M12 17h.01" />
                 </svg>
-                Partner Account
+                Client Account
               </span>
             </label>
             <input
-              v-model="filters.partner_account"
+              v-model="filters.client_account"
               type="text"
-              placeholder="กรอก Partner Account..."
-              class="w-full px-4 py-3 text-gray-700 transition duration-200 bg-white border-2 border-blue-100 rounded-xl dark:border-slate-600 dark:bg-slate-800 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800"
+              placeholder="ค้นหา Client Account จากทุกหน้า (Client Account, Account ID, etc.)"
+              class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
               @input="applyFilters"
-            />
-          </div>
-          <div class="flex-1 min-w-[200px]">
-            <label
-              class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
             >
+          </div>
+          <div class="col-span-1">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="flex items-center gap-2">
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  ></path>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6" />
                 </svg>
-                Client UID
+                Account Type
               </span>
             </label>
-            <input
-              v-model="filters.client_uid"
-              type="text"
-              placeholder="กรอก Client UID..."
-              class="w-full px-4 py-3 text-gray-700 transition duration-200 bg-white border-2 border-blue-100 rounded-xl dark:border-slate-600 dark:bg-slate-800 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800"
-              @input="applyFilters"
-            />
-          </div>
-          <div class="flex-1 min-w-[200px]">
-            <label
-              class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
-            >
-              <span class="flex items-center gap-2">
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  ></path>
-                </svg>
-                ประเทศ
-              </span>
-            </label>
-            <input
-              v-model="filters.client_country"
-              type="text"
-              placeholder="กรอกประเทศ..."
-              class="w-full px-4 py-3 text-gray-700 transition duration-200 bg-white border-2 border-blue-100 rounded-xl dark:border-slate-600 dark:bg-slate-800 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800"
-              @input="applyFilters"
-            />
-          </div>
-          <div class="flex-1 min-w-[200px]">
-            <label
-              class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
-            >
-              <span class="flex items-center gap-2">
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  ></path>
-                </svg>
-                วันที่ลงทะเบียน
-              </span>
-            </label>
-            <input
-              v-model="filters.reg_date"
-              type="date"
-              class="w-full px-4 py-3 text-gray-700 transition duration-200 bg-white border-2 border-blue-100 rounded-xl dark:border-slate-600 dark:bg-slate-800 dark:text-gray-300 focus:border-blue-500 dark:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800"
+            <select
+              v-model="filters.account_type"
+              class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
               @change="applyFilters"
-            />
+            >
+              <option value="">All</option>
+              <option v-for="type in accountTypeOptions" :key="type" :value="type">{{ type }}</option>
+            </select>
           </div>
-          <div class="flex flex-none gap-2 ml-auto">
+          <div class="col-span-1">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <span class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Platform
+              </span>
+            </label>
+            <select
+              v-model="filters.platform"
+              class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
+              @change="applyFilters"
+            >
+              <option value="">All</option>
+              <option v-for="platform in platformOptions" :key="platform" :value="platform">{{ platform }}</option>
+            </select>
+          </div>
+          <div class="col-span-1 sm:col-span-2 lg:col-span-1">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <span class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Sign Up Date
+              </span>
+            </label>
+            <select v-model="signUpDateFilter" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base">
+              <option value="all">ทั้งหมด</option>
+              <option value="1m">เปิดบัญชีเมื่อ 1 เดือนที่แล้ว</option>
+              <option value="2m">เปิดบัญชีเมื่อ 2 เดือนที่แล้ว</option>
+              <option value="custom">เลือกวันที่เอง</option>
+            </select>
+          </div>
+
+          <!-- Reset Button -->
+          <div class="col-span-1">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <span class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Actions
+              </span>
+            </label>
             <button
               @click="resetFilters"
-              class="px-8 py-3 font-semibold text-gray-700 transition-all duration-300 transform shadow-lg rounded-xl bg-gradient-to-r from-gray-300 via-gray-200 to-gray-100 hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+              class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-gray-300 via-gray-200 to-gray-100 text-gray-700 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800 text-sm sm:text-base"
             >
               Reset
             </button>
+          </div>
+
+          <!-- Custom Date Range (Mobile: Full width) -->
+          <div v-if="signUpDateFilter === 'custom'" class="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <span class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Start Date
+                  </span>
+                </label>
+                <input
+                  type="date"
+                  v-model="startDate"
+                  class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
+                >
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <span class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    End Date
+                  </span>
+                </label>
+                <input
+                  type="date"
+                  v-model="endDate"
+                  class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
+                >
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -760,12 +794,7 @@ const displayedPages = computed(() => {
                   <td
                     class="px-6 py-4 text-sm font-semibold text-blue-600 whitespace-nowrap dark:text-blue-400"
                   >
-                    {{
-                      account?.client_name ||
-                      account?.client_email ||
-                      account?.client_id ||
-                      "-"
-                    }}
+                    {{ account?.client_account || "-" }}
                   </td>
                   <td
                     class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap dark:text-gray-300"
@@ -851,66 +880,15 @@ const displayedPages = computed(() => {
               </tbody>
             </table>
           </div>
-          <!-- Pagination Controls -->
-          <div class="px-6 py-4 bg-white/50 dark:bg-slate-800/50 border-t border-blue-100/20 dark:border-slate-700/20">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <span>Showing</span>
-                <span class="font-semibold text-gray-900 dark:text-white">{{ startIndex + 1 }}</span>
-                <span>to</span>
-                <span class="font-semibold text-gray-900 dark:text-white">{{ endIndex }}</span>
-                <span>of</span>
-                <span class="font-semibold text-gray-900 dark:text-white">{{ filteredAccounts.length }}</span>
-                <span>entries</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <button
-                  @click="goToPage(currentPage - 1)"
-                  :disabled="currentPage === 1"
-                  class="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
-                    bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600
-                    border border-blue-100 dark:border-slate-600"
-                >
-                  Previous
-                </button>
-                <div class="flex items-center gap-1">
-                  <button
-                    v-for="page in displayedPages"
-                    :key="page"
-                    @click="page !== '...' ? goToPage(page) : null"
-                    :disabled="page === '...'"
-                    :class="[
-                      'px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200',
-                      page === '...'
-                        ? 'bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-default'
-                        : currentPage === page
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600'
-                    ]"
-                  >
-                    {{ page }}
-                  </button>
-                </div>
-                <button
-                  @click="goToPage(currentPage + 1)"
-                  :disabled="currentPage === Math.ceil(filteredAccounts.length / itemsPerPage)"
-                  class="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
-                    bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600
-                    border border-blue-100 dark:border-slate-600"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          </div>
+
         </div>
       </div>
       <!-- Pagination -->
-      <div v-if="props.clients?.data?.length > 0" class="px-6 py-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg border-t border-blue-100/20 dark:border-slate-700/20">
+      <div v-if="props.clients && props.clients.data && props.clients.data.length > 0" class="px-6 py-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg border-t border-blue-100/20 dark:border-slate-700/20">
         <div class="flex items-center justify-between">
           <!-- Pagination Info -->
           <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
-            <span>แสดง {{ props.clients.from }} ถึง {{ props.clients.to }} จากทั้งหมด {{ props.clients.total }} รายการ</span>
+            <span>แสดง {{ startIndex }} ถึง {{ endIndex }} จากทั้งหมด {{ filteredAccounts.length }} รายการ</span>
           </div>
           
           <!-- Pagination Navigation -->
@@ -919,7 +897,7 @@ const displayedPages = computed(() => {
             <Link
               v-if="props.clients.prev_page_url"
               :href="props.clients.prev_page_url"
-              class="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700"
+              class="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors duration-200"
               preserve-scroll
             >
               ก่อนหน้า
@@ -931,9 +909,9 @@ const displayedPages = computed(() => {
             <!-- Page Numbers -->
             <template v-for="(link, i) in props.clients.links" :key="i">
               <Link
-                v-if="link.url && !link.label.includes('Previous') && !link.label.includes('Next')"
+                v-if="link.url && !link.label.includes('Previous') && !link.label.includes('Next') && !link.label.includes('...')"
                 :href="link.url"
-                class="px-4 py-2 text-sm font-medium rounded-lg"
+                class="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200"
                 :class="{
                   'text-white bg-blue-600 dark:bg-blue-500': link.active,
                   'text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-slate-700': !link.active
@@ -942,13 +920,19 @@ const displayedPages = computed(() => {
               >
                 {{ link.label }}
               </Link>
+              <span
+                v-else-if="link.label.includes('...')"
+                class="px-4 py-2 text-sm font-medium text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg cursor-default"
+              >
+                ...
+              </span>
             </template>
 
             <!-- Next Page -->
             <Link
               v-if="props.clients.next_page_url"
               :href="props.clients.next_page_url"
-              class="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700"
+              class="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors duration-200"
               preserve-scroll
             >
               ถัดไป

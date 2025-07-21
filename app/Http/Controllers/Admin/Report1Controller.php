@@ -312,6 +312,8 @@ class Report1Controller extends Controller
                 'total_profit' => $clients->sum('reward_usd'),
                 'total_client_uids' => $clients->pluck('client_uid')->unique()->count()
             ];
+            
+
 
             // Format client data with calculated fields
             $formattedClients = $clients->map(function ($client) {
@@ -327,6 +329,7 @@ class Report1Controller extends Controller
                 return [
                     'partner_account' => $client['partner_account'] ?? '-',
                     'client_uid' => $client['client_uid'] ?? '-',
+                    'client_account' => $client['client_account'] ?? '-',
                     'reg_date' => $client['reg_date'],
                     'client_country' => $client['client_country'] ?? '-',
                     'volume_lots' => $volumeLots,
@@ -345,10 +348,12 @@ class Report1Controller extends Controller
             ]);
 
             // Convert to paginated collection
-            $perPage = 50; // เพิ่มจำนวนรายการต่อหน้าเป็น 50
+            $perPage = 15; // จำนวนรายการต่อหน้าเป็น 15 ตามที่ต้องการ
             $currentPage = $request->get('page', 1);
             $offset = ($currentPage - 1) * $perPage;
             $paginatedClients = $formattedClients->slice($offset, $perPage)->values();
+            
+
             
             // Create pagination data manually
             $pagination = [
