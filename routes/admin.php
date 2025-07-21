@@ -49,6 +49,9 @@ Route::group([
         Route::get('/{clientUid}/details', 'CustomersController@getCustomerDetails')->name('details');
     });
 
+    // All Customers API Route - moved outside admin group to avoid Inertia middleware
+    // Route::get('/all-customers', 'CustomersController@allCustomers')->name('all-customers');
+
     // Report1 Routes
     Route::group([
         'prefix' => 'reports1',

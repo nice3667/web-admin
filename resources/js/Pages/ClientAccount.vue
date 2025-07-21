@@ -21,9 +21,10 @@ const filteredClients = computed(() => {
     if (searchQuery.value) {
         const query = searchQuery.value.toLowerCase();
         filtered = filtered.filter(client => 
+            client.client_uid?.toLowerCase().includes(query) ||
             client.client_id?.toLowerCase().includes(query) ||
-            client.name?.toLowerCase().includes(query) ||
-            client.email?.toLowerCase().includes(query)
+            client.partner_account?.toLowerCase().includes(query) ||
+            client.client_country?.toLowerCase().includes(query)
         );
     }
     
@@ -35,7 +36,7 @@ const filteredClients = computed(() => {
     
     if (searchStatus.value) {
         filtered = filtered.filter(client => 
-            client.status?.toLowerCase() === searchStatus.value.toLowerCase()
+            client.client_status === searchStatus.value
         );
     }
     
@@ -55,7 +56,10 @@ const paginatedClients = computed(() =>
 
 // Statistics
 const clientStats = computed(() => {
-    const activeClients = clients.value.filter(client => client.status === 'active').length;
+    const activeClients = clients.value.filter(client => 
+        client.client_status === 'ACTIVE' || 
+        client.client_status === 'UNKNOWN'
+    ).length;
     const totalBalance = clients.value.reduce((sum, client) => sum + (parseFloat(client.balance) || 0), 0);
     const averageBalance = totalBalance / clients.value.length || 0;
     
@@ -197,7 +201,7 @@ const menuItems = [
                         <input
                             type="text"
                             v-model="searchQuery"
-                            placeholder="Search by ID, name, email..."
+                            placeholder="Search by Client UID, Partner Account, Country..."
                             class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
                         >
                     </div>
@@ -232,8 +236,10 @@ const menuItems = [
                             class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
                         >
                             <option value="">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                            <option value="ACTIVE">Active</option>
+                            <option value="INACTIVE">Inactive</option>
+                            <option value="LEFT">Left</option>
+                            <option value="UNKNOWN">Unknown</option>
                         </select>
                     </div>
                 </div>
@@ -360,12 +366,12 @@ const menuItems = [
                         <table class="min-w-full divide-y divide-blue-100/20 dark:divide-slate-700/20">
                             <thead class="bg-blue-50/50 dark:bg-slate-700/50">
                                 <tr>
-                                    <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Client ID</th>
-                                    <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider hidden sm:table-cell">Name</th>
-                                    <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider hidden md:table-cell">Email</th>
+                                    <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Client UID</th>
+                                    <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider hidden sm:table-cell">Country</th>
+                                    <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider hidden md:table-cell">Partner Account</th>
                                     <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                                    <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider hidden lg:table-cell">Balance</th>
-                                    <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider hidden xl:table-cell">Source</th>
+                                    <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider hidden lg:table-cell">Reward USD</th>
+                                    <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider hidden xl:table-cell">KYC Status</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white/50 dark:bg-slate-800/50 divide-y divide-blue-100/20 dark:divide-slate-700/20">
@@ -391,30 +397,32 @@ const menuItems = [
 
                                 <!-- Data Rows -->
                                 <tr v-else v-for="client in paginatedClients" :key="client.id" class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-colors duration-200">
-                                    <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{{ client.client_id }}</td>
-                                    <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300 hidden sm:table-cell">{{ client.name }}</td>
-                                    <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300 hidden md:table-cell">{{ client.email }}</td>
+                                    <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{{ client.client_uid || client.client_id }}</td>
+                                    <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300 hidden sm:table-cell">{{ client.client_country || '-' }}</td>
+                                    <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300 hidden md:table-cell">{{ client.partner_account || '-' }}</td>
                                     <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                                         <span :class="[
                                             'px-2 sm:px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full',
-                                            client.status === 'active'
+                                            (client.client_status === 'ACTIVE' || client.client_status === 'UNKNOWN')
                                                 ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400'
+                                                : client.client_status === 'LEFT'
+                                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400'
                                                 : 'bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400'
                                         ]">
-                                            {{ client.status }}
+                                            {{ client.client_status }}
                                         </span>
                                     </td>
                                     <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300 hidden lg:table-cell">
-                                        {{ new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(client.balance) }}
+                                        ${{ formatNumber(client.reward_usd || 0) }}
                                     </td>
                                     <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300 hidden xl:table-cell">
                                         <span :class="[
                                             'px-2 sm:px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full',
-                                            client.source === 'V1'
-                                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-400'
-                                                : 'bg-purple-100 text-purple-800 dark:bg-purple-800/20 dark:text-purple-400'
+                                            client.kyc_passed
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400'
+                                                : 'bg-gray-100 text-gray-800 dark:bg-gray-800/20 dark:text-gray-400'
                                         ]">
-                                            {{ client.source }}
+                                            {{ client.kyc_passed ? 'KYC Passed' : 'KYC Pending' }}
                                         </span>
                                     </td>
                                 </tr>

@@ -60,3 +60,4 @@ Route::prefix('clients')->group(function () {
     Route::get('/debug', [ClientController::class, 'debugApi']);
     Route::get('/debug-db', [ClientController::class, 'debugDatabase']);
 });
+

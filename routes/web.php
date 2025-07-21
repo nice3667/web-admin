@@ -86,12 +86,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/exness/debug', [ExnessController::class, 'debugApiResponses']);
     Route::get('/api/exness/debug-db', [ExnessController::class, 'debugDatabaseStatus']);
 
-    // Client sync route
+    // Client routes
+    Route::get('/api/clients', [ClientController::class, 'index']);
     Route::post('/api/clients/sync', [ClientController::class, 'sync']);
     Route::post('/api/clients/sync-new', [ClientController::class, 'syncNewClients']);
     Route::get('/api/clients/sync-stats', [ClientController::class, 'syncStats']);
     Route::get('/api/clients/debug', [ClientController::class, 'debugApi']);
     Route::get('/api/clients/debug-db', [ClientController::class, 'debugDatabase']);
+
+    // Admin API routes - moved to admin group below
+    // Route::get('/api/admin/all-customers', [CustomersController::class, 'allCustomers']);
 
     // Real-time sync routes
     Route::prefix('api/realtime-sync')->group(function () {
@@ -164,5 +168,13 @@ Route::get('/api/exness/clients', [ExnessController::class, 'getClients']);
 // Legacy routes - kept for backward compatibility
 Route::get('/api/exness/clients/v1', [ExnessController::class, 'getClients']);
 Route::get('/api/exness/clients/v2', [ExnessController::class, 'getWallets']);
+
+// Admin API routes (without Inertia middleware)
+Route::middleware(['web', 'auth', 'verified', \App\Http\Middleware\HasAccessAdmin::class])->prefix('admin')->group(function () {
+    Route::get('/api/all-customers', [CustomersController::class, 'allCustomers']);
+});
+
+// Test API route without any middleware
+Route::get('/test-api/all-customers', [CustomersController::class, 'allCustomers']);
 
 require __DIR__.'/auth.php';

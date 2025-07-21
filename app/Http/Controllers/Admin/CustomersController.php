@@ -320,7 +320,11 @@ class CustomersController extends Controller
         $ham = HamClient::all();
         $kantapong = KantapongClient::all();
         $janischa = JanischaClient::all();
-        $all = $all->concat($ham)->concat($kantapong)->concat($janischa);
+        $clients = \App\Models\Client::all(); // Add Client model data
+        $all = $all->concat($ham)->concat($kantapong)->concat($janischa)->concat($clients);
+
+        Log::info('Local DB clients count: ' . $all->count());
+        Log::info('Client model count: ' . $clients->count());
 
         // 2. Exness/Janischa (ReportController)
         try {
@@ -335,8 +339,24 @@ class CustomersController extends Controller
                 if (isset($data['data']['clients'])) {
                     $all = $all->concat($data['data']['clients']);
                 }
+            } elseif (is_object($exness) && method_exists($exness, 'toArray')) {
+                $exnessData = $exness->toArray();
+                if (isset($exnessData['data']['clients'])) {
+                    $all = $all->concat($exnessData['data']['clients']);
+                }
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+            Log::error('Error fetching Exness/Janischa data: ' . $e->getMessage());
+            
+            // Fallback: Get data directly from JanischaClient model
+            try {
+                $janischaClients = \App\Models\JanischaClient::all();
+                Log::info('Fallback: Using JanischaClient model data, count: ' . $janischaClients->count());
+                $all = $all->concat($janischaClients);
+            } catch (\Throwable $fallbackError) {
+                Log::error('Error in JanischaClient fallback: ' . $fallbackError->getMessage());
+            }
+        }
 
         // 3. Exness/Ham (Report1Controller)
         try {
@@ -352,7 +372,9 @@ class CustomersController extends Controller
                     $all = $all->concat($data['data']['clients']);
                 }
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+            Log::error('Error fetching Exness/Ham data: ' . $e->getMessage());
+        }
 
         // 4. Exness/Kantapong (Report2Controller)
         try {
@@ -368,7 +390,9 @@ class CustomersController extends Controller
                     $all = $all->concat($data['data']['clients']);
                 }
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+            Log::error('Error fetching Exness/Kantapong data: ' . $e->getMessage());
+        }
 
         // 5. XM (XMReportController)
         try {
@@ -384,28 +408,60 @@ class CustomersController extends Controller
                     $all = $all->concat($data);
                 }
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+            Log::error('Error fetching XM data: ' . $e->getMessage());
+        }
+
+        Log::info('Total clients before normalization: ' . $all->count());
+
+        // Debug: Log sample data before normalization
+        if ($all->count() > 0) {
+            $sample = $all->first();
+            Log::info('Sample client before normalization:', is_array($sample) ? $sample : $sample->toArray());
+        }
 
         // Normalize fields for frontend search
         $normalized = $all->map(function ($c) {
-            $arr = is_array($c) ? $c : (array)$c;
-            return [
-                'client_uid' => $arr['client_uid'] ?? $arr['clientId'] ?? $arr['traderId'] ?? $arr['account'] ?? $arr['login'] ?? null,
-                'client_id' => $arr['client_id'] ?? $arr['clientId'] ?? $arr['traderId'] ?? $arr['account'] ?? $arr['login'] ?? null,
-                'client_account' => $arr['client_account'] ?? $arr['account'] ?? $arr['login'] ?? $arr['traderId'] ?? null,
-                'partner_account' => $arr['partner_account'] ?? $arr['campaign'] ?? null,
-                'traderId' => $arr['traderId'] ?? null,
-                'client_name' => $arr['client_name'] ?? $arr['name'] ?? null,
-                'account_number' => $arr['account_number'] ?? $arr['account'] ?? $arr['login'] ?? null,
-                'login' => $arr['login'] ?? null,
-                'exness_id' => $arr['exness_id'] ?? null,
-                'country' => $arr['client_country'] ?? $arr['country'] ?? null,
-                'status' => $arr['client_status'] ?? $arr['status'] ?? $arr['valid'] ?? null,
-                'reg_date' => $arr['reg_date'] ?? $arr['signUpDate'] ?? null,
-                'reward_usd' => $arr['reward_usd'] ?? $arr['total_reward_usd'] ?? null,
-                'rebate_amount_usd' => $arr['rebate_amount_usd'] ?? null,
-            ];
+            // Handle different data types safely
+            if (is_array($c)) {
+                $arr = $c;
+            } elseif (is_object($c) && method_exists($c, 'toArray')) {
+                $arr = $c->toArray();
+            } elseif (is_object($c)) {
+                $arr = (array) $c;
+            } else {
+                $arr = (array) $c;
+            }
+            
+            // Debug: Log the array structure (only for first few items to avoid spam)
+            static $logCount = 0;
+            if ($logCount < 3) {
+                Log::info('Normalizing client ' . $logCount . ':', $arr);
+                $logCount++;
+            }
+            
+                                    $normalized = [
+                            'client_uid' => $arr['client_uid'] ?? $arr['clientId'] ?? $arr['traderId'] ?? $arr['account'] ?? $arr['login'] ?? $arr['id'] ?? null,
+                            'client_id' => $arr['client_id'] ?? $arr['clientId'] ?? $arr['traderId'] ?? $arr['account'] ?? $arr['login'] ?? $arr['id'] ?? null,
+                            'client_account' => $arr['client_account'] ?? $arr['account'] ?? $arr['login'] ?? $arr['traderId'] ?? $arr['clientId'] ?? null,
+                            'partner_account' => $arr['partner_account'] ?? $arr['campaign'] ?? $arr['partner'] ?? null,
+                            'traderId' => $arr['traderId'] ?? $arr['trader_id'] ?? $arr['clientId'] ?? $arr['account'] ?? null,
+                            'client_name' => $arr['client_name'] ?? $arr['name'] ?? $arr['full_name'] ?? $arr['first_name'] ?? null,
+                            'account_number' => $arr['account_number'] ?? $arr['account'] ?? $arr['login'] ?? $arr['account_id'] ?? null,
+                            'login' => $arr['login'] ?? $arr['account'] ?? $arr['account_id'] ?? null,
+                            'exness_id' => $arr['exness_id'] ?? $arr['exnessId'] ?? $arr['broker_id'] ?? null,
+                            'country' => $arr['client_country'] ?? $arr['country'] ?? $arr['nationality'] ?? null,
+                            'status' => $arr['client_status'] ?? $arr['status'] ?? $arr['valid'] ?? $arr['is_active'] ?? null,
+                            'reg_date' => $arr['reg_date'] ?? $arr['signUpDate'] ?? $arr['created_at'] ?? $arr['registration_date'] ?? null,
+                            'reward_usd' => $arr['reward_usd'] ?? $arr['total_reward_usd'] ?? $arr['commission'] ?? $arr['profit'] ?? 0,
+                            'rebate_amount_usd' => $arr['rebate_amount_usd'] ?? $arr['rebate'] ?? $arr['cashback'] ?? 0,
+                            'raw_data' => $arr['raw_data'] ?? null, // Add raw_data for search
+                        ];
+            
+            return $normalized;
         })->values();
+
+        Log::info('Total clients after normalization: ' . $normalized->count());
 
         return response()->json([
             'success' => true,

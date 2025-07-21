@@ -1,10 +1,7 @@
 <template>
   <TopNavBar />
-<<<<<<< HEAD
-    <Head title="ค้นหาข้อมูลลูกค้า" />
-=======
->>>>>>> e037524a44ff4e6eba521fa3c56060db3857e60c
-    <div class="min-h-screen py-4 sm:py-8 lg:py-12 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+  <Head title="ค้นหาข้อมูลลูกค้า" />
+  <div class="min-h-screen py-4 sm:py-8 lg:py-12 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
     <div class="mx-auto px-4 sm:px-6 lg:px-8">
           <!-- Page Title with Animation -->
           <div class="mb-6 lg:mb-8 text-center animate-fade-in">
@@ -37,7 +34,7 @@
             <input
               type="text"
               v-model="searchAccount"
-              placeholder="ค้นหา Client Account, Client UID, Partner Account, หรือ Trader ID"
+              placeholder="ค้นหา Client Account, Client UID, หรือข้อมูลอื่นๆ"
               class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
             >
                   </div>
@@ -148,6 +145,7 @@
                 <span class="sm:hidden">Fetch</span>
               </span>
             </button>
+            
               </div>
             </div>
 
@@ -157,7 +155,7 @@
               <thead class="bg-blue-50/50 dark:bg-slate-700/50">
                 <tr>
                   <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Client UID</th>
-                  <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Account</th>
+                  <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Client Account</th>
                   <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Country</th>
                   <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</th>
                   <th scope="col" class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Reward (USD)</th>
@@ -166,10 +164,10 @@
                     </tr>
                   </thead>
               <tbody class="bg-white/50 dark:bg-slate-800/50 divide-y divide-blue-100/20 dark:divide-slate-700/20">
-                <!-- Show prompt if searchAccount is empty -->
-                <tr v-if="!searchAccount.trim()">
+                <!-- Show prompt if no customers found -->
+                <tr v-if="!searchAccount.trim() && customers.length === 0">
                   <td colspan="7" class="px-3 sm:px-6 py-12 text-center text-gray-400 dark:text-gray-500">
-                    กรุณากรอก Client Account หรือ Trader ID เพื่อค้นหาข้อมูลลูกค้า
+                    ไม่มีข้อมูลลูกค้า กรุณากดปุ่ม "Fetch Data" เพื่อโหลดข้อมูล
                   </td>
                 </tr>
                 <!-- Loading State -->
@@ -187,38 +185,38 @@
                 <!-- No Data State -->
                 <tr v-else-if="paginatedCustomers.length === 0" class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50">
                   <td colspan="7" class="px-3 sm:px-6 py-8 lg:py-12 text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                    ไม่พบข้อมูลลูกค้าที่ค้นหา
+                    {{ customers.length === 0 ? 'ไม่มีข้อมูลลูกค้า กรุณากดปุ่ม "Fetch Data" เพื่อโหลดข้อมูล' : 'ไม่พบลูกค้าที่ตรงกับเงื่อนไขการค้นหา' }}
                   </td>
                 </tr>
                 <!-- Data Rows -->
-                <tr v-else v-for="customer in paginatedCustomers" :key="customer.client_uid" class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-colors duration-200">
-                  <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{{ customer.client_uid }}</td>
-                  <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300">{{ customer.client_id }}</td>
+                <tr v-else v-for="customer in paginatedCustomers" :key="customer.client_uid || customer.client_id || customer.traderId" class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-colors duration-200">
+                  <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{{ customer.client_uid || customer.client_id || customer.traderId || '-' }}</td>
+                  <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300">{{ customer.raw_data?.client_account || customer.client_account || customer.account_number || customer.login || '-' }}</td>
                   <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300">{{ customer.country || '-' }}</td>
                   <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                     <span :class="[
                       'px-2 sm:px-4 py-1 sm:py-1.5 inline-flex items-center gap-1 sm:gap-1.5 text-xs font-semibold rounded-full',
-                      customer.client_status === 'ACTIVE'
+                      (customer.status === 'ACTIVE' || customer.status === 'Valid' || customer.status === 'UNKNOWN' || customer.client_status === 'ACTIVE')
                         ? 'bg-green-100/80 text-green-800 dark:bg-green-800/20 dark:text-green-400'
                         : 'bg-red-100/80 text-red-800 dark:bg-red-800/20 dark:text-red-400'
                     ]">
                       <span class="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
                         <span :class="[
                           'animate-ping absolute inline-flex h-full w-full rounded-full opacity-75',
-                          customer.client_status === 'ACTIVE' ? 'bg-green-400' : 'bg-red-400'
+                          (customer.status === 'ACTIVE' || customer.status === 'Valid' || customer.status === 'UNKNOWN' || customer.client_status === 'ACTIVE') ? 'bg-green-400' : 'bg-red-400'
                         ]"></span>
                         <span :class="[
                           'relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2',
-                          customer.client_status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-500'
+                          (customer.status === 'ACTIVE' || customer.status === 'Valid' || customer.status === 'UNKNOWN' || customer.client_status === 'ACTIVE') ? 'bg-green-500' : 'bg-red-500'
                         ]"></span>
                       </span>
-                      <span class="hidden sm:inline">{{ customer.client_status === 'ACTIVE' ? 'Active' : 'Inactive' }}</span>
-                      <span class="sm:hidden">{{ customer.client_status === 'ACTIVE' ? 'A' : 'I' }}</span>
+                      <span class="hidden sm:inline">{{ (customer.status === 'ACTIVE' || customer.status === 'Valid' || customer.status === 'UNKNOWN' || customer.client_status === 'ACTIVE') ? 'Active' : 'Inactive' }}</span>
+                      <span class="sm:hidden">{{ (customer.status === 'ACTIVE' || customer.status === 'Valid' || customer.status === 'UNKNOWN' || customer.client_status === 'ACTIVE') ? 'A' : 'I' }}</span>
                         </span>
                       </td>
-                  <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300">${{ formatNumber(customer.total_reward_usd) }}</td>
-                  <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300">${{ formatNumber(customer.rebate_amount_usd) }}</td>
-                  <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300">{{ customer.owner?.name || '-' }}</td>
+                  <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300">${{ formatNumber(customer.reward_usd || customer.total_reward_usd || 0) }}</td>
+                  <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300">${{ formatNumber(customer.rebate_amount_usd || 0) }}</td>
+                  <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300">{{ customer.owner?.name || customer.partner_account || '-' }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -279,6 +277,17 @@
         </div>
       </div>
     </div>
+    
+          <!-- Error Section -->
+      <div v-if="error" class="mt-8 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+        <h4 class="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">Error Loading Data</h4>
+        <p class="text-red-700 dark:text-red-300">{{ error }}</p>
+        <button @click="fetchData" class="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+          Retry
+        </button>
+      </div>
+
+
   </div>
   <BottomNavBar :menu="menuItems" />
 </template>
@@ -286,6 +295,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { Head } from '@inertiajs/vue3'
 import TopNavBar from '@/Components/TopNavBar.vue';
 import BottomNavBar from '@/Components/BottomNavBar.vue';
 
@@ -301,6 +311,8 @@ const stats = ref({
   total_rebate_usd: 0
 })
 const searchAccount = ref("");
+const startDate = ref(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+const endDate = ref(new Date().toISOString().split('T')[0])
 
 // Setup axios defaults
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
@@ -322,52 +334,84 @@ const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage)
 const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage, totalItems.value))
 const filteredCustomers = computed(() => {
   const search = searchAccount.value.trim();
-  if (!search) return [];
+  if (!search) return customers.value; // Show all customers when search is empty
   const searchLower = search.toLowerCase();
-  // Debug: log all customers that contain the search term in any field
-  const matches = customers.value.filter(customer =>
-    Object.values(customer).some(v => v && String(v).toLowerCase().includes(searchLower))
-  );
-  if (matches.length > 0) {
-    console.log('ลูกค้าที่พบเลขค้นหา', search, ':', matches);
-  } else {
-    console.log('ไม่พบลูกค้าที่มีเลข', search, 'ใน field ใดๆ');
-  }
-  return customers.value.filter(customer => {
-    return (
-      (customer.client_uid && String(customer.client_uid).toLowerCase().includes(searchLower)) ||
-      (customer.client_id && String(customer.client_id).toLowerCase().includes(searchLower)) ||
-      (customer.client_account && String(customer.client_account).toLowerCase().includes(searchLower)) ||
-      (customer.partner_account && String(customer.partner_account).toLowerCase().includes(searchLower)) ||
-      (customer.traderId && String(customer.traderId).toLowerCase().includes(searchLower)) ||
-      (customer.client_name && String(customer.client_name).toLowerCase().includes(searchLower)) ||
-      (customer.account_number && String(customer.account_number).toLowerCase().includes(searchLower)) ||
-      (customer.login && String(customer.login).toLowerCase().includes(searchLower)) ||
-      (customer.exness_id && String(customer.exness_id).toLowerCase().includes(searchLower))
-    );
+  
+  console.log('กำลังค้นหา:', searchLower);
+  console.log('จำนวนลูกค้าทั้งหมด:', customers.value.length);
+  
+  const results = customers.value.filter(customer => {
+    // Function to search recursively in all fields
+                      const searchInObject = (obj, searchTerm) => {
+                    if (!obj || typeof obj !== 'object') return false;
+
+                    for (const [key, value] of Object.entries(obj)) {
+                      if (value === null || value === undefined) continue;
+
+                      if (typeof value === 'string' && value.toLowerCase().includes(searchTerm)) {
+                        return true;
+                      }
+
+                      if (typeof value === 'number' && String(value).toLowerCase().includes(searchTerm)) {
+                        return true;
+                      }
+
+                      if (typeof value === 'object' && searchInObject(value, searchTerm)) {
+                        return true;
+                      }
+                    }
+                    return false;
+                  };
+
+                  // Special search for raw_data fields (for JanischaClient)
+                  const searchInRawData = (obj, searchTerm) => {
+                    if (obj.raw_data && typeof obj.raw_data === 'object') {
+                      for (const [key, value] of Object.entries(obj.raw_data)) {
+                        if (value === null || value === undefined) continue;
+                        
+                        if (typeof value === 'string' && value.toLowerCase().includes(searchTerm)) {
+                          return true;
+                        }
+                        
+                        if (typeof value === 'number' && String(value).toLowerCase().includes(searchTerm)) {
+                          return true;
+                        }
+                      }
+                    }
+                    return false;
+                  };
+    
+                        // Search in all fields of the customer object
+                    const matches = searchInObject(customer, searchLower);
+                    
+                    // Also search in raw_data fields
+                    const rawDataMatches = searchInRawData(customer, searchLower);
+
+                    if (matches || rawDataMatches) {
+                      console.log('พบลูกค้าที่ตรงกับ:', customer);
+                    }
+
+                    return matches || rawDataMatches;
   });
+  
+  console.log('ผลการค้นหา:', results.length, 'รายการ');
+  return results;
 });
 
 const paginatedCustomers = computed(() => {
   return filteredCustomers.value.slice(startIndex.value, endIndex.value)
 })
 
-const filteredStats = computed(() => {
-  if (!searchAccount.value.trim() || filteredCustomers.value.length === 0) {
-    return {
-      total_customers: 0,
-      active_customers: 0,
-      total_reward_usd: 0,
-      total_rebate_usd: 0
-    }
-  }
-  return {
-    total_customers: filteredCustomers.value.length,
-    active_customers: filteredCustomers.value.filter(c => c.client_status === 'ACTIVE').length,
-    total_reward_usd: filteredCustomers.value.reduce((sum, c) => sum + (c.total_reward_usd || 0), 0),
-    total_rebate_usd: filteredCustomers.value.reduce((sum, c) => sum + (c.rebate_amount_usd || 0), 0)
-  }
-})
+                const filteredStats = computed(() => {
+                  const customersToShow = searchAccount.value.trim() ? filteredCustomers.value : customers.value;
+
+                  return {
+                    total_customers: customersToShow.length,
+                    active_customers: customersToShow.filter(c => c.status === 'ACTIVE' || c.status === 'Valid' || c.status === 'UNKNOWN' || c.client_status === 'ACTIVE').length,
+                    total_reward_usd: customersToShow.reduce((sum, c) => sum + (c.reward_usd || c.total_reward_usd || 0), 0),
+                    total_rebate_usd: customersToShow.reduce((sum, c) => sum + (c.rebate_amount_usd || 0), 0)
+                  }
+                })
 
 const displayedPages = computed(() => {
   const pages = []
@@ -406,26 +450,69 @@ const fetchData = async () => {
   error.value = null
 
   try {
-    const response = await axios.get('/admin/all-customers', {
-      params: {
-        startTime: startDate.value,
-        endTime: endDate.value
-      }
-    })
-    customers.value = Array.isArray(response.data?.data?.customers)
-      ? response.data.data.customers
-      : [];
+    console.log('Fetching data from /test-api/all-customers...');
+    
+    // Try without date parameters first
+    let response;
+    try {
+      response = await axios.get('/test-api/all-customers');
+    } catch (dateError) {
+      console.log('Trying with date parameters...');
+      response = await axios.get('/test-api/all-customers', {
+        params: {
+          startTime: startDate.value,
+          endTime: endDate.value
+        }
+      });
+    }
+    
+    console.log('API Response:', response.data);
+    console.log('Response status:', response.status);
+    
+    // Handle different response structures
+    let customersData = [];
+    if (Array.isArray(response.data)) {
+      customersData = response.data;
+    } else if (Array.isArray(response.data?.data)) {
+      customersData = response.data.data;
+    } else if (Array.isArray(response.data?.data?.customers)) {
+      customersData = response.data.data.customers;
+    } else if (Array.isArray(response.data?.customers)) {
+      customersData = response.data.customers;
+    }
+    
+    customers.value = customersData;
+    
+    // Handle stats
     if (response.data?.data?.stats) {
       stats.value = response.data.data.stats;
+    } else if (response.data?.stats) {
+      stats.value = response.data.stats;
     }
+    
     currentPage.value = 1
-    // Debug: log the structure of the first customer
+    
+    // Debug: log the structure of the first customer and all field names
     if (customers.value.length > 0) {
       console.log('ตัวอย่างข้อมูลลูกค้า:', customers.value[0]);
+      console.log('ชื่อฟิลด์ทั้งหมด:', Object.keys(customers.value[0]));
+      
+      // Log first few customers for debugging
+      customers.value.slice(0, 3).forEach((customer, index) => {
+        console.log(`ลูกค้าที่ ${index + 1}:`, customer);
+      });
     } else {
       console.log('ไม่มีข้อมูลลูกค้า');
+      console.log('Response structure:', response.data);
     }
   } catch (e) {
+    console.error('Error fetching data:', e);
+    console.error('Error details:', {
+      message: e.message,
+      response: e.response?.data,
+      status: e.response?.status,
+      headers: e.response?.headers
+    });
     error.value = e.message || 'An error occurred while fetching data'
     customers.value = []
   } finally {
@@ -440,6 +527,8 @@ const formatNumber = (number) => {
 function resetFilters() {
   searchAccount.value = "";
 }
+
+
 
 onMounted(() => {
   fetchData()

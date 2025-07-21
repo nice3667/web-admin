@@ -1,5 +1,6 @@
 <template>
   <TopNavBar />
+  <Head title="XM Report Dashboard" />
   <div class="min-h-screen py-4 sm:py-8 lg:py-12 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
     <div class=" mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Page Title with Animation -->
@@ -33,7 +34,7 @@
             <input
               type="text"
               v-model="searchTraderId"
-              placeholder="Search Trader ID"
+              placeholder="ค้นหา Trade ID จากทุกหน้า (Trader ID, Client ID, Account ID, etc.)"
               class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
             >
           </div>
@@ -276,7 +277,7 @@
                 <!-- No Data State -->
                 <tr v-else-if="!paginatedTraders.length" class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50">
                   <td colspan="10" class="px-3 sm:px-6 py-8 lg:py-12 text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                    No traders found for the selected date range
+                    {{ traders.length === 0 ? 'ไม่มีข้อมูล traders กรุณากดปุ่ม "Fetch Data" เพื่อโหลดข้อมูล' : 'ไม่พบ traders ที่ตรงกับเงื่อนไขการค้นหา' }}
                   </td>
                 </tr>
 
@@ -388,6 +389,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { Head } from '@inertiajs/vue3'
 import TopNavBar from '@/Components/TopNavBar.vue';
 import BottomNavBar from '@/Components/BottomNavBar.vue';
 
@@ -458,7 +460,26 @@ const filteredTraders = computed(() => {
     }
   }
   return traders.value.filter(trader => {
-    const traderIdMatch = !searchTraderId.value || String(trader.traderId).toLowerCase().includes(searchTraderId.value.toLowerCase());
+    // Enhanced Trader ID search across multiple fields
+    const searchTerm = searchTraderId.value.toLowerCase();
+    const traderIdMatch = !searchTraderId.value || (
+      (trader.traderId && String(trader.traderId).toLowerCase().includes(searchTerm)) ||
+      (trader.clientId && String(trader.clientId).toLowerCase().includes(searchTerm)) ||
+      (trader.accountId && String(trader.accountId).toLowerCase().includes(searchTerm)) ||
+      (trader.userId && String(trader.userId).toLowerCase().includes(searchTerm)) ||
+      (trader.login && String(trader.login).toLowerCase().includes(searchTerm)) ||
+      (trader.accountNumber && String(trader.accountNumber).toLowerCase().includes(searchTerm)) ||
+      (trader.tradingAccount && String(trader.tradingAccount).toLowerCase().includes(searchTerm)) ||
+      (trader.brokerAccount && String(trader.brokerAccount).toLowerCase().includes(searchTerm)) ||
+      (trader.mt4Account && String(trader.mt4Account).toLowerCase().includes(searchTerm)) ||
+      (trader.mt5Account && String(trader.mt5Account).toLowerCase().includes(searchTerm)) ||
+      // Search in nested objects if they exist
+      (trader.account && trader.account.id && String(trader.account.id).toLowerCase().includes(searchTerm)) ||
+      (trader.account && trader.account.number && String(trader.account.number).toLowerCase().includes(searchTerm)) ||
+      (trader.user && trader.user.id && String(trader.user.id).toLowerCase().includes(searchTerm)) ||
+      (trader.user && trader.user.username && String(trader.user.username).toLowerCase().includes(searchTerm))
+    );
+    
     const accountTypeMatch = !searchAccountType.value || (trader.accountType && trader.accountType.toLowerCase().includes(searchAccountType.value.toLowerCase()));
     const platformMatch = !searchPlatform.value || (trader.tradingPlatform && trader.tradingPlatform.toLowerCase().includes(searchPlatform.value.toLowerCase()));
     let signUpDateMatch = true;
