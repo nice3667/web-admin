@@ -23,42 +23,42 @@ class Report1Controller extends Controller
     {
         try {
             Log::info('Fetching Ham clients data for reports1/clients1...');
-            
+
             // Try to get data from Exness API first, fallback to database
             $dataSource = 'Database';
             $apiError = null;
             $userEmail = 'hamsftmo@gmail.com';
-            
+
             try {
                 $apiResponse = $this->hamExnessAuthService->getClientsData();
-                
+
                 if (isset($apiResponse['error'])) {
                     throw new \Exception($apiResponse['error']);
                 }
-                
+
                 $apiClients = $apiResponse['data'] ?? [];
                 $dataSource = 'Exness API';
-                
+
                 Log::info('Successfully fetched data from Exness API', [
                     'count' => count($apiClients),
                     'user' => 'hamsftmo@gmail.com'
                 ]);
-                
+
                 // Use API data
                 $clients = collect($apiClients);
-                
+
             } catch (\Exception $e) {
                 Log::warning('Failed to fetch from Exness API, using database data', [
                     'error' => $e->getMessage(),
                     'user' => 'hamsftmo@gmail.com'
                 ]);
-                
+
                 $apiError = $e->getMessage();
-                
+
                 // Fallback to database
                 $query = HamClient::query();
                 $clients = $query->get();
-                
+
                 // Convert to API format for consistency
                 $clients = $clients->map(function ($client) {
                     return [
@@ -79,7 +79,7 @@ class Report1Controller extends Controller
 
             // Apply filters
             $filters = [];
-            
+
             if ($request->filled('search')) {
                 $clients = $clients->filter(function ($client) use ($request) {
                     return stripos($client['client_uid'], $request->search) !== false;
@@ -89,8 +89,8 @@ class Report1Controller extends Controller
 
             if ($request->filled('status') && $request->status !== 'all') {
                 $clients = $clients->filter(function ($client) use ($request) {
-                    $volumeLots = (float)($client['volume_lots'] ?? 0);
-                    $rewardUsd = (float)($client['reward_usd'] ?? 0);
+                    $volumeLots = (float) ($client['volume_lots'] ?? 0);
+                    $rewardUsd = (float) ($client['reward_usd'] ?? 0);
                     $calculatedStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
                     return strtoupper($calculatedStatus) === strtoupper($request->status);
                 });
@@ -138,19 +138,19 @@ class Report1Controller extends Controller
 
             // Format client data with calculated status
             $formattedClients = $uniqueClients->map(function ($client) {
-                $volumeLots = (float)($client['volume_lots'] ?? 0);
-                $rewardUsd = (float)($client['reward_usd'] ?? 0);
-                
+                $volumeLots = (float) ($client['volume_lots'] ?? 0);
+                $rewardUsd = (float) ($client['reward_usd'] ?? 0);
+
                 // Calculate status based on activity
                 $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
-                
+
                 return [
                     'client_uid' => $client['client_uid'] ?? '-',
                     'client_status' => $clientStatus,
                     'reward_usd' => $rewardUsd,
-                    'rebate_amount_usd' => (float)($client['rebate_amount_usd'] ?? 0),
+                    'rebate_amount_usd' => (float) ($client['rebate_amount_usd'] ?? 0),
                     'volume_lots' => $volumeLots,
-                    'volume_mln_usd' => (float)($client['volume_mln_usd'] ?? 0),
+                    'volume_mln_usd' => (float) ($client['volume_mln_usd'] ?? 0),
                     'reg_date' => $client['reg_date'],
                     'partner_account' => $client['partner_account'] ?? '-',
                     'client_country' => $client['client_country'] ?? '-'
@@ -175,7 +175,7 @@ class Report1Controller extends Controller
 
 
 
-        return Inertia::render('Admin/Report1/Clients1', [
+            return Inertia::render('Admin/Report1/Clients1', [
                 'clients' => $pagination,
                 'stats' => $stats,
                 'filters' => $filters,
@@ -187,7 +187,7 @@ class Report1Controller extends Controller
         } catch (\Exception $e) {
             Log::error('Error in Report1Controller@clients1: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-            
+
             return Inertia::render('Admin/Report1/Clients1', [
                 'clients' => collect([]),
                 'stats' => [
@@ -209,42 +209,42 @@ class Report1Controller extends Controller
     {
         try {
             Log::info('Fetching Ham client account data...');
-            
+
             // Try to get data from Exness API first, fallback to database
             $dataSource = 'Database';
             $apiError = null;
             $userEmail = 'hamsftmo@gmail.com';
-            
+
             try {
                 $apiResponse = $this->hamExnessAuthService->getClientsData();
-                
+
                 if (isset($apiResponse['error'])) {
                     throw new \Exception($apiResponse['error']);
                 }
-                
+
                 $apiClients = $apiResponse['data'] ?? [];
                 $dataSource = 'Exness API';
-                
+
                 Log::info('Successfully fetched data from Exness API', [
                     'count' => count($apiClients),
                     'user' => 'hamsftmo@gmail.com'
                 ]);
-                
+
                 // Use API data
                 $clients = collect($apiClients);
-                
+
             } catch (\Exception $e) {
                 Log::warning('Failed to fetch from Exness API, using database data', [
                     'error' => $e->getMessage(),
                     'user' => 'hamsftmo@gmail.com'
                 ]);
-                
+
                 $apiError = $e->getMessage();
-                
+
                 // Fallback to database
                 $query = HamClient::query();
                 $clients = $query->get();
-                
+
                 // Convert to API format for consistency
                 $clients = $clients->map(function ($client) {
                     return [
@@ -265,7 +265,7 @@ class Report1Controller extends Controller
 
             // Apply filters (same as clients method)
             $filters = [];
-            
+
             if ($request->filled('partner_account')) {
                 $clients = $clients->filter(function ($client) use ($request) {
                     return stripos($client['partner_account'], $request->partner_account) !== false;
@@ -289,8 +289,8 @@ class Report1Controller extends Controller
 
             if ($request->filled('client_status')) {
                 $clients = $clients->filter(function ($client) use ($request) {
-                    $volumeLots = (float)($client['volume_lots'] ?? 0);
-                    $rewardUsd = (float)($client['reward_usd'] ?? 0);
+                    $volumeLots = (float) ($client['volume_lots'] ?? 0);
+                    $rewardUsd = (float) ($client['reward_usd'] ?? 0);
                     $calculatedStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
                     return strtoupper($calculatedStatus) === strtoupper($request->client_status);
                 });
@@ -312,20 +312,20 @@ class Report1Controller extends Controller
                 'total_profit' => $clients->sum('reward_usd'),
                 'total_client_uids' => $clients->pluck('client_uid')->unique()->count()
             ];
-            
+
 
 
             // Format client data with calculated fields
             $formattedClients = $clients->map(function ($client) {
-                $volumeLots = (float)($client['volume_lots'] ?? 0);
-                $rewardUsd = (float)($client['reward_usd'] ?? 0);
-                
+                $volumeLots = (float) ($client['volume_lots'] ?? 0);
+                $rewardUsd = (float) ($client['reward_usd'] ?? 0);
+
                 // Calculate status based on activity
                 $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
-                
+
                 // KYC estimation based on activity level
                 $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
-                
+
                 return [
                     'partner_account' => $client['partner_account'] ?? '-',
                     'client_uid' => $client['client_uid'] ?? '-',
@@ -333,7 +333,7 @@ class Report1Controller extends Controller
                     'reg_date' => $client['reg_date'],
                     'client_country' => $client['client_country'] ?? '-',
                     'volume_lots' => $volumeLots,
-                    'volume_mln_usd' => (float)($client['volume_mln_usd'] ?? 0),
+                    'volume_mln_usd' => (float) ($client['volume_mln_usd'] ?? 0),
                     'reward_usd' => $rewardUsd,
                     'client_status' => $clientStatus,
                     'kyc_passed' => $kycPassed,
@@ -352,9 +352,9 @@ class Report1Controller extends Controller
             $currentPage = $request->get('page', 1);
             $offset = ($currentPage - 1) * $perPage;
             $paginatedClients = $formattedClients->slice($offset, $perPage)->values();
-            
 
-            
+
+
             // Create pagination data manually
             $pagination = [
                 'data' => $paginatedClients,
@@ -368,16 +368,16 @@ class Report1Controller extends Controller
                 'next_page_url' => $currentPage < ceil($formattedClients->count() / $perPage) ? $request->fullUrlWithQuery(['page' => $currentPage + 1]) : null,
                 'links' => []
             ];
-            
+
             // Generate pagination links
             $totalPages = ceil($formattedClients->count() / $perPage);
             $pagination['links'][] = ['url' => $pagination['prev_page_url'], 'label' => '&laquo; Previous', 'active' => false];
-            
+
             // แสดงปุ่มตัวเลขหน้าแบบฉลาด
             $maxButtons = 5; // จำนวนปุ่มตัวเลขที่จะแสดง
             $start = max(1, min($currentPage - floor($maxButtons / 2), $totalPages - $maxButtons + 1));
             $end = min($start + $maxButtons - 1, $totalPages);
-            
+
             // เพิ่มปุ่มหน้าแรกถ้าไม่ได้อยู่ที่จุดเริ่มต้น
             if ($start > 1) {
                 $pagination['links'][] = [
@@ -393,16 +393,16 @@ class Report1Controller extends Controller
                     ];
                 }
             }
-            
+
             // เพิ่มปุ่มตัวเลขหน้า
             for ($i = $start; $i <= $end; $i++) {
                 $pagination['links'][] = [
                     'url' => $request->fullUrlWithQuery(['page' => $i]),
-                    'label' => (string)$i,
+                    'label' => (string) $i,
                     'active' => $i == $currentPage
                 ];
             }
-            
+
             // เพิ่มปุ่มหน้าสุดท้ายถ้าไม่ได้อยู่ที่จุดสิ้นสุด
             if ($end < $totalPages) {
                 if ($end < $totalPages - 1) {
@@ -414,11 +414,11 @@ class Report1Controller extends Controller
                 }
                 $pagination['links'][] = [
                     'url' => $request->fullUrlWithQuery(['page' => $totalPages]),
-                    'label' => (string)$totalPages,
+                    'label' => (string) $totalPages,
                     'active' => false
                 ];
             }
-            
+
             $pagination['links'][] = ['url' => $pagination['next_page_url'], 'label' => 'Next &raquo;', 'active' => false];
 
             return Inertia::render('Admin/Report1/ClientAccount1', [
@@ -433,7 +433,7 @@ class Report1Controller extends Controller
         } catch (\Exception $e) {
             Log::error('Error in Report1Controller@clientAccount1: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-            
+
             return Inertia::render('Admin/Report1/ClientAccount1', [
                 'clients' => collect([]),
                 'stats' => [
@@ -455,7 +455,7 @@ class Report1Controller extends Controller
     {
         try {
             $result = $this->hamExnessAuthService->getClientsData();
-            
+
             if (isset($result['error'])) {
                 Log::warning('Ham API failed for client transactions, using empty data', ['error' => $result['error']]);
                 $clients = [];
@@ -469,12 +469,12 @@ class Report1Controller extends Controller
                     'client_uid' => $client['client_uid'] ?? '-',
                     'partner_account' => $client['partner_account'] ?? '-',
                     'transaction_type' => 'Trading',
-                    'amount' => (float)($client['volume_mln_usd'] ?? 0),
+                    'amount' => (float) ($client['volume_mln_usd'] ?? 0),
                     'currency' => 'USD',
                     'status' => 'Completed',
                     'created_at' => $client['reg_date'] ?? now(),
-                    'volume_lots' => (float)($client['volume_lots'] ?? 0),
-                    'reward_usd' => (float)($client['reward_usd'] ?? 0)
+                    'volume_lots' => (float) ($client['volume_lots'] ?? 0),
+                    'reward_usd' => (float) ($client['reward_usd'] ?? 0)
                 ];
             })->toArray();
 
@@ -507,16 +507,16 @@ class Report1Controller extends Controller
     {
         try {
             $result = $this->hamExnessAuthService->getClientsData();
-            
+
             $pendingTransactions = collect($result['data'] ?? [])->filter(function ($client) {
-                return (float)($client['volume_lots'] ?? 0) > 0 && (float)($client['reward_usd'] ?? 0) == 0;
+                return (float) ($client['volume_lots'] ?? 0) > 0 && (float) ($client['reward_usd'] ?? 0) == 0;
             })->map(function ($client) {
                 return [
                     'client_uid' => $client['client_uid'] ?? '-',
                     'partner_account' => $client['partner_account'] ?? '-',
                     'transaction_type' => 'Reward Pending',
-                    'amount' => (float)($client['volume_mln_usd'] ?? 0),
-                    'volume_lots' => (float)($client['volume_lots'] ?? 0),
+                    'amount' => (float) ($client['volume_mln_usd'] ?? 0),
+                    'volume_lots' => (float) ($client['volume_lots'] ?? 0),
                     'status' => 'Pending',
                     'created_at' => $client['reg_date'] ?? now()
                 ];
@@ -551,16 +551,16 @@ class Report1Controller extends Controller
     {
         try {
             $result = $this->hamExnessAuthService->getClientsData();
-            
+
             $rewardHistory = collect($result['data'] ?? [])->filter(function ($client) {
-                return (float)($client['reward_usd'] ?? 0) > 0;
+                return (float) ($client['reward_usd'] ?? 0) > 0;
             })->map(function ($client) {
                 return [
                     'client_uid' => $client['client_uid'] ?? '-',
                     'partner_account' => $client['partner_account'] ?? '-',
-                    'reward_amount' => (float)($client['reward_usd'] ?? 0),
-                    'volume_lots' => (float)($client['volume_lots'] ?? 0),
-                    'volume_usd' => (float)($client['volume_mln_usd'] ?? 0),
+                    'reward_amount' => (float) ($client['reward_usd'] ?? 0),
+                    'volume_lots' => (float) ($client['volume_lots'] ?? 0),
+                    'volume_usd' => (float) ($client['volume_mln_usd'] ?? 0),
                     'reward_date' => $client['reg_date'] ?? now(),
                     'status' => 'Paid'
                 ];
@@ -597,7 +597,7 @@ class Report1Controller extends Controller
     {
         try {
             $data = $this->hamExnessAuthService->getClientsData();
-            
+
             if (isset($data['error'])) {
                 return response()->json([
                     'success' => false,
@@ -627,17 +627,17 @@ class Report1Controller extends Controller
     private function formatClientsData($data)
     {
         return collect($data)->map(function ($client) {
-            $volumeLots = (float)($client['volume_lots'] ?? 0);
-            $rewardUsd = (float)($client['reward_usd'] ?? 0);
+            $volumeLots = (float) ($client['volume_lots'] ?? 0);
+            $rewardUsd = (float) ($client['reward_usd'] ?? 0);
             $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
-            
+
             return [
                 'client_uid' => $client['client_uid'] ?? '-',
                 'client_status' => $clientStatus,
                 'reward_usd' => $rewardUsd,
-                'rebate_amount_usd' => (float)($client['rebate_amount_usd'] ?? 0),
+                'rebate_amount_usd' => (float) ($client['rebate_amount_usd'] ?? 0),
                 'volume_lots' => $volumeLots,
-                'volume_mln_usd' => (float)($client['volume_mln_usd'] ?? 0),
+                'volume_mln_usd' => (float) ($client['volume_mln_usd'] ?? 0),
                 'reg_date' => $client['reg_date'] ?? null,
                 'partner_account' => $client['partner_account'] ?? '-',
                 'client_country' => $client['client_country'] ?? $client['country'] ?? '-'
@@ -648,18 +648,18 @@ class Report1Controller extends Controller
     private function formatClientAccountData($data)
     {
         return collect($data)->map(function ($client) {
-            $volumeLots = (float)($client['volume_lots'] ?? 0);
-            $rewardUsd = (float)($client['reward_usd'] ?? 0);
+            $volumeLots = (float) ($client['volume_lots'] ?? 0);
+            $rewardUsd = (float) ($client['reward_usd'] ?? 0);
             $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
             $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
-            
+
             return [
                 'partner_account' => $client['partner_account'] ?? '-',
                 'client_uid' => $client['client_uid'] ?? '-',
                 'reg_date' => $client['reg_date'] ?? null,
                 'client_country' => $client['client_country'] ?? $client['country'] ?? '-',
                 'volume_lots' => $volumeLots,
-                'volume_mln_usd' => (float)($client['volume_mln_usd'] ?? 0),
+                'volume_mln_usd' => (float) ($client['volume_mln_usd'] ?? 0),
                 'reward_usd' => $rewardUsd,
                 'client_status' => $clientStatus,
                 'kyc_passed' => $kycPassed,
@@ -677,7 +677,7 @@ class Report1Controller extends Controller
             $search = strtolower($request->search);
             $filtered = $filtered->filter(function ($client) use ($search) {
                 return str_contains(strtolower($client['client_uid']), $search) ||
-                       str_contains(strtolower($client['partner_account']), $search);
+                    str_contains(strtolower($client['partner_account']), $search);
             });
         }
 
@@ -726,4 +726,4 @@ class Report1Controller extends Controller
             'inactive' => $inactive
         ];
     }
-} 
+}

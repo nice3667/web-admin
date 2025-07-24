@@ -56,23 +56,23 @@ const menuItems = [
       }
     ]
   },
-  {
-    label: "Exness 3",
-    icon: mdiAccountGroup,
-    dropdown: true,
-    items: [
-      {
-        label: "Clients",
-        to: "/admin/reports2/clients2",
-        icon: mdiAccountGroup
-      },
-      {
-        label: "Client Account",
-        to: "/admin/reports2/client-account2",
-        icon: mdiAccountDetails
-      }
-    ]
-  },
+//   {
+//     label: "Exness 3",
+//     icon: mdiAccountGroup,
+//     dropdown: true,
+//     items: [
+//       {
+//         label: "Clients",
+//         to: "/admin/reports2/clients2",
+//         icon: mdiAccountGroup
+//       },
+//       {
+//         label: "Client Account",
+//         to: "/admin/reports2/client-account2",
+//         icon: mdiAccountDetails
+//       }
+//     ]
+//   },
 //     ,
 //   {
 //     label: "Rebate",

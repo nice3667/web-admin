@@ -1,8 +1,15 @@
 <script setup>
 import { Head, router, Link } from "@inertiajs/vue3";
-import { mdiClockOutline, mdiAlertBoxOutline, mdiAccountGroup, mdiChartLine, mdiCurrencyUsd, mdiGift } from "@mdi/js";
-import TopNavBar from '@/Components/TopNavBar.vue';
-import BottomNavBar from '@/Components/BottomNavBar.vue';
+import {
+  mdiClockOutline,
+  mdiAlertBoxOutline,
+  mdiAccountGroup,
+  mdiChartLine,
+  mdiCurrencyUsd,
+  mdiGift,
+} from "@mdi/js";
+import TopNavBar from "@/Components/TopNavBar.vue";
+import BottomNavBar from "@/Components/BottomNavBar.vue";
 import { ref, computed, watch } from "vue";
 
 const props = defineProps({
@@ -19,8 +26,8 @@ const props = defineProps({
       total_amount: 0,
       due_today: 0,
       overdue: 0,
-      total_client_uids: 0
-    })
+      total_client_uids: 0,
+    }),
   },
   filters: {
     type: Object,
@@ -64,7 +71,7 @@ const endDate = ref("");
 const accountTypeOptions = computed(() => {
   const types = new Set();
   if (props.clients?.data) {
-    props.clients.data.forEach(account => {
+    props.clients.data.forEach((account) => {
       if (account.account_type) {
         types.add(account.account_type);
       }
@@ -82,7 +89,7 @@ const platformOptions = computed(() => {
 const applyFilters = () => {
   // No router navigation - just update local filters
   // The filteredAccounts computed property will handle the filtering
-  console.log('Filters applied:', filters.value);
+  console.log("Filters applied:", filters.value);
 };
 
 const resetFilters = () => {
@@ -101,7 +108,7 @@ const resetFilters = () => {
   startDate.value = "";
   endDate.value = "";
 
-  console.log('Filters reset');
+  console.log("Filters reset");
 };
 
 // Computed properties for filtered data
@@ -111,24 +118,29 @@ const filteredAccounts = computed(() => {
   // Filter by Client Account
   if (filters.value?.client_account) {
     const searchLower = filters.value.client_account.toLowerCase();
-    result = result.filter((account) =>
-      (account?.client_account || '').toLowerCase().includes(searchLower) ||
-      (account?.client_uid || '').toLowerCase().includes(searchLower) ||
-      (account?.partner_account || '').toLowerCase().includes(searchLower)
+    result = result.filter(
+      (account) =>
+        (account?.client_account || "").toLowerCase().includes(searchLower) ||
+        (account?.client_uid || "").toLowerCase().includes(searchLower) ||
+        (account?.partner_account || "").toLowerCase().includes(searchLower)
     );
   }
 
   // Filter by Account Type
   if (filters.value?.account_type) {
-    result = result.filter((account) =>
-      (account?.account_type || '').toLowerCase() === filters.value.account_type.toLowerCase()
+    result = result.filter(
+      (account) =>
+        (account?.account_type || "").toLowerCase() ===
+        filters.value.account_type.toLowerCase()
     );
   }
 
   // Filter by Platform
   if (filters.value?.platform) {
-    result = result.filter((account) =>
-      (account?.platform || '').toLowerCase() === filters.value.platform.toLowerCase()
+    result = result.filter(
+      (account) =>
+        (account?.platform || "").toLowerCase() ===
+        filters.value.platform.toLowerCase()
     );
   }
 
@@ -136,7 +148,7 @@ const filteredAccounts = computed(() => {
   if (filters.value?.partner_account) {
     const searchLower = filters.value.partner_account.toLowerCase();
     result = result.filter((account) =>
-      (account?.partner_account || '').toLowerCase().includes(searchLower)
+      (account?.partner_account || "").toLowerCase().includes(searchLower)
     );
   }
 
@@ -144,7 +156,7 @@ const filteredAccounts = computed(() => {
   if (filters.value?.client_uid) {
     const searchLower = filters.value.client_uid.toLowerCase();
     result = result.filter((account) =>
-      (account?.client_uid || '').toLowerCase().includes(searchLower)
+      (account?.client_uid || "").toLowerCase().includes(searchLower)
     );
   }
 
@@ -152,14 +164,16 @@ const filteredAccounts = computed(() => {
   if (filters.value?.client_country) {
     const searchLower = filters.value.client_country.toLowerCase();
     result = result.filter((account) =>
-      (account?.client_country || '').toLowerCase().includes(searchLower)
+      (account?.client_country || "").toLowerCase().includes(searchLower)
     );
   }
 
   // Filter by Status
   if (filters.value?.client_status) {
-    result = result.filter((account) =>
-      (account?.client_status || '').toLowerCase() === filters.value.client_status.toLowerCase()
+    result = result.filter(
+      (account) =>
+        (account?.client_status || "").toLowerCase() ===
+        filters.value.client_status.toLowerCase()
     );
   }
 
@@ -167,7 +181,9 @@ const filteredAccounts = computed(() => {
   if (filters.value?.reg_date) {
     result = result.filter((account) => {
       if (!account?.reg_date) return false;
-      const accountDate = new Date(account.reg_date).toISOString().split('T')[0];
+      const accountDate = new Date(account.reg_date)
+        .toISOString()
+        .split("T")[0];
       return accountDate === filters.value.reg_date;
     });
   }
@@ -179,12 +195,24 @@ const filteredAccounts = computed(() => {
     let endDate = null;
 
     if (signUpDateFilter.value === "1m") {
-      startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      startDate = new Date(
+        now.getFullYear(),
+        now.getMonth() - 1,
+        now.getDate()
+      );
       endDate = now;
     } else if (signUpDateFilter.value === "2m") {
-      startDate = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
+      startDate = new Date(
+        now.getFullYear(),
+        now.getMonth() - 2,
+        now.getDate()
+      );
       endDate = now;
-    } else if (signUpDateFilter.value === "custom" && startDate.value && endDate.value) {
+    } else if (
+      signUpDateFilter.value === "custom" &&
+      startDate.value &&
+      endDate.value
+    ) {
       startDate = new Date(startDate.value);
       endDate = new Date(endDate.value);
     }
@@ -203,15 +231,16 @@ const filteredAccounts = computed(() => {
 
 // Computed properties for stats with safe defaults
 const computedStats = computed(() => ({
-  total_pending: props.stats?.total_pending || props.stats?.total_client_uids || 0,
+  total_pending:
+    props.stats?.total_pending || props.stats?.total_client_uids || 0,
   total_amount: Number(props.stats?.total_amount || 0).toFixed(4),
   due_today: Number(props.stats?.due_today || 0).toFixed(4),
-  overdue: Number(props.stats?.overdue || 0).toFixed(4)
+  overdue: Number(props.stats?.overdue || 0).toFixed(4),
 }));
 
 // Helper functions for status display
 const getStatusColor = (status) => {
-  const statusUpper = (status || '').toUpperCase();
+  const statusUpper = (status || "").toUpperCase();
   switch (statusUpper) {
     case "ACTIVE":
       return "text-green-600";
@@ -223,7 +252,7 @@ const getStatusColor = (status) => {
 };
 
 const getStatusText = (status) => {
-  return (status || 'UNKNOWN').toUpperCase();
+  return (status || "UNKNOWN").toUpperCase();
 };
 
 // Helper functions for formatting
@@ -435,14 +464,35 @@ const endIndex = computed(() => filteredAccounts.value.length);
       </div>
 
       <!-- Filter Box (XM style) -->
-      <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-2xl rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 mb-6 lg:mb-8 border border-white/20 dark:border-slate-700/20 transform hover:scale-[1.01] lg:hover:scale-[1.02] transition-all duration-300">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-6 items-end">
+      <div
+        class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-2xl rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 mb-6 lg:mb-8 border border-white/20 dark:border-slate-700/20 transform hover:scale-[1.01] lg:hover:scale-[1.02] transition-all duration-300"
+      >
+        <div
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-6 items-end"
+        >
           <div class="col-span-1">
-            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+            >
               <span class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 9h2M12 17h.01" />
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M11 9h2M12 17h.01"
+                  />
                 </svg>
                 Client Account
               </span>
@@ -453,13 +503,25 @@ const endIndex = computed(() => filteredAccounts.value.length);
               placeholder="ค้นหา Client Account จากทุกหน้า (Client Account, Account ID, etc.)"
               class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
               @input="applyFilters"
-            >
+            />
           </div>
           <div class="col-span-1">
-            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+            >
               <span class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6" />
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12h6"
+                  />
                 </svg>
                 Account Type
               </span>
@@ -470,14 +532,32 @@ const endIndex = computed(() => filteredAccounts.value.length);
               @change="applyFilters"
             >
               <option value="">All</option>
-              <option v-for="type in accountTypeOptions" :key="type" :value="type">{{ type }}</option>
+              <option
+                v-for="type in accountTypeOptions"
+                :key="type"
+                :value="type"
+              >
+                {{ type }}
+              </option>
             </select>
           </div>
           <div class="col-span-1">
-            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+            >
               <span class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
                 Platform
               </span>
@@ -488,19 +568,40 @@ const endIndex = computed(() => filteredAccounts.value.length);
               @change="applyFilters"
             >
               <option value="">All</option>
-              <option v-for="platform in platformOptions" :key="platform" :value="platform">{{ platform }}</option>
+              <option
+                v-for="platform in platformOptions"
+                :key="platform"
+                :value="platform"
+              >
+                {{ platform }}
+              </option>
             </select>
           </div>
           <div class="col-span-1 sm:col-span-2 lg:col-span-1">
-            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+            >
               <span class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
                 </svg>
                 Sign Up Date
               </span>
             </label>
-            <select v-model="signUpDateFilter" class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base">
+            <select
+              v-model="signUpDateFilter"
+              class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
+            >
               <option value="all">ทั้งหมด</option>
               <option value="1m">เปิดบัญชีเมื่อ 1 เดือนที่แล้ว</option>
               <option value="2m">เปิดบัญชีเมื่อ 2 เดือนที่แล้ว</option>
@@ -510,10 +611,22 @@ const endIndex = computed(() => filteredAccounts.value.length);
 
           <!-- Reset Button -->
           <div class="col-span-1">
-            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+            >
               <span class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
                 </svg>
                 Actions
               </span>
@@ -527,13 +640,28 @@ const endIndex = computed(() => filteredAccounts.value.length);
           </div>
 
           <!-- Custom Date Range (Mobile: Full width) -->
-          <div v-if="signUpDateFilter === 'custom'" class="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-5">
+          <div
+            v-if="signUpDateFilter === 'custom'"
+            class="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-5"
+          >
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label
+                  class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                >
                   <span class="flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
                     </svg>
                     Start Date
                   </span>
@@ -542,13 +670,25 @@ const endIndex = computed(() => filteredAccounts.value.length);
                   type="date"
                   v-model="startDate"
                   class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
-                >
+                />
               </div>
               <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label
+                  class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                >
                   <span class="flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
                     </svg>
                     End Date
                   </span>
@@ -557,7 +697,7 @@ const endIndex = computed(() => filteredAccounts.value.length);
                   type="date"
                   v-model="endDate"
                   class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
-                >
+                />
               </div>
             </div>
           </div>
@@ -571,8 +711,12 @@ const endIndex = computed(() => filteredAccounts.value.length);
         >
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">จำนวน Client UID</p>
-              <p class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                จำนวน Client UID
+              </p>
+              <p
+                class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
+              >
                 {{ computedStats.total_pending }}
               </p>
             </div>
@@ -600,9 +744,13 @@ const endIndex = computed(() => filteredAccounts.value.length);
         >
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Volume (lots)</p>
-              <p class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                {{ computedStats.total_amount }}
+              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Volume (lots)
+              </p>
+              <p
+                class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
+              >
+                {{ computedStats.total_amount || "0.0000" }}
               </p>
             </div>
             <div
@@ -629,9 +777,13 @@ const endIndex = computed(() => filteredAccounts.value.length);
         >
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Volume (USD)</p>
-              <p class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                {{ computedStats.due_today }}
+              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Volume (USD)
+              </p>
+              <p
+                class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
+              >
+                {{ computedStats.due_today || "0.0000" }}
               </p>
             </div>
             <div
@@ -658,9 +810,13 @@ const endIndex = computed(() => filteredAccounts.value.length);
         >
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Reward (USD)</p>
-              <p class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                {{ computedStats.overdue }}
+              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Reward (USD)
+              </p>
+              <p
+                class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
+              >
+                {{ computedStats.overdue || "0.0000" }}
               </p>
             </div>
             <div
@@ -816,7 +972,7 @@ const endIndex = computed(() => filteredAccounts.value.length);
                     {{
                       account?.volume_lots
                         ? formatNumber(account.volume_lots)
-                        : "0"
+                        : "0.0000"
                     }}
                   </td>
                   <td
@@ -825,7 +981,7 @@ const endIndex = computed(() => filteredAccounts.value.length);
                     ${{
                       account?.volume_mln_usd
                         ? formatCurrency(account.volume_mln_usd)
-                        : "0"
+                        : "0.0000"
                     }}
                   </td>
                   <td
@@ -834,7 +990,7 @@ const endIndex = computed(() => filteredAccounts.value.length);
                     ${{
                       account?.reward_usd
                         ? formatCurrency(account.reward_usd)
-                        : "0"
+                        : "0.0000"
                     }}
                   </td>
                   <td
@@ -880,17 +1036,26 @@ const endIndex = computed(() => filteredAccounts.value.length);
               </tbody>
             </table>
           </div>
-
         </div>
       </div>
       <!-- Pagination -->
-      <div v-if="props.clients && props.clients.data && props.clients.data.length > 0" class="px-6 py-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg border-t border-blue-100/20 dark:border-slate-700/20">
+      <div
+        v-if="
+          props.clients && props.clients.data && props.clients.data.length > 0
+        "
+        class="px-6 py-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg border-t border-blue-100/20 dark:border-slate-700/20"
+      >
         <div class="flex items-center justify-between">
           <!-- Pagination Info -->
-          <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
-            <span>แสดง {{ startIndex }} ถึง {{ endIndex }} จากทั้งหมด {{ filteredAccounts.length }} รายการ</span>
+          <div
+            class="flex items-center text-sm text-gray-600 dark:text-gray-400"
+          >
+            <span
+              >แสดง {{ startIndex }} ถึง {{ endIndex }} จากทั้งหมด
+              {{ filteredAccounts.length }} รายการ</span
+            >
           </div>
-          
+
           <!-- Pagination Navigation -->
           <div class="flex items-center space-x-2">
             <!-- Previous Page -->
@@ -902,19 +1067,28 @@ const endIndex = computed(() => filteredAccounts.value.length);
             >
               ก่อนหน้า
             </Link>
-            <span v-else class="px-4 py-2 text-sm font-medium text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg cursor-not-allowed">
+            <span
+              v-else
+              class="px-4 py-2 text-sm font-medium text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg cursor-not-allowed"
+            >
               ก่อนหน้า
             </span>
 
             <!-- Page Numbers -->
             <template v-for="(link, i) in props.clients.links" :key="i">
               <Link
-                v-if="link.url && !link.label.includes('Previous') && !link.label.includes('Next') && !link.label.includes('...')"
+                v-if="
+                  link.url &&
+                  !link.label.includes('Previous') &&
+                  !link.label.includes('Next') &&
+                  !link.label.includes('...')
+                "
                 :href="link.url"
                 class="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200"
                 :class="{
                   'text-white bg-blue-600 dark:bg-blue-500': link.active,
-                  'text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-slate-700': !link.active
+                  'text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-slate-700':
+                    !link.active,
                 }"
                 preserve-scroll
               >
@@ -937,7 +1111,10 @@ const endIndex = computed(() => filteredAccounts.value.length);
             >
               ถัดไป
             </Link>
-            <span v-else class="px-4 py-2 text-sm font-medium text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg cursor-not-allowed">
+            <span
+              v-else
+              class="px-4 py-2 text-sm font-medium text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg cursor-not-allowed"
+            >
               ถัดไป
             </span>
           </div>
