@@ -9,23 +9,23 @@ use Illuminate\Support\Facades\Log;
 class SyncAllUsersData extends Command
 {
     protected $signature = 'sync:all-users {--force : Force sync even if recently synced}';
-    protected $description = 'Sync all users data (Ham, Kantapong, Janischa) from Exness API';
+    protected $description = 'Sync all users data (Ham, Janischa) from Exness API';
 
     public function handle()
     {
-        $this->info('Starting sync for all users...');
         $startTime = microtime(true);
+        $this->info('🔄 Starting sync for all users...');
         
-        $results = [];
         $forceFlag = $this->option('force') ? ['--force' => true] : [];
+        $results = [];
 
         // Sync Ham data
-        $this->info('1/3 Syncing Ham data...');
         try {
+            $this->info('1/2 Syncing Ham data...');
             $exitCode = Artisan::call('sync:ham-data', $forceFlag);
             $results['ham'] = [
                 'success' => $exitCode === 0,
-                'output' => Artisan::output()
+                'exit_code' => $exitCode
             ];
             
             if ($exitCode === 0) {
@@ -41,35 +41,13 @@ class SyncAllUsersData extends Command
             $this->error('✗ Ham data sync error: ' . $e->getMessage());
         }
 
-        // Sync Kantapong data
-        $this->info('2/3 Syncing Kantapong data...');
-        try {
-            $exitCode = Artisan::call('sync:kantapong-data', $forceFlag);
-            $results['kantapong'] = [
-                'success' => $exitCode === 0,
-                'output' => Artisan::output()
-            ];
-            
-            if ($exitCode === 0) {
-                $this->info('✓ Kantapong data sync completed successfully');
-            } else {
-                $this->error('✗ Kantapong data sync failed');
-            }
-        } catch (\Exception $e) {
-            $results['kantapong'] = [
-                'success' => false,
-                'error' => $e->getMessage()
-            ];
-            $this->error('✗ Kantapong data sync error: ' . $e->getMessage());
-        }
-
         // Sync Janischa data
-        $this->info('3/3 Syncing Janischa data...');
         try {
+            $this->info('2/2 Syncing Janischa data...');
             $exitCode = Artisan::call('sync:janischa-data', $forceFlag);
             $results['janischa'] = [
                 'success' => $exitCode === 0,
-                'output' => Artisan::output()
+                'exit_code' => $exitCode
             ];
             
             if ($exitCode === 0) {
@@ -102,17 +80,17 @@ class SyncAllUsersData extends Command
             }
         }
         
-        $this->info("Successfully synced: {$successCount}/3 users");
+        $this->info("Successfully synced: {$successCount}/2 users");
         
         // Log summary
         Log::info('All users sync completed', [
             'duration' => $duration,
             'results' => $results,
             'success_count' => $successCount,
-            'total_users' => 3
+            'total_users' => 2
         ]);
 
         // Return appropriate exit code
-        return $successCount === 3 ? 0 : 1;
+        return $successCount === 2 ? 0 : 1;
     }
 }

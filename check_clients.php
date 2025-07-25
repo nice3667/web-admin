@@ -12,7 +12,7 @@ echo "🔍 ตรวจสอบข้อมูลลูกค้า\n";
 echo "=====================\n\n";
 
 // ตรวจสอบผู้ใช้
-$users = User::whereIn('email', ['hamsftmo@gmail.com', 'Janischa.trade@gmail.com', 'kantapong0592@gmail.com'])->get();
+$users = User::whereIn('email', ['hamsftmo@gmail.com', 'Janischa.trade@gmail.com'])->get();
 
 foreach ($users as $user) {
     echo "📧 ผู้ใช้: {$user->name} ({$user->email}) - ID: {$user->id}\n";

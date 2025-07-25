@@ -13,28 +13,22 @@ return new class extends Migration
     {
         Schema::create('kantapong_clients', function (Blueprint $table) {
             $table->id();
-            $table->string('partner_account')->nullable();
             $table->string('client_uid')->unique();
-            $table->string('client_id')->nullable();
-            $table->date('reg_date')->nullable();
+            $table->string('partner_account')->nullable();
             $table->string('client_country')->nullable();
-            $table->decimal('volume_lots', 20, 8)->default(0);
-            $table->decimal('volume_mln_usd', 20, 8)->default(0);
-            $table->decimal('reward_usd', 20, 8)->default(0);
-            $table->string('client_status')->default('UNKNOWN');
+            $table->timestamp('reg_date')->nullable();
+            $table->decimal('volume_lots', 15, 4)->default(0);
+            $table->decimal('volume_mln_usd', 15, 4)->default(0);
+            $table->decimal('reward_usd', 15, 4)->default(0);
+            $table->decimal('rebate_amount_usd', 15, 4)->default(0);
             $table->boolean('kyc_passed')->default(false);
             $table->boolean('ftd_received')->default(false);
             $table->boolean('ftt_made')->default(false);
-            $table->json('raw_data')->nullable();
-            $table->timestamp('last_sync_at')->nullable();
             $table->timestamps();
-
-            // Add indexes for frequently searched fields
+            
+            $table->index('client_uid');
             $table->index('partner_account');
-            $table->index('client_country');
-            $table->index('client_status');
             $table->index('reg_date');
-            $table->index('last_sync_at');
         });
     }
 

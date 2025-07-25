@@ -12,29 +12,15 @@ class Kernel extends ConsoleKernel
      *
      * @return void
      */
-    protected function schedule(Schedule $schedule)
+    protected function schedule(Schedule $schedule): void
     {
-        // User data sync jobs
-        $schedule->command('sync:all-users')
-                 ->everyThirtyMinutes()
+        // $schedule->command('inspire')->hourly();
+        
+        // Sync clients data every hour
+        $schedule->command('sync:all-clients')
+                 ->hourly()
                  ->withoutOverlapping()
-                 ->appendOutputTo(storage_path('logs/user-sync.log'));
-
-        // Individual backup sync jobs
-        $schedule->command('sync:ham-data')
-                 ->hourlyAt(5)
-                 ->withoutOverlapping()
-                 ->appendOutputTo(storage_path('logs/ham-sync.log'));
-
-        $schedule->command('sync:kantapong-data')
-                 ->hourlyAt(15)
-                 ->withoutOverlapping()
-                 ->appendOutputTo(storage_path('logs/kantapong-sync.log'));
-
-        $schedule->command('sync:janischa-data')
-                 ->hourlyAt(25)
-                 ->withoutOverlapping()
-                 ->appendOutputTo(storage_path('logs/janischa-sync.log'));
+                 ->runInBackground();
     }
 
     /**

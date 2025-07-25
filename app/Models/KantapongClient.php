@@ -2,87 +2,81 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Builder;
 
 class KantapongClient extends Model
 {
-    use HasFactory;
-
     protected $table = 'kantapong_clients';
 
     protected $fillable = [
-        'partner_account',
         'client_uid',
-        'client_id',
-        'reg_date',
+        'partner_account',
         'client_country',
+        'reg_date',
         'volume_lots',
         'volume_mln_usd',
         'reward_usd',
-        'client_status',
+        'rebate_amount_usd',
         'kyc_passed',
         'ftd_received',
         'ftt_made',
-        'raw_data',
-        'last_sync_at',
     ];
 
     protected $casts = [
-        'reg_date' => 'date',
-        'volume_lots' => 'decimal:8',
-        'volume_mln_usd' => 'decimal:8',
-        'reward_usd' => 'decimal:8',
+        'reg_date' => 'datetime',
+        'volume_lots' => 'decimal:4',
+        'volume_mln_usd' => 'decimal:4',
+        'reward_usd' => 'decimal:4',
+        'rebate_amount_usd' => 'decimal:4',
         'kyc_passed' => 'boolean',
         'ftd_received' => 'boolean',
         'ftt_made' => 'boolean',
-        'raw_data' => 'array',
-        'last_sync_at' => 'datetime',
     ];
 
-    protected $dates = [
-        'reg_date',
-        'last_sync_at',
-    ];
-
-    // Scope for active clients
-    public function scopeActive($query)
-    {
-        return $query->where('client_status', '!=', 'INACTIVE');
-    }
-
-    // Scope for clients with KYC passed
-    public function scopeKycPassed($query)
+    /**
+     * Scope for KYC passed clients
+     */
+    public function scopeKycPassed(Builder $query): Builder
     {
         return $query->where('kyc_passed', true);
     }
 
-    // Scope for clients with FTD received
-    public function scopeFtdReceived($query)
+    /**
+     * Scope for FTD received clients
+     */
+    public function scopeFtdReceived(Builder $query): Builder
     {
         return $query->where('ftd_received', true);
     }
 
-    // Scope for clients by country
-    public function scopeByCountry($query, $country)
+    /**
+     * Scope for FTT made clients
+     */
+    public function scopeFttMade(Builder $query): Builder
     {
-        return $query->where('client_country', $country);
+        return $query->where('ftt_made', true);
     }
 
-    // Accessor for formatted volume
-    protected function formattedVolumeLots(): Attribute
+    /**
+     * Scope for active clients (have volume or rewards)
+     */
+    public function scopeActive(Builder $query): Builder
     {
-        return Attribute::make(
-            get: fn ($value) => number_format($this->volume_lots, 2),
-        );
+        return $query->where(function ($q) {
+            $q->where('volume_lots', '>', 0)
+              ->orWhere('reward_usd', '>', 0);
+        });
     }
 
-    // Accessor for formatted reward
-    protected function formattedRewardUsd(): Attribute
+    /**
+     * Get client status based on activity
+     */
+    public function getClientStatusAttribute(): string
     {
-        return Attribute::make(
-            get: fn ($value) => number_format($this->reward_usd, 2),
-        );
+        if ($this->volume_lots > 0 || $this->reward_usd > 0) {
+            return 'ACTIVE';
+        }
+        return 'INACTIVE';
     }
 } 

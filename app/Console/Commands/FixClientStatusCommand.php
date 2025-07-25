@@ -35,7 +35,7 @@ class FixClientStatusCommand extends Command
         $emails = [
             'hamsftmo@gmail.com',
             'Janischa.trade@gmail.com', 
-            'kantapong0592@gmail.com'
+
         ];
 
         $showOnly = $this->option('show-only');

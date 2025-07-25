@@ -21,147 +21,64 @@ class Report2Controller extends Controller
     public function clients2(Request $request)
     {
         try {
-            Log::info('Report2Controller@clients2 started', [
-                'request_params' => $request->all(),
-                'user_email' => 'kantapong0592@gmail.com'
-            ]);
-
+            Log::info('Fetching Kantapong clients data for reports2/clients2...');
+            
             // Try to get data from Exness API first, fallback to database
             $dataSource = 'Database';
             $apiError = null;
-            $userEmail = 'kantapong0592@gmail.com';
-
-            // Check cache first to avoid repeated API calls
-            $cacheKey = 'kantapong_clients2_data_' . md5($userEmail);
-            $cachedData = \Cache::get($cacheKey);
-
-            if ($cachedData && !$request->has('refresh')) {
-                Log::info('Using cached Kantapong clients2 data');
-                $clients = collect($cachedData);
-                $dataSource = 'Cached API';
-            } else {
-                Log::info('No cached data, calling KantapongExnessAuthService...');
-                try {
-                    $apiResponse = $this->kantapongExnessService->getClientsData();
-
-                    Log::info('KantapongExnessAuthService response received', [
-                        'has_error' => isset($apiResponse['error']),
-                        'has_data' => isset($apiResponse['data']),
-                        'data_count' => isset($apiResponse['data']) ? count($apiResponse['data']) : 0
-                    ]);
-
-                    if (isset($apiResponse['error'])) {
-                        Log::error('KantapongExnessAuthService returned error', ['error' => $apiResponse['error']]);
-                        throw new \Exception($apiResponse['error']);
-                    }
-
-                    $apiClients = $apiResponse['data'] ?? [];
-                    $dataSource = 'Exness API';
-
-                    Log::info('Successfully fetched data from Exness API', [
-                        'count' => count($apiClients),
-                        'user' => 'kantapong0592@gmail.com'
-                    ]);
-
-                    // Cache the data for 5 minutes to reduce API calls
-                    \Cache::put($cacheKey, $apiClients, 300);
-
-                    // Use API data
-                    $clients = collect($apiClients);
-
-                } catch (\Exception $e) {
-                    Log::error('Exception in KantapongExnessAuthService call', [
-                        'message' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
-
-                    Log::warning('Failed to fetch from Exness API, using database data', [
-                        'error' => $e->getMessage(),
-                        'user' => 'kantapong0592@gmail.com'
-                    ]);
-
-                    $apiError = $e->getMessage();
-
-                    // Fallback to database with pagination
-                    $query = KantapongClient::query();
-
-                    // Apply filters at database level for better performance
-                    if ($request->filled('search')) {
-                        $query->where('client_uid', 'like', '%' . $request->search . '%');
-                    }
-                    if ($request->filled('status') && $request->status !== 'all') {
-                        $query->where('client_status', $request->status);
-                    }
-                    if ($request->filled('start_date')) {
-                        $query->whereDate('reg_date', '>=', $request->start_date);
-                    }
-                    if ($request->filled('end_date')) {
-                        $query->whereDate('reg_date', '<=', $request->end_date);
-                    }
-
-                    // Use pagination at database level
-                    $perPage = 50; // Increased from 10 for better UX
-                    $clients = $query->paginate($perPage);
-
-                    Log::info('Using database fallback', [
-                        'total_records' => $clients->total(),
-                        'per_page' => $perPage
-                    ]);
-
-                    // Convert to API format for consistency
-                    $clients->getCollection()->transform(function ($client) {
-                        return [
-                            'partner_account' => $client->partner_account,
-                            'client_uid' => $client->client_uid,
-                            'reg_date' => $client->reg_date,
-                            'client_country' => $client->client_country,
-                            'volume_lots' => $client->volume_lots,
-                            'volume_mln_usd' => $client->volume_mln_usd,
-                            'reward_usd' => $client->reward_usd,
-                            'client_status' => $client->client_status,
-                            'kyc_passed' => $client->kyc_passed,
-                            'ftd_received' => $client->ftd_received,
-                            'ftt_made' => $client->ftt_made,
-                        ];
-                    });
-
-                    // Calculate stats efficiently
-                    $statsQuery = KantapongClient::query();
-                    if ($request->filled('search')) {
-                        $statsQuery->where('client_uid', 'like', '%' . $request->search . '%');
-                    }
-                    if ($request->filled('status') && $request->status !== 'all') {
-                        $statsQuery->where('client_status', $request->status);
-                    }
-                    if ($request->filled('start_date')) {
-                        $statsQuery->whereDate('reg_date', '>=', $request->start_date);
-                    }
-                    if ($request->filled('end_date')) {
-                        $statsQuery->whereDate('reg_date', '<=', $request->end_date);
-                    }
-
-                    $stats = [
-                        'total_pending' => $statsQuery->count(),
-                        'total_amount' => $statsQuery->sum('volume_lots'),
-                        'due_today' => $statsQuery->sum('volume_mln_usd'),
-                        'overdue' => $statsQuery->sum('reward_usd'),
-                        'total_client_uids' => $statsQuery->distinct('client_uid')->count()
-                    ];
-
-                    return Inertia::render('Admin/Report2/Clients2', [
-                        'clients' => $clients,
-                        'stats' => $stats,
-                        'filters' => $request->only(['search', 'status', 'start_date', 'end_date']),
-                        'data_source' => $dataSource,
-                        'user_email' => $userEmail,
-                        'error' => $apiError
-                    ]);
+            $userEmail = 'kantapong.exness@gmail.com';
+            
+            try {
+                $apiResponse = $this->kantapongExnessService->getClientsData();
+                
+                if (isset($apiResponse['error'])) {
+                    throw new \Exception($apiResponse['error']);
                 }
+                
+                $apiClients = $apiResponse['data'] ?? [];
+                $dataSource = 'Exness API';
+                
+                Log::info('Successfully fetched data from Exness API', [
+                    'count' => count($apiClients),
+                    'user' => 'kantapong.exness@gmail.com'
+                ]);
+                
+                // Use API data
+                $clients = collect($apiClients);
+                
+            } catch (\Exception $e) {
+                Log::warning('Failed to fetch from Exness API, using database data', [
+                    'error' => $e->getMessage(),
+                    'user' => 'kantapong.exness@gmail.com'
+                ]);
+                
+                $apiError = $e->getMessage();
+                
+                // Fallback to database
+                $query = KantapongClient::query();
+                $clients = $query->get();
+                
+                // Convert to API format for consistency
+                $clients = $clients->map(function ($client) {
+                    return [
+                        'partner_account' => $client->partner_account,
+                        'client_uid' => $client->client_uid,
+                        'reg_date' => $client->reg_date,
+                        'client_country' => $client->client_country,
+                        'volume_lots' => $client->volume_lots,
+                        'volume_mln_usd' => $client->volume_mln_usd,
+                        'reward_usd' => $client->reward_usd,
+                        'client_status' => $client->client_status,
+                        'kyc_passed' => $client->kyc_passed,
+                        'ftd_received' => $client->ftd_received,
+                        'ftt_made' => $client->ftt_made,
+                    ];
+                });
             }
 
-            // Apply filters (only for API data)
+            // Apply filters
             $filters = [];
-
+            
             if ($request->filled('search')) {
                 $clients = $clients->filter(function ($client) use ($request) {
                     return stripos($client['client_uid'], $request->search) !== false;
@@ -209,7 +126,7 @@ class Report2Controller extends Controller
                 ];
             })->values();
 
-            // Calculate statistics efficiently
+            // Calculate statistics
             $stats = [
                 'total_pending' => $uniqueClients->count(),
                 'total_amount' => $uniqueClients->sum('volume_lots'),
@@ -222,10 +139,10 @@ class Report2Controller extends Controller
             $formattedClients = $uniqueClients->map(function ($client) {
                 $volumeLots = (float)($client['volume_lots'] ?? 0);
                 $rewardUsd = (float)($client['reward_usd'] ?? 0);
-
+                
                 // Calculate status based on activity
                 $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
-
+                
                 return [
                     'client_uid' => $client['client_uid'] ?? '-',
                     'client_status' => $clientStatus,
@@ -244,15 +161,12 @@ class Report2Controller extends Controller
                 'data_source' => $dataSource
             ]);
 
-            // Convert to paginated collection with better performance
-            $perPage = 50; // Increased from 10 for better UX
-            $currentPage = (int) $request->get('page', 1);
-            if ($currentPage < 1) {
-                $currentPage = 1;
-            }
+            // Convert to paginated collection
+            $perPage = 10;
+            $currentPage = $request->get('page', 1);
             $offset = ($currentPage - 1) * $perPage;
             $paginatedClients = $formattedClients->slice($offset, $perPage)->values();
-
+            
             // Create pagination data manually
             $pagination = [
                 'data' => $paginatedClients,
@@ -266,11 +180,11 @@ class Report2Controller extends Controller
                 'next_page_url' => $currentPage < ceil($formattedClients->count() / $perPage) ? $request->fullUrlWithQuery(['page' => $currentPage + 1]) : null,
                 'links' => []
             ];
-
+            
             // Generate pagination links
             $totalPages = ceil($formattedClients->count() / $perPage);
             $pagination['links'][] = ['url' => $pagination['prev_page_url'], 'label' => '&laquo; Previous', 'active' => false];
-
+            
             for ($i = 1; $i <= $totalPages; $i++) {
                 $pagination['links'][] = [
                     'url' => $request->fullUrlWithQuery(['page' => $i]),
@@ -278,13 +192,8 @@ class Report2Controller extends Controller
                     'active' => $i == $currentPage
                 ];
             }
-
+            
             $pagination['links'][] = ['url' => $pagination['next_page_url'], 'label' => 'Next &raquo;', 'active' => false];
-
-            Log::info('Report2Controller@clients2 completed successfully', [
-                'final_data_source' => $dataSource,
-                'final_count' => $formattedClients->count()
-            ]);
 
             return Inertia::render('Admin/Report2/Clients2', [
                 'clients' => $pagination,
@@ -298,7 +207,7 @@ class Report2Controller extends Controller
         } catch (\Exception $e) {
             Log::error('Error in Report2Controller@clients2: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-
+            
             return Inertia::render('Admin/Report2/Clients2', [
                 'clients' => collect([]),
                 'stats' => [
@@ -309,8 +218,8 @@ class Report2Controller extends Controller
                     'total_client_uids' => 0
                 ],
                 'filters' => [],
-                'data_source' => 'error',
-                'user_email' => 'kantapong0592@gmail.com',
+                'data_source' => 'Error',
+                'user_email' => 'kantapong.exness@gmail.com',
                 'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()
             ]);
         }
@@ -320,128 +229,63 @@ class Report2Controller extends Controller
     {
         try {
             Log::info('Fetching Kantapong client account data...');
-
+            
             // Try to get data from Exness API first, fallback to database
             $dataSource = 'Database';
             $apiError = null;
-            $userEmail = 'kantapong0592@gmail.com';
-
-            // Check cache first to avoid repeated API calls
-            $cacheKey = 'kantapong_clients_data_' . md5($userEmail);
-            $cachedData = \Cache::get($cacheKey);
-
-            if ($cachedData && !$request->has('refresh')) {
-                Log::info('Using cached Kantapong data');
-                $clients = collect($cachedData);
-                $dataSource = 'Cached API';
-            } else {
-                try {
-                    $apiResponse = $this->kantapongExnessService->getClientsData();
-
-                    if (isset($apiResponse['error'])) {
-                        throw new \Exception($apiResponse['error']);
-                    }
-
-                    $apiClients = $apiResponse['data'] ?? [];
-                    $dataSource = 'Exness API';
-
-                    Log::info('Successfully fetched data from Exness API', [
-                        'count' => count($apiClients),
-                        'user' => 'kantapong0592@gmail.com'
-                    ]);
-
-                    // Cache the data for 5 minutes to reduce API calls
-                    \Cache::put($cacheKey, $apiClients, 300);
-
-                    // Use API data
-                    $clients = collect($apiClients);
-
-                } catch (\Exception $e) {
-                    Log::warning('Failed to fetch from Exness API, using database data', [
-                        'error' => $e->getMessage(),
-                        'user' => 'kantapong0592@gmail.com'
-                    ]);
-
-                    $apiError = $e->getMessage();
-
-                    // Fallback to database with pagination
-                    $query = KantapongClient::query();
-
-                    // Apply filters at database level for better performance
-                    if ($request->filled('partner_account')) {
-                        $query->where('partner_account', 'like', '%' . $request->partner_account . '%');
-                    }
-                    if ($request->filled('client_uid')) {
-                        $query->where('client_uid', 'like', '%' . $request->client_uid . '%');
-                    }
-                    if ($request->filled('client_country')) {
-                        $query->where('client_country', $request->client_country);
-                    }
-                    if ($request->filled('reg_date')) {
-                        $query->whereDate('reg_date', $request->reg_date);
-                    }
-
-                    // Use pagination at database level
-                    $perPage = 50; // Increased from 10 for better UX
-                    $clients = $query->paginate($perPage);
-
-                    // Convert to API format for consistency
-                    $clients->getCollection()->transform(function ($client) {
-                        return [
-                            'partner_account' => $client->partner_account,
-                            'client_uid' => $client->client_uid,
-                            'client_name' => $client->raw_data['client_account'] ?? $client->raw_data['client_name'] ?? $client->client_id ?? $client->client_uid ?? null,
-                            'client_email' => $client->raw_data['client_email'] ?? null,
-                            'client_id' => $client->client_id ?? $client->client_uid ?? null,
-                            'reg_date' => $client->reg_date,
-                            'client_country' => $client->client_country,
-                            'volume_lots' => $client->volume_lots,
-                            'volume_mln_usd' => $client->volume_mln_usd,
-                            'reward_usd' => $client->reward_usd,
-                            'client_status' => $client->client_status,
-                            'kyc_passed' => $client->kyc_passed,
-                            'ftd_received' => $client->ftd_received,
-                            'ftt_made' => $client->ftt_made,
-                        ];
-                    });
-
-                    // Calculate stats efficiently
-                    $statsQuery = KantapongClient::query();
-                    if ($request->filled('partner_account')) {
-                        $statsQuery->where('partner_account', 'like', '%' . $request->partner_account . '%');
-                    }
-                    if ($request->filled('client_uid')) {
-                        $statsQuery->where('client_uid', 'like', '%' . $request->client_uid . '%');
-                    }
-                    if ($request->filled('client_country')) {
-                        $statsQuery->where('client_country', $request->client_country);
-                    }
-                    if ($request->filled('reg_date')) {
-                        $statsQuery->whereDate('reg_date', $request->reg_date);
-                    }
-
-                    $stats = [
-                        'total_accounts' => $statsQuery->count(),
-                        'total_volume_lots' => $statsQuery->sum('volume_lots'),
-                        'total_volume_usd' => $statsQuery->sum('volume_mln_usd'),
-                        'total_profit' => $statsQuery->sum('reward_usd'),
-                        'total_client_uids' => $statsQuery->distinct('client_uid')->count()
-                    ];
-
-                    return Inertia::render('Admin/Report2/ClientAccount2', [
-                        'clients' => $clients,
-                        'stats' => $stats,
-                        'filters' => $request->only(['partner_account', 'client_uid', 'client_country', 'reg_date']),
-                        'data_source' => $dataSource,
-                        'user_email' => $userEmail,
-                        'error' => $apiError
-                    ]);
+            $userEmail = 'kantapong.exness@gmail.com';
+            
+            try {
+                $apiResponse = $this->kantapongExnessService->getClientsData();
+                
+                if (isset($apiResponse['error'])) {
+                    throw new \Exception($apiResponse['error']);
                 }
+                
+                $apiClients = $apiResponse['data'] ?? [];
+                $dataSource = 'Exness API';
+                
+                Log::info('Successfully fetched data from Exness API', [
+                    'count' => count($apiClients),
+                    'user' => 'kantapong.exness@gmail.com'
+                ]);
+                
+                // Use API data
+                $clients = collect($apiClients);
+                
+            } catch (\Exception $e) {
+                Log::warning('Failed to fetch from Exness API, using database data', [
+                    'error' => $e->getMessage(),
+                    'user' => 'kantapong.exness@gmail.com'
+                ]);
+                
+                $apiError = $e->getMessage();
+                
+                // Fallback to database
+                $query = KantapongClient::query();
+                $clients = $query->get();
+                
+                // Convert to API format for consistency
+                $clients = $clients->map(function ($client) {
+                    return [
+                        'partner_account' => $client->partner_account,
+                        'client_uid' => $client->client_uid,
+                        'reg_date' => $client->reg_date,
+                        'client_country' => $client->client_country,
+                        'volume_lots' => $client->volume_lots,
+                        'volume_mln_usd' => $client->volume_mln_usd,
+                        'reward_usd' => $client->reward_usd,
+                        'client_status' => $client->client_status,
+                        'kyc_passed' => $client->kyc_passed,
+                        'ftd_received' => $client->ftd_received,
+                        'ftt_made' => $client->ftt_made,
+                    ];
+                });
             }
 
-            // Apply filters (only for API data)
+            // Apply filters (same as clients method)
             $filters = [];
-
+            
             if ($request->filled('partner_account')) {
                 $clients = $clients->filter(function ($client) use ($request) {
                     return stripos($client['partner_account'], $request->partner_account) !== false;
@@ -480,7 +324,7 @@ class Report2Controller extends Controller
                 $filters['reg_date'] = $request->reg_date;
             }
 
-            // Calculate statistics efficiently
+            // Calculate statistics
             $stats = [
                 'total_accounts' => $clients->count(),
                 'total_volume_lots' => $clients->sum('volume_lots'),
@@ -493,19 +337,16 @@ class Report2Controller extends Controller
             $formattedClients = $clients->map(function ($client) {
                 $volumeLots = (float)($client['volume_lots'] ?? 0);
                 $rewardUsd = (float)($client['reward_usd'] ?? 0);
-
+                
                 // Calculate status based on activity
                 $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
-
+                
                 // KYC estimation based on activity level
                 $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
-
+                
                 return [
                     'partner_account' => $client['partner_account'] ?? '-',
                     'client_uid' => $client['client_uid'] ?? '-',
-                    'client_name' => $client['client_account'] ?? $client['client_id'] ?? $client['client_uid'] ?? null,
-                    'client_email' => $client['client_email'] ?? null,
-                    'client_id' => $client['client_id'] ?? $client['client_uid'] ?? null,
                     'reg_date' => $client['reg_date'],
                     'client_country' => $client['client_country'] ?? '-',
                     'volume_lots' => $volumeLots,
@@ -523,15 +364,12 @@ class Report2Controller extends Controller
                 'data_source' => $dataSource
             ]);
 
-            // Convert to paginated collection with better performance
-            $perPage = 50; // Increased for better UX
-            $currentPage = (int) $request->get('page', 1);
-            if ($currentPage < 1) {
-                $currentPage = 1;
-            }
+            // Convert to paginated collection
+            $perPage = 10;
+            $currentPage = $request->get('page', 1);
             $offset = ($currentPage - 1) * $perPage;
             $paginatedClients = $formattedClients->slice($offset, $perPage)->values();
-
+            
             // Create pagination data manually
             $pagination = [
                 'data' => $paginatedClients,
@@ -545,11 +383,11 @@ class Report2Controller extends Controller
                 'next_page_url' => $currentPage < ceil($formattedClients->count() / $perPage) ? $request->fullUrlWithQuery(['page' => $currentPage + 1]) : null,
                 'links' => []
             ];
-
+            
             // Generate pagination links
             $totalPages = ceil($formattedClients->count() / $perPage);
             $pagination['links'][] = ['url' => $pagination['prev_page_url'], 'label' => '&laquo; Previous', 'active' => false];
-
+            
             for ($i = 1; $i <= $totalPages; $i++) {
                 $pagination['links'][] = [
                     'url' => $request->fullUrlWithQuery(['page' => $i]),
@@ -557,7 +395,7 @@ class Report2Controller extends Controller
                     'active' => $i == $currentPage
                 ];
             }
-
+            
             $pagination['links'][] = ['url' => $pagination['next_page_url'], 'label' => 'Next &raquo;', 'active' => false];
 
             return Inertia::render('Admin/Report2/ClientAccount2', [
@@ -572,7 +410,7 @@ class Report2Controller extends Controller
         } catch (\Exception $e) {
             Log::error('Error in Report2Controller@clientAccount2: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-
+            
             return Inertia::render('Admin/Report2/ClientAccount2', [
                 'clients' => collect([]),
                 'stats' => [
@@ -584,7 +422,7 @@ class Report2Controller extends Controller
                 ],
                 'filters' => [],
                 'data_source' => 'Error',
-                'user_email' => 'kantapong0592@gmail.com',
+                'user_email' => 'kantapong.exness@gmail.com',
                 'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()
             ]);
         }
@@ -595,7 +433,7 @@ class Report2Controller extends Controller
         try {
             // Get data from Exness API
             $apiResult = $this->kantapongExnessService->getClientsData();
-
+            
             if (isset($apiResult['error'])) {
                 $transactions = [];
                 $dataSource = 'error';
@@ -614,7 +452,7 @@ class Report2Controller extends Controller
                         'status' => $client['client_status'] ?? 'UNKNOWN',
                     ];
                 })->toArray();
-
+                
                 $dataSource = 'exness_api';
             }
 
@@ -678,14 +516,14 @@ class Report2Controller extends Controller
         try {
             // Get data from Exness API
             $apiResult = $this->kantapongExnessService->getClientsData();
-
+            
             if (isset($apiResult['error'])) {
                 $pendingTransactions = [];
                 $dataSource = 'error';
             } else {
                 // Filter for pending transactions (example logic)
                 $pendingTransactions = collect($apiResult['data'])->filter(function ($client) {
-                    return ($client['client_status'] ?? '') === 'PENDING' ||
+                    return ($client['client_status'] ?? '') === 'PENDING' || 
                            !($client['kyc_passed'] ?? false);
                 })->map(function ($client) {
                     return [
@@ -700,7 +538,7 @@ class Report2Controller extends Controller
                         'kyc_passed' => $client['kyc_passed'] ?? false,
                     ];
                 })->values()->toArray();
-
+                
                 $dataSource = 'exness_api';
             }
 
@@ -742,7 +580,7 @@ class Report2Controller extends Controller
         try {
             // Get data from Exness API
             $apiResult = $this->kantapongExnessService->getClientsData();
-
+            
             if (isset($apiResult['error'])) {
                 $rewardHistory = [];
                 $dataSource = 'error';
@@ -762,7 +600,7 @@ class Report2Controller extends Controller
                         'status' => 'PAID',
                     ];
                 })->values()->toArray();
-
+                
                 $dataSource = 'exness_api';
             }
 
@@ -802,44 +640,15 @@ class Report2Controller extends Controller
     public function testConnection2()
     {
         try {
-            Log::info('Testing Kantapong API connection...');
-
-            $service = new KantapongExnessAuthService();
-
-            // Test authentication
-            $token = $service->retrieveToken();
-
-            if ($token) {
-                Log::info('Kantapong API connection successful', [
-                    'token_length' => strlen($token),
-                    'token_preview' => substr($token, 0, 50) . '...'
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Kantapong API connection successful',
-                    'token_length' => strlen($token),
-                    'token_preview' => substr($token, 0, 50) . '...'
-                ]);
-            } else {
-                Log::error('Kantapong API connection failed - no token received');
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Kantapong API connection failed - no token received'
-                ], 500);
-            }
+            $result = $this->kantapongExnessService->testConnection();
+            
+            return response()->json($result);
 
         } catch (\Exception $e) {
-            Log::error('Kantapong API connection test error', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
             return response()->json([
                 'success' => false,
-                'message' => 'Kantapong API connection test error: ' . $e->getMessage()
-            ], 500);
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+            ]);
         }
     }
-}
+} 

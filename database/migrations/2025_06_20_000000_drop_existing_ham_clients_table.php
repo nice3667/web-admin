@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::dropIfExists('ham_clients');
-        Schema::dropIfExists('kantapong_clients');
+
         Schema::dropIfExists('janischa_clients');
     }
 

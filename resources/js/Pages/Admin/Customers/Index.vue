@@ -1,6 +1,6 @@
 <template>
   <TopNavBar />
-  <Head title="ค้นหาข้อมูลลูกค้า" />
+  <Head :title="`ค้นหาข้อมูลลูกค้า${searchAccount.trim() || selectedOwner !== 'all' ? ' (Filtered)' : ''}`" />
   <div
     class="min-h-screen py-4 sm:py-8 lg:py-12 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900"
   >
@@ -11,11 +11,17 @@
           class="text-2xl sm:text-3xl lg:text-4xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
         >
           Customer Dashboard
+          <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-sm font-normal text-blue-600 dark:text-blue-400">
+            (Filtered)
+          </span>
         </h1>
         <p
           class="mt-2 lg:mt-3 text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-400"
         >
           View and analyze customer statistics and performance metrics
+          <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+            (แสดงเฉพาะผลลัพธ์ที่กรอง)
+          </span>
         </p>
       </div>
 
@@ -24,6 +30,9 @@
         class="mb-4 lg:mb-2 text-xl sm:text-2xl lg:text-3xl font-extrabold text-blue-700 dark:text-blue-300 animate-fade-in text-center lg:text-left"
       >
         Customer Management
+        <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-sm font-normal text-blue-600 dark:text-blue-400">
+          (Filtered)
+        </span>
       </div>
 
       <!-- Filter Section (XM style) -->
@@ -82,6 +91,37 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                Owner
+              </span>
+            </label>
+            <select
+              v-model="selectedOwner"
+              class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
+            >
+              <option value="all">ทั้งหมด</option>
+              <option value="ham">Ham</option>
+              <option value="janischa">Janischa</option>
+
+            </select>
+          </div>
+          <div class="col-span-1">
+            <label
+              class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+            >
+              <span class="flex items-center gap-2">
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                   />
                 </svg>
@@ -99,9 +139,99 @@
       </div>
 
       <!-- Statistics Cards (XM style) -->
-      <div
-        class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8"
-      >
+                <div
+            class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8"
+          >
+        <!-- Sync Status -->
+        <div
+          class="col-span-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1"
+        >
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            สถานะการ Sync ข้อมูล (รวม XM)
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="text-center">
+              <div class="flex items-center justify-center mb-2">
+                <span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Ham (รวม XM)</span>
+              </div>
+              <p class="text-2xl font-bold text-blue-600">{{ 
+                customers.filter(c => getOwnerInfo(c).type === 'ham').length 
+              }}</p>
+              <p class="text-xs text-gray-500">ในฐานข้อมูล</p>
+              <p class="text-xs text-blue-600 dark:text-blue-400">
+                ~1,363 จาก Exness API + ~1,216 จาก XM API
+              </p>
+            </div>
+            <div class="text-center">
+              <div class="flex items-center justify-center mb-2">
+                <span class="w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Janischa</span>
+              </div>
+              <p class="text-2xl font-bold text-purple-600">{{ 
+                customers.filter(c => getOwnerInfo(c).type === 'janischa').length 
+              }}</p>
+              <p class="text-xs text-gray-500">ในฐานข้อมูล</p>
+              <p class="text-xs text-purple-600 dark:text-purple-400">
+                ~357 จาก Exness API
+              </p>
+            </div>
+          </div>
+          <div class="mt-4 text-center">
+            <button
+              @click="syncData"
+              class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
+            >
+              Sync ข้อมูลใหม่
+            </button>
+          </div>
+        </div>
+        <!-- Owner Statistics -->
+        <div
+          class="col-span-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1"
+        >
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            สถิติแยกตาม Owner (รวม XM)
+            <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-sm font-normal text-blue-600 dark:text-blue-400">
+              (แสดงเฉพาะผลลัพธ์ที่กรอง)
+            </span>
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="text-center">
+              <div class="flex items-center justify-center mb-2">
+                <span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Ham (รวม XM)</span>
+              </div>
+              <p class="text-2xl font-bold text-blue-600">{{ 
+                customers.filter(c => getOwnerInfo(c).type === 'ham').length 
+              }}</p>
+              <p class="text-xs text-gray-500">ลูกค้า</p>
+              <p class="text-xs text-blue-600 dark:text-blue-400">
+                (Exness + XM)
+              </p>
+              <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-blue-600 dark:text-blue-400">
+                {{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'ham').length }} ในผลลัพธ์
+              </p>
+            </div>
+            <div class="text-center">
+              <div class="flex items-center justify-center mb-2">
+                <span class="w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Janischa</span>
+              </div>
+              <p class="text-2xl font-bold text-purple-600">{{ 
+                customers.filter(c => getOwnerInfo(c).type === 'janischa').length 
+              }}</p>
+              <p class="text-xs text-gray-500">ลูกค้า</p>
+              <p class="text-xs text-purple-600 dark:text-purple-400">
+                (Exness)
+              </p>
+              <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-purple-600 dark:text-purple-400">
+                {{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'janischa').length }} ในผลลัพธ์
+              </p>
+            </div>
+
+          </div>
+        </div>
         <div
           class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1"
         >
@@ -111,11 +241,17 @@
                 class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 truncate"
               >
                 Total Customers
+                <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+                  (Filtered)
+                </span>
               </p>
               <p
                 class="mt-1 lg:mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
               >
                 {{ formatNumber(filteredStats.total_customers) }}
+              </p>
+              <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                จาก {{ customers.length }} รายการทั้งหมด
               </p>
             </div>
             <div
@@ -146,11 +282,17 @@
                 class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 truncate"
               >
                 Active Customers
+                <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+                  (Filtered)
+                </span>
               </p>
               <p
                 class="mt-1 lg:mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
               >
                 {{ formatNumber(filteredStats.active_customers) }}
+              </p>
+              <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                จาก {{ customers.filter(c => c.status === "ACTIVE" || c.status === "Valid" || c.status === "UNKNOWN" || c.client_status === "ACTIVE" || c.raw_data?.client_status === "ACTIVE").length }} รายการทั้งหมด
               </p>
             </div>
             <div
@@ -181,11 +323,24 @@
                 class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 truncate"
               >
                 Total Reward (USD)
+                <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+                  (Filtered)
+                </span>
               </p>
               <p
                 class="mt-1 lg:mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
               >
                 ${{ formatNumber(filteredStats.total_reward_usd) }}
+              </p>
+              <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                จาก ${{ formatNumber(customers.reduce((sum, c) => {
+                  const rewardUsd = parseFloat(c.reward_usd) || 
+                                  parseFloat(c.total_reward_usd) || 
+                                  parseFloat(c.raw_data?.reward_usd) || 
+                                  parseFloat(c.raw_data?.total_reward_usd) || 
+                                  0;
+                  return sum + (isNaN(rewardUsd) ? 0 : rewardUsd);
+                }, 0)) }} ทั้งหมด
               </p>
             </div>
             <div
@@ -216,11 +371,22 @@
                 class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 truncate"
               >
                 Total Rebate (USD)
+                <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+                  (Filtered)
+                </span>
               </p>
               <p
                 class="mt-1 lg:mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
               >
                 ${{ formatNumber(filteredStats.total_rebate_usd) }}
+              </p>
+              <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                จาก ${{ formatNumber(customers.reduce((sum, c) => {
+                  const rebateUsd = parseFloat(c.rebate_amount_usd) || 
+                                  parseFloat(c.raw_data?.rebate_amount_usd) || 
+                                  0;
+                  return sum + (isNaN(rebateUsd) ? 0 : rebateUsd);
+                }, 0)) }} ทั้งหมด
               </p>
             </div>
             <div
@@ -256,12 +422,39 @@
               class="text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
             >
               Customers List
+              <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-sm font-normal text-blue-600 dark:text-blue-400">
+                (Filtered Results)
+              </span>
             </h3>
             <p
               class="mt-1 lg:mt-2 text-sm lg:text-base text-gray-600 dark:text-gray-400"
             >
               Detailed information about all customers and their current status
+              <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+                (แสดงเฉพาะผลลัพธ์ที่กรอง)
+              </span>
             </p>
+            <!-- แสดงผลการค้นหาและกรอง -->
+            <div v-if="searchAccount.trim() || selectedOwner !== 'all'" class="mt-2">
+              <p class="text-sm text-blue-600 dark:text-blue-400">
+                <span v-if="searchAccount.trim()" class="font-semibold">ค้นหา:</span> 
+                <span v-if="searchAccount.trim()">{{ searchAccount.trim() }}</span>
+                <span v-if="searchAccount.trim() && selectedOwner !== 'all'" class="mx-2">•</span>
+                <span v-if="selectedOwner !== 'all'" class="font-semibold">Owner:</span> 
+                <span v-if="selectedOwner !== 'all'">
+                  {{ selectedOwner === "ham" ? "Ham" : selectedOwner === "janischa" ? "Janischa" : "ไม่ระบุ" }}
+                </span>
+              </p>
+              <p class="text-sm text-green-600 dark:text-green-400 mt-1">
+                พบ {{ filteredCustomers.length }} รายการ
+                <span v-if="filteredCustomers.length > 0">
+                  ({{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'ham').length }} Ham (รวม XM), 
+                  {{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'janischa').length }} Janischa, 
+                   
+                  {{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'unknown').length }} ไม่ระบุ)
+                </span>
+              </p>
+            </div>
           </div>
           <div class="flex gap-2">
             <button
@@ -344,12 +537,7 @@
                   >
                     Partner Account
                   </th>
-                  <th
-                    scope="col"
-                    class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
-                  >
-                    Source Email
-                  </th>
+
                 </tr>
               </thead>
               <tbody
@@ -358,10 +546,13 @@
                 <!-- Show prompt if no customers found -->
                 <tr v-if="!searchAccount.trim() && customers.length === 0">
                   <td
-                    colspan="9"
+                    colspan="8"
                     class="px-3 sm:px-6 py-12 text-center text-gray-400 dark:text-gray-500"
                   >
                     ไม่มีข้อมูลลูกค้า กรุณากดปุ่ม "Fetch Data" เพื่อโหลดข้อมูล
+                    <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+                      (แสดงเฉพาะผลลัพธ์ที่กรอง)
+                    </span>
                   </td>
                 </tr>
                 <!-- Loading State -->
@@ -370,7 +561,7 @@
                   class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50"
                 >
                   <td
-                    colspan="9"
+                    colspan="8"
                     class="px-3 sm:px-6 py-8 lg:py-12 text-center"
                   >
                     <div class="flex items-center justify-center">
@@ -396,7 +587,7 @@
                       </svg>
                       <span
                         class="ml-3 text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400"
-                        >Loading data...</span
+                        >Loading data...<span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400"> (Filtered)</span></span
                       >
                     </div>
                   </td>
@@ -407,14 +598,19 @@
                   class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50"
                 >
                   <td
-                    colspan="9"
+                    colspan="8"
                     class="px-3 sm:px-6 py-8 lg:py-12 text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400"
                   >
                     {{
                       customers.length === 0
                         ? 'ไม่มีข้อมูลลูกค้า กรุณากดปุ่ม "Fetch Data" เพื่อโหลดข้อมูล'
+                        : searchAccount.trim() || selectedOwner !== "all"
+                        ? `ไม่พบลูกค้าที่ตรงกับเงื่อนไขการค้นหา${searchAccount.trim() ? ` "${searchAccount.trim()}"` : ""}${selectedOwner !== "all" ? ` และ Owner: ${selectedOwner === "ham" ? "Ham" : selectedOwner === "janischa" ? "Janischa" : "ไม่ระบุ"}` : ""}`
                         : "ไม่พบลูกค้าที่ตรงกับเงื่อนไขการค้นหา"
                     }}
+                    <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+                      (แสดงเฉพาะผลลัพธ์ที่กรอง)
+                    </span>
                   </td>
                 </tr>
                 <!-- Data Rows -->
@@ -513,32 +709,74 @@
                   >
                     ${{
                       formatNumber(
-                        customer.reward_usd || customer.total_reward_usd || 0
+                        (() => {
+                          const rewardUsd = parseFloat(customer.reward_usd) || 
+                                          parseFloat(customer.total_reward_usd) || 
+                                          parseFloat(customer.raw_data?.reward_usd) || 
+                                          parseFloat(customer.raw_data?.total_reward_usd) || 
+                                          0;
+                          return isNaN(rewardUsd) ? 0 : rewardUsd;
+                        })()
                       )
                     }}
                   </td>
                   <td
                     class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
                   >
-                    ${{ formatNumber(customer.rebate_amount_usd || 0) }}
+                    ${{ formatNumber((() => {
+                      const rebateUsd = parseFloat(customer.rebate_amount_usd) || 
+                                      parseFloat(customer.raw_data?.rebate_amount_usd) || 
+                                      0;
+                      return isNaN(rebateUsd) ? 0 : rebateUsd;
+                    })()) }}
                   </td>
                   <td
-                    class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
+                    class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm"
                   >
-                    {{
-                      customer.owner?.name || customer.partner_account || "-"
-                    }}
+                    <span
+                      :class="[
+                        'px-2 sm:px-3 py-1 sm:py-1.5 inline-flex items-center gap-1 sm:gap-1.5 text-xs font-semibold rounded-full',
+                        getOwnerInfo(customer).type === 'ham'
+                          ? 'bg-blue-100/80 text-blue-800 dark:bg-blue-800/20 dark:text-blue-400'
+                          : getOwnerInfo(customer).type === 'janischa'
+                          ? 'bg-purple-100/80 text-purple-800 dark:bg-purple-800/20 dark:text-purple-400'
+                          
+                          : 'bg-gray-100/80 text-gray-800 dark:bg-gray-800/20 dark:text-gray-400'
+                      ]"
+                    >
+                      <span class="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
+                        <span
+                          :class="[
+                            'animate-ping absolute inline-flex h-full w-full rounded-full opacity-75',
+                            getOwnerInfo(customer).type === 'ham'
+                              ? 'bg-blue-400'
+                              : getOwnerInfo(customer).type === 'janischa'
+                              ? 'bg-purple-400'
+
+                              : 'bg-gray-400'
+                          ]"
+                        ></span>
+                        <span
+                          :class="[
+                            'relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2',
+                            getOwnerInfo(customer).type === 'ham'
+                              ? 'bg-blue-500'
+                              : getOwnerInfo(customer).type === 'janischa'
+                              ? 'bg-purple-500'
+
+                              : 'bg-gray-500'
+                          ]"
+                        ></span>
+                      </span>
+                      {{ getOwnerInfo(customer).name }}
+                    </span>
                   </td>
                   <td
                     class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
                   >
                     {{ customer.partner_account || "-" }}
                   </td>
-                  <td
-                    class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
-                  >
-                    {{ customer.source_email || "-" }}
-                  </td>
+
                 </tr>
               </tbody>
             </table>
@@ -567,6 +805,15 @@
                   totalItems
                 }}</span>
                 <span class="hidden sm:inline">entries</span>
+                <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="ml-2 text-blue-600 dark:text-blue-400">
+                  (จาก {{ filteredCustomers.length }} รายการที่กรอง)
+                  <span class="text-xs">
+                    ({{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'ham').length }} Ham (รวม XM), 
+                    {{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'janischa').length }} Janischa, 
+
+                    {{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'unknown').length }} ไม่ระบุ)
+                  </span>
+                </span>
               </div>
 
               <div class="flex items-center gap-1 sm:gap-2">
@@ -615,8 +862,16 @@
     >
       <h4 class="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
         Error Loading Data
+        <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-sm font-normal text-red-600 dark:text-red-400">
+          (Filtered)
+        </span>
       </h4>
-      <p class="text-red-700 dark:text-red-300">{{ error }}</p>
+              <p class="text-red-700 dark:text-red-300">
+          {{ error }}
+          <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-red-600 dark:text-red-400">
+            (แสดงเฉพาะผลลัพธ์ที่กรอง)
+          </span>
+        </p>
       <button
         @click="fetchData"
         class="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
@@ -647,6 +902,7 @@ const stats = ref({
   total_rebate_usd: 0,
 });
 const searchAccount = ref("");
+const selectedOwner = ref("all"); // เพิ่มตัวแปรสำหรับกรองตาม Owner
 const startDate = ref(
   new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
 );
@@ -674,45 +930,31 @@ const endIndex = computed(() =>
 );
 const filteredCustomers = computed(() => {
   const search = searchAccount.value.trim();
-  if (!search) return customers.value; // Show all customers when search is empty
-  const searchLower = search.toLowerCase();
+  const ownerFilter = selectedOwner.value;
+  
+  let filtered = customers.value;
 
-  console.log("กำลังค้นหา:", searchLower);
-  console.log("จำนวนลูกค้าทั้งหมด:", customers.value.length);
+  // กรองตาม Owner
+  if (ownerFilter !== "all") {
+    filtered = filtered.filter((customer) => {
+      const ownerInfo = getOwnerInfo(customer);
+      return ownerInfo.type === ownerFilter;
+    });
+  }
 
-  const results = customers.value.filter((customer) => {
-    // Function to search recursively in all fields
-    const searchInObject = (obj, searchTerm) => {
-      if (!obj || typeof obj !== "object") return false;
+  // กรองตามการค้นหา
+  if (search) {
+    const searchLower = search.toLowerCase();
 
-      for (const [key, value] of Object.entries(obj)) {
-        if (value === null || value === undefined) continue;
+    console.log("กำลังค้นหา:", searchLower);
+    console.log("จำนวนลูกค้าทั้งหมด:", filtered.length);
 
-        if (
-          typeof value === "string" &&
-          value.toLowerCase().includes(searchTerm)
-        ) {
-          return true;
-        }
+    const results = filtered.filter((customer) => {
+      // Function to search recursively in all fields
+      const searchInObject = (obj, searchTerm) => {
+        if (!obj || typeof obj !== "object") return false;
 
-        if (
-          typeof value === "number" &&
-          String(value).toLowerCase().includes(searchTerm)
-        ) {
-          return true;
-        }
-
-        if (typeof value === "object" && searchInObject(value, searchTerm)) {
-          return true;
-        }
-      }
-      return false;
-    };
-
-    // Special search for raw_data fields (for JanischaClient)
-    const searchInRawData = (obj, searchTerm) => {
-      if (obj.raw_data && typeof obj.raw_data === "object") {
-        for (const [key, value] of Object.entries(obj.raw_data)) {
+        for (const [key, value] of Object.entries(obj)) {
           if (value === null || value === undefined) continue;
 
           if (
@@ -728,26 +970,56 @@ const filteredCustomers = computed(() => {
           ) {
             return true;
           }
+
+          if (typeof value === "object" && searchInObject(value, searchTerm)) {
+            return true;
+          }
         }
+        return false;
+      };
+
+      // Special search for raw_data fields (for JanischaClient)
+      const searchInRawData = (obj, searchTerm) => {
+        if (obj.raw_data && typeof obj.raw_data === "object") {
+          for (const [key, value] of Object.entries(obj.raw_data)) {
+            if (value === null || value === undefined) continue;
+
+            if (
+              typeof value === "string" &&
+              value.toLowerCase().includes(searchTerm)
+            ) {
+              return true;
+            }
+
+            if (
+              typeof value === "number" &&
+              String(value).toLowerCase().includes(searchTerm)
+            ) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+
+      // Search in all fields of the customer object
+      const matches = searchInObject(customer, searchLower);
+
+      // Also search in raw_data fields
+      const rawDataMatches = searchInRawData(customer, searchLower);
+
+      if (matches || rawDataMatches) {
+        console.log("พบลูกค้าที่ตรงกับ:", customer);
       }
-      return false;
-    };
 
-    // Search in all fields of the customer object
-    const matches = searchInObject(customer, searchLower);
+      return matches || rawDataMatches;
+    });
 
-    // Also search in raw_data fields
-    const rawDataMatches = searchInRawData(customer, searchLower);
+    console.log("ผลการค้นหา:", results.length, "รายการ");
+    return results;
+  }
 
-    if (matches || rawDataMatches) {
-      console.log("พบลูกค้าที่ตรงกับ:", customer);
-    }
-
-    return matches || rawDataMatches;
-  });
-
-  console.log("ผลการค้นหา:", results.length, "รายการ");
-  return results;
+  return filtered;
 });
 
 const paginatedCustomers = computed(() => {
@@ -755,9 +1027,61 @@ const paginatedCustomers = computed(() => {
 });
 
 const filteredStats = computed(() => {
-  const customersToShow = searchAccount.value.trim()
-    ? filteredCustomers.value
-    : customers.value;
+  const customersToShow = filteredCustomers.value;
+
+  // Debug: Log some customer data to understand the structure
+  if (customersToShow.length > 0) {
+    console.log("Debug filteredStats - First customer:", customersToShow[0]);
+    console.log("Debug filteredStats - reward_usd types:", customersToShow.slice(0, 3).map(c => ({
+      reward_usd: c.reward_usd,
+      total_reward_usd: c.total_reward_usd,
+      rebate_amount_usd: c.rebate_amount_usd,
+      raw_data_reward_usd: c.raw_data?.reward_usd,
+      raw_data_total_reward_usd: c.raw_data?.total_reward_usd,
+      raw_data_rebate_amount_usd: c.raw_data?.rebate_amount_usd,
+      types: {
+        reward_usd: typeof c.reward_usd,
+        total_reward_usd: typeof c.total_reward_usd,
+        rebate_amount_usd: typeof c.rebate_amount_usd,
+        raw_data_reward_usd: typeof c.raw_data?.reward_usd,
+        raw_data_total_reward_usd: typeof c.raw_data?.total_reward_usd,
+        raw_data_rebate_amount_usd: typeof c.raw_data?.rebate_amount_usd
+      }
+    })));
+  }
+
+  const totalReward = customersToShow.reduce(
+    (sum, c) => {
+      // Check both direct properties and raw_data properties
+      const rewardUsd = parseFloat(c.reward_usd) || 
+                       parseFloat(c.total_reward_usd) || 
+                       parseFloat(c.raw_data?.reward_usd) || 
+                       parseFloat(c.raw_data?.total_reward_usd) || 
+                       0;
+      const result = sum + (isNaN(rewardUsd) ? 0 : rewardUsd);
+      console.log(`Customer reward calculation: ${c.reward_usd} || ${c.total_reward_usd} || ${c.raw_data?.reward_usd} || ${c.raw_data?.total_reward_usd} = ${rewardUsd}, sum = ${result}`);
+      return result;
+    },
+    0
+  );
+
+  const totalRebate = customersToShow.reduce(
+    (sum, c) => {
+      const rebateUsd = parseFloat(c.rebate_amount_usd) || parseFloat(c.raw_data?.rebate_amount_usd) || 0;
+      const result = sum + (isNaN(rebateUsd) ? 0 : rebateUsd);
+      console.log(`Customer rebate calculation: ${c.rebate_amount_usd} || ${c.raw_data?.rebate_amount_usd} = ${rebateUsd}, sum = ${result}`);
+      return result;
+    },
+    0
+  );
+
+  console.log("Debug filteredStats - Final totals:", { totalReward, totalRebate });
+  console.log("Debug filteredStats - isNaN check:", { 
+    totalRewardIsNaN: isNaN(totalReward), 
+    totalRebateIsNaN: isNaN(totalRebate),
+    totalRewardType: typeof totalReward,
+    totalRebateType: typeof totalRebate
+  });
 
   return {
     total_customers: customersToShow.length,
@@ -766,16 +1090,11 @@ const filteredStats = computed(() => {
         c.status === "ACTIVE" ||
         c.status === "Valid" ||
         c.status === "UNKNOWN" ||
-        c.client_status === "ACTIVE"
+        c.client_status === "ACTIVE" ||
+        c.raw_data?.client_status === "ACTIVE"
     ).length,
-    total_reward_usd: customersToShow.reduce(
-      (sum, c) => sum + (c.reward_usd || c.total_reward_usd || 0),
-      0
-    ),
-    total_rebate_usd: customersToShow.reduce(
-      (sum, c) => sum + (c.rebate_amount_usd || 0),
-      0
-    ),
+    total_reward_usd: isNaN(totalReward) ? 0 : totalReward,
+    total_rebate_usd: isNaN(totalRebate) ? 0 : totalRebate,
   };
 });
 
@@ -818,22 +1137,27 @@ const fetchData = async () => {
   isLoading.value = true;
   error.value = null;
 
-  try {
-    console.log("Fetching data from /test-api/all-customers...");
+      try {
+      console.log("Fetching data from /admin/customers...");
 
-    // Try without date parameters first
-    let response;
-    try {
-      response = await axios.get("/test-api/all-customers");
-    } catch (dateError) {
-      console.log("Trying with date parameters...");
-      response = await axios.get("/test-api/all-customers", {
-        params: {
-          startTime: startDate.value,
-          endTime: endDate.value,
-        },
-      });
-    }
+      // Try the main customers endpoint first
+      let response;
+      try {
+        response = await axios.get("/admin/customers");
+      } catch (mainError) {
+        console.log("Main endpoint failed, trying all-customers...");
+        try {
+          response = await axios.get("/admin/all-customers");
+        } catch (allCustomersError) {
+          console.log("Trying with date parameters...");
+          response = await axios.get("/admin/customers", {
+            params: {
+              startTime: startDate.value,
+              endTime: endDate.value,
+            },
+          });
+        }
+      }
 
     console.log("API Response:", response.data);
     console.log("Response status:", response.status);
@@ -863,13 +1187,20 @@ const fetchData = async () => {
 
     // Debug: log the structure of the first customer and all field names
     if (customers.value.length > 0) {
-      console.log("ตัวอย่างข้อมูลลูกค้า:", customers.value[0]);
-      console.log("ชื่อฟิลด์ทั้งหมด:", Object.keys(customers.value[0]));
+          console.log("ตัวอย่างข้อมูลลูกค้า:", customers.value[0]);
+    console.log("ชื่อฟิลด์ทั้งหมด:", Object.keys(customers.value[0]));
 
-      // Log first few customers for debugging
-      customers.value.slice(0, 3).forEach((customer, index) => {
-        console.log(`ลูกค้าที่ ${index + 1}:`, customer);
-      });
+    // Log first few customers for debugging
+    customers.value.slice(0, 3).forEach((customer, index) => {
+      console.log(`ลูกค้าที่ ${index + 1}:`, customer);
+      console.log(`ลูกค้าที่ ${index + 1} reward_usd:`, customer.reward_usd, typeof customer.reward_usd);
+      console.log(`ลูกค้าที่ ${index + 1} total_reward_usd:`, customer.total_reward_usd, typeof customer.total_reward_usd);
+      console.log(`ลูกค้าที่ ${index + 1} rebate_amount_usd:`, customer.rebate_amount_usd, typeof customer.rebate_amount_usd);
+      console.log(`ลูกค้าที่ ${index + 1} raw_data:`, customer.raw_data);
+      console.log(`ลูกค้าที่ ${index + 1} raw_data.reward_usd:`, customer.raw_data?.reward_usd, typeof customer.raw_data?.reward_usd);
+      console.log(`ลูกค้าที่ ${index + 1} raw_data.total_reward_usd:`, customer.raw_data?.total_reward_usd, typeof customer.raw_data?.total_reward_usd);
+      console.log(`ลูกค้าที่ ${index + 1} raw_data.rebate_amount_usd:`, customer.raw_data?.rebate_amount_usd, typeof customer.raw_data?.rebate_amount_usd);
+    });
     } else {
       console.log("ไม่มีข้อมูลลูกค้า");
       console.log("Response structure:", response.data);
@@ -890,12 +1221,75 @@ const fetchData = async () => {
 };
 
 const formatNumber = (number) => {
+  // Check if number is NaN or invalid
+  if (isNaN(number) || number === null || number === undefined) {
+    return "0";
+  }
   return new Intl.NumberFormat("en-US").format(number);
+};
+
+// ฟังก์ชันเพื่อระบุว่าเป็นข้อมูลของ Ham, Janischa หรือ Kantapong
+const getOwnerInfo = (customer) => {
+  const partnerAccount = customer.partner_account || customer.raw_data?.partner_account;
+  
+  if (!partnerAccount) return { name: "ไม่ระบุ", type: "unknown" };
+  
+  // ตรวจสอบ partner_account เพื่อระบุว่าเป็นของใคร
+  if (partnerAccount === "1172984151037556173") {
+    return { name: "Ham", type: "ham" };
+  } else if (partnerAccount === "1167686758601662826") {
+    return { name: "Janischa", type: "janischa" };
+  } else if (partnerAccount === "1130924909696967913") {
+    return { name: "Janischa", type: "janischa" };
+  } else if (partnerAccount === "1129255941915600142") {
+    return { name: "Ham", type: "ham" };
+  } else if (partnerAccount === "XM_HAM") {
+    return { name: "Ham", type: "ham" };
+  } else if (partnerAccount === "low") {
+    return { name: "Ham", type: "ham" };
+  } else if (partnerAccount === "pay U") {
+    return { name: "Ham", type: "ham" };
+  } else if (partnerAccount === "RB you") {
+    return { name: "Ham", type: "ham" };
+  } else if (partnerAccount === "K.kan") {
+    return { name: "Ham", type: "ham" };
+  }
+  
+  // Fallback: Check if customer has owner field from backend
+  if (customer.owner) {
+    if (customer.owner === "Ham") {
+      return { name: "Ham", type: "ham" };
+    } else if (customer.owner === "Janischa") {
+      return { name: "Janischa", type: "janischa" };
+    }
+  }
+  
+  return { name: "ไม่ระบุ", type: "unknown" };
 };
 
 function resetFilters() {
   searchAccount.value = "";
+  selectedOwner.value = "all";
 }
+
+const syncData = async () => {
+  try {
+    console.log("Starting data sync...");
+    
+    // Call the sync command via API
+    const response = await axios.post("/admin/sync-data");
+    
+    if (response.data.success) {
+      console.log("Sync completed successfully");
+      // Refresh data after sync
+      await fetchData();
+    } else {
+      console.error("Sync failed:", response.data.message);
+    }
+  } catch (error) {
+    console.error("Sync error:", error);
+  }
+};
 
 onMounted(() => {
   fetchData();
