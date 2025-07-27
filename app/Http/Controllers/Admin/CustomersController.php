@@ -11,7 +11,6 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Artisan;
 
 class CustomersController extends Controller
 {
@@ -24,11 +23,8 @@ class CustomersController extends Controller
             $hamClients = $this->getClientsData(HamClient::class, $request);
             $janischaClients = $this->getClientsData(JanischaClient::class, $request);
 
-            // Get data from external APIs
-            $externalData = $this->getExternalData($request);
-
             // Combine all clients
-            $allClients = $hamClients->concat($janischaClients)->concat($externalData);
+            $allClients = $hamClients->concat($janischaClients);
 
             // Apply search filters
             $filters = [];
@@ -39,8 +35,7 @@ class CustomersController extends Controller
                 $filteredClients = $filteredClients->filter(function($client) use ($searchTerm) {
                     return stripos($client['client_uid'], $searchTerm) !== false ||
                            stripos($client['client_id'], $searchTerm) !== false ||
-                           stripos($client['partner_account'], $searchTerm) !== false ||
-                           stripos($client['client_account'], $searchTerm) !== false;
+                           stripos($client['partner_account'], $searchTerm) !== false;
                 });
                 $filters['search'] = $searchTerm;
             }
@@ -66,7 +61,7 @@ class CustomersController extends Controller
                 'total_volume_lots' => $filteredClients->sum('total_volume_lots'),
                 'total_volume_usd' => $filteredClients->sum('total_volume_mln_usd'),
                 'total_reward_usd' => $filteredClients->sum('total_reward_usd'),
-                'total_rebate_usd' => $filteredClients->sum('total_rebate_amount_usd'),
+                'total_rebate_usd' => 0,
                 'active_customers' => $filteredClients->where('client_status', 'ACTIVE')->count(),
                 'inactive_customers' => $filteredClients->where('client_status', 'INACTIVE')->count(),
             ];
@@ -130,8 +125,7 @@ class CustomersController extends Controller
             $query->where(function($q) use ($searchTerm) {
                 $q->where('client_uid', 'like', '%' . $searchTerm . '%')
                   ->orWhere('partner_account', 'like', '%' . $searchTerm . '%')
-                  ->orWhere('client_id', 'like', '%' . $searchTerm . '%')
-                  ->orWhere('raw_data->client_account', 'like', '%' . $searchTerm . '%');
+                  ->orWhere('client_id', 'like', '%' . $searchTerm . '%');
             });
         }
 
@@ -139,7 +133,8 @@ class CustomersController extends Controller
             $query->where('client_status', $request->client_status);
         }
 
-        // Get all data without pagination for better data completeness
+        // Use pagination at database level for better performance
+        $perPage = 50; // Increased from no pagination for better UX
         $clients = $query
             ->selectRaw('
                 client_uid,
@@ -150,163 +145,55 @@ class CustomersController extends Controller
                 SUM(volume_lots) as total_volume_lots,
                 SUM(volume_mln_usd) as total_volume_mln_usd,
                 SUM(reward_usd) as total_reward_usd,
-                SUM(rebate_amount_usd) as total_rebate_amount_usd,
                 MAX(client_status) as client_status,
                 MAX(kyc_passed) as kyc_passed,
                 MAX(ftd_received) as ftd_received,
                 MAX(ftt_made) as ftt_made,
-                MAX(last_sync_at) as last_sync_at,
-                MAX(raw_data) as raw_data
+                MAX(last_sync_at) as last_sync_at
             ')
             ->groupBy('client_uid')
             ->orderBy('reg_date', 'desc')
-            ->get();
+            ->paginate($perPage);
 
         // Format client data and add owner information
-        $clients->transform(function ($client) {
+        $clients->getCollection()->transform(function ($client) {
             // Determine status from activity
             $volumeLots = (float)($client->total_volume_lots ?? 0);
             $rewardUsd = (float)($client->total_reward_usd ?? 0);
-            $rebateUsd = (float)($client->total_rebate_amount_usd ?? 0);
             $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
 
             // KYC estimation based on activity level
             $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
 
-            // Get client_account from raw_data if available
-            $rawData = is_string($client->raw_data) ? json_decode($client->raw_data, true) : $client->raw_data;
-            $clientAccount = $rawData['client_account'] ?? $client->client_id ?? '-';
-
             return [
                 'client_uid' => $client->client_uid ?? '-',
                 'partner_account' => $client->partner_account ?? '-',
                 'client_id' => $client->client_id ?? '-',
-                'client_account' => $clientAccount,
                 'reg_date' => $client->reg_date,
                 'client_country' => $client->client_country ?? '-',
                 'volume_lots' => $volumeLots,
                 'volume_mln_usd' => (float)($client->total_volume_mln_usd ?? 0),
                 'reward_usd' => $rewardUsd,
-                'rebate_amount_usd' => $rebateUsd,
                 'client_status' => $clientStatus,
                 'kyc_passed' => $kycPassed,
                 'ftd_received' => ($volumeLots > 0 || $rewardUsd > 0),
                 'ftt_made' => ($volumeLots > 0),
                 'last_sync_at' => $client->last_sync_at,
-                'raw_data' => $rawData,
-                'owner' => $this->getOwnerInfo($client)
+                'owner' => $this->getOwnerInfo($client->client_uid)
             ];
         });
 
         return $clients;
     }
 
-    private function getExternalData(Request $request)
+    private function getOwnerInfo($clientUid)
     {
-        $externalData = collect();
-
-        // Try to get data from Report1Controller (Ham data)
-        try {
-            $report1Controller = app(\App\Http\Controllers\Admin\Report1Controller::class);
-            $hamData = $report1Controller->clients1($request);
-            
-            if (method_exists($hamData, 'getData')) {
-                $data = $hamData->getData();
-                if (isset($data['data']['clients'])) {
-                    $externalData = $externalData->concat($data['data']['clients']);
-                }
-            }
-        } catch (\Exception $e) {
-            Log::warning('Could not fetch Ham data from Report1Controller: ' . $e->getMessage());
-        }
-
-        // Try to get data from ReportController (Janischa data)
-        try {
-            $reportController = app(\App\Http\Controllers\Admin\ReportController::class);
-            $janischaData = $reportController->clients($request);
-            
-            if (method_exists($janischaData, 'getData')) {
-                $data = $janischaData->getData();
-                if (isset($data['data']['clients'])) {
-                    $externalData = $externalData->concat($data['data']['clients']);
-                }
-            }
-        } catch (\Exception $e) {
-            Log::warning('Could not fetch Janischa data from ReportController: ' . $e->getMessage());
-        }
-
-        // Try to get data from XMReportController (Ham data)
-        try {
-            $xmController = app(\App\Http\Controllers\Admin\XMReportController::class);
-            $xmData = $xmController->getTraderList($request);
-            
-            if (method_exists($xmData, 'getData')) {
-                $data = $xmData->getData();
-                if (is_array($data)) {
-                    // Transform XM data to match our format and mark as Ham
-                    $transformedXmData = collect($data)->map(function ($trader) {
-                        // Handle both array and object formats
-                        $traderId = is_object($trader) ? $trader->traderId ?? $trader->trader_id ?? null : $trader['traderId'] ?? null;
-                        $clientId = is_object($trader) ? $trader->clientId ?? $trader->client_id ?? null : $trader['clientId'] ?? null;
-                        $country = is_object($trader) ? $trader->country ?? null : $trader['country'] ?? null;
-                        $valid = is_object($trader) ? $trader->valid ?? false : $trader['valid'] ?? false;
-                        $signUpDate = is_object($trader) ? $trader->signUpDate ?? null : $trader['signUpDate'] ?? null;
-                        
-                        return [
-                            'client_uid' => $traderId,
-                            'client_id' => $clientId ?? $traderId,
-                            'client_account' => $traderId,
-                            'partner_account' => 'XM_HAM', // Mark as Ham's XM data
-                            'country' => $country,
-                            'client_country' => $country,
-                            'status' => $valid ? 'ACTIVE' : 'INACTIVE',
-                            'client_status' => $valid ? 'ACTIVE' : 'INACTIVE',
-                            'reg_date' => $signUpDate,
-                            'reward_usd' => 0, // XM data doesn't have reward info
-                            'rebate_amount_usd' => 0, // XM data doesn't have rebate info
-                            'volume_lots' => 0,
-                            'volume_mln_usd' => 0,
-                            'raw_data' => $trader,
-                            'owner' => 'Ham', // Explicitly mark as Ham
-                            'source' => 'XM'
-                        ];
-                    });
-                    $externalData = $externalData->concat($transformedXmData);
-                }
-            }
-        } catch (\Exception $e) {
-            Log::warning('Could not fetch XM data: ' . $e->getMessage());
-        }
-
-        Log::info('External data fetched: ' . $externalData->count() . ' records');
-        return $externalData;
-    }
-
-    private function getOwnerInfo($client)
-    {
-        // Check if this is a client object with partner_account
-        if (is_object($client) && isset($client->partner_account)) {
-            $partnerAccount = $client->partner_account;
-        } elseif (is_array($client) && isset($client['partner_account'])) {
-            $partnerAccount = $client['partner_account'];
-        } else {
-            return 'Unknown';
-        }
-
-        // Map partner_account to owner names
         $owners = [
-            '1172984151037556173' => 'Ham',
-            '1167686758601662826' => 'Janischa',
-            '1130924909696967913' => 'Janischa',
-            '1129255941915600142' => 'Ham',  // New partner account found
-            'XM_HAM' => 'Ham',  // XM data belongs to Ham
-            'low' => 'Ham',  // Additional partner account found
-            'pay U' => 'Ham',  // Additional partner account found
-            'RB you' => 'Ham',  // Additional partner account found
-            'K.kan' => 'Ham'  // Additional partner account found
+            'hamsftmo@gmail.com' => 'Ham',
+            'Janischa.trade@gmail.com' => 'Janischa'
         ];
 
-        return $owners[$partnerAccount] ?? 'Unknown';
+        return $owners[$clientUid] ?? 'Unknown';
     }
 
     public function assignOwner(Request $request)
@@ -411,32 +298,6 @@ class CustomersController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาดในการดึงสถิติ: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function syncData(Request $request)
-    {
-        try {
-            Log::info('Starting manual sync of clients data...');
-            
-            // Run the sync command
-            Artisan::call('sync:all-clients');
-            
-            $output = Artisan::output();
-            Log::info('Sync command output: ' . $output);
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Sync completed successfully',
-                'output' => $output
-            ]);
-            
-        } catch (\Exception $e) {
-            Log::error('Error in manual sync: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'เกิดข้อผิดพลาดในการ sync: ' . $e->getMessage()
             ], 500);
         }
     }
