@@ -55,6 +55,10 @@ Route::group([
     // All Customers API Route - moved outside admin group to avoid Inertia middleware
     Route::get('/all-customers', 'CustomersController@allCustomers')->name('all-customers');
 
+    // API Routes for JSON responses (outside admin group to avoid Inertia middleware)
+    Route::get('/api/reports1/client-account1', 'Report1Controller@clientAccount1Api')->name('api.reports1.client-account1');
+    Route::get('/api/reports2/client-account2', 'Report2Controller@clientAccount2Api')->name('api.reports2.client-account2');
+
     // Report1 Routes
     Route::group([
         'prefix' => 'reports1',

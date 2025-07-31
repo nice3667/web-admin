@@ -142,6 +142,37 @@
                 <div
             class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8"
           >
+        <!-- Debug Info -->
+        <div
+          class="col-span-full bg-yellow-50/80 dark:bg-yellow-900/20 backdrop-blur-lg overflow-hidden shadow-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-yellow-200/20 dark:border-yellow-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1"
+        >
+          <h3 class="text-lg font-bold text-yellow-900 dark:text-yellow-100 mb-4">
+            Debug Info - ข้อมูลจากแต่ละแหล่ง
+          </h3>
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div class="text-center">
+              <p class="text-sm font-semibold text-yellow-700 dark:text-yellow-300">Local DB</p>
+              <p class="text-xl font-bold text-yellow-600">{{ debugInfo.local_db || 0 }}</p>
+            </div>
+            <div class="text-center">
+              <p class="text-sm font-semibold text-blue-700 dark:text-blue-300">XM (Ham)</p>
+              <p class="text-xl font-bold text-blue-600">{{ debugInfo.xm || 0 }}</p>
+            </div>
+            <div class="text-center">
+              <p class="text-sm font-semibold text-purple-700 dark:text-purple-300">Client Account 1 (Ham)</p>
+              <p class="text-xl font-bold text-purple-600">{{ debugInfo.client_account1 || 0 }}</p>
+            </div>
+            <div class="text-center">
+              <p class="text-sm font-semibold text-green-700 dark:text-green-300">Client Account (Janischa)</p>
+              <p class="text-xl font-bold text-green-600">{{ debugInfo.client_account || 0 }}</p>
+            </div>
+          </div>
+          <div class="mt-4 text-center">
+            <p class="text-sm text-yellow-700 dark:text-yellow-300">
+              รวมทั้งหมด: {{ Object.values(debugInfo).reduce((sum, val) => sum + (val || 0), 0) }} รายการ
+            </p>
+          </div>
+        </div>
         <!-- Sync Status -->
         <div
           class="col-span-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1"
@@ -160,7 +191,7 @@
               }}</p>
               <p class="text-xs text-gray-500">ในฐานข้อมูล</p>
               <p class="text-xs text-blue-600 dark:text-blue-400">
-                ~1,363 จาก Exness API + ~1,216 จาก XM API
+                ~1,363 จาก Exness API + ~1,216 จาก XM API + Client Account Data
               </p>
             </div>
             <div class="text-center">
@@ -173,7 +204,7 @@
               }}</p>
               <p class="text-xs text-gray-500">ในฐานข้อมูล</p>
               <p class="text-xs text-purple-600 dark:text-purple-400">
-                ~357 จาก Exness API
+                ~357 จาก Exness API + Client Account Data
               </p>
             </div>
           </div>
@@ -207,7 +238,7 @@
               }}</p>
               <p class="text-xs text-gray-500">ลูกค้า</p>
               <p class="text-xs text-blue-600 dark:text-blue-400">
-                (Exness + XM)
+                (Exness + XM + Client Account)
               </p>
               <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-blue-600 dark:text-blue-400">
                 {{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'ham').length }} ในผลลัพธ์
@@ -223,7 +254,7 @@
               }}</p>
               <p class="text-xs text-gray-500">ลูกค้า</p>
               <p class="text-xs text-purple-600 dark:text-purple-400">
-                (Exness)
+                (Exness + Client Account)
               </p>
               <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-purple-600 dark:text-purple-400">
                 {{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'janischa').length }} ในผลลัพธ์
@@ -292,7 +323,7 @@
                 {{ formatNumber(filteredStats.active_customers) }}
               </p>
               <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                จาก {{ customers.filter(c => c.status === "ACTIVE" || c.status === "Valid" || c.status === "UNKNOWN" || c.client_status === "ACTIVE" || c.raw_data?.client_status === "ACTIVE").length }} รายการทั้งหมด
+                จาก {{ customers.filter(c => c.status === "ACTIVE" || c.status === "Valid" || c.status === "UNKNOWN" || c.client_status === "ACTIVE" || c.raw_data?.client_status === "ACTIVE" || c.valid === true).length }} รายการทั้งหมด
               </p>
             </div>
             <div
@@ -338,6 +369,8 @@
                                   parseFloat(c.total_reward_usd) || 
                                   parseFloat(c.raw_data?.reward_usd) || 
                                   parseFloat(c.raw_data?.total_reward_usd) || 
+                                  parseFloat(c.commission) ||
+                                  parseFloat(c.profit) ||
                                   0;
                   return sum + (isNaN(rewardUsd) ? 0 : rewardUsd);
                 }, 0)) }} ทั้งหมด
@@ -384,6 +417,8 @@
                 จาก ${{ formatNumber(customers.reduce((sum, c) => {
                   const rebateUsd = parseFloat(c.rebate_amount_usd) || 
                                   parseFloat(c.raw_data?.rebate_amount_usd) || 
+                                  parseFloat(c.rebate) ||
+                                  parseFloat(c.cashback) ||
                                   0;
                   return sum + (isNaN(rebateUsd) ? 0 : rebateUsd);
                 }, 0)) }} ทั้งหมด
@@ -535,6 +570,18 @@
                     scope="col"
                     class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
                   >
+                    Registration Date
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                  >
+                    Source
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                  >
                     Partner Account
                   </th>
 
@@ -546,7 +593,7 @@
                 <!-- Show prompt if no customers found -->
                 <tr v-if="!searchAccount.trim() && customers.length === 0">
                   <td
-                    colspan="8"
+                    colspan="10"
                     class="px-3 sm:px-6 py-12 text-center text-gray-400 dark:text-gray-500"
                   >
                     ไม่มีข้อมูลลูกค้า กรุณากดปุ่ม "Fetch Data" เพื่อโหลดข้อมูล
@@ -561,7 +608,7 @@
                   class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50"
                 >
                   <td
-                    colspan="8"
+                    colspan="10"
                     class="px-3 sm:px-6 py-8 lg:py-12 text-center"
                   >
                     <div class="flex items-center justify-center">
@@ -598,7 +645,7 @@
                   class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50"
                 >
                   <td
-                    colspan="8"
+                    colspan="10"
                     class="px-3 sm:px-6 py-8 lg:py-12 text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400"
                   >
                     {{
@@ -620,7 +667,14 @@
                   :key="
                     customer.client_uid ||
                     customer.client_id ||
-                    customer.traderId
+                    customer.traderId ||
+                    customer.raw_data?.client_uid ||
+                    customer.raw_data?.client_id ||
+                    customer.raw_data?.traderId ||
+                    customer.login ||
+                    customer.account_number ||
+                    customer.source ||
+                    Math.random()
                   "
                   class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-colors duration-200"
                 >
@@ -631,6 +685,9 @@
                       customer.client_uid ||
                       customer.client_id ||
                       customer.traderId ||
+                      customer.raw_data?.client_uid ||
+                      customer.raw_data?.client_id ||
+                      customer.raw_data?.traderId ||
                       "-"
                     }}
                   </td>
@@ -642,13 +699,22 @@
                       customer.client_account ||
                       customer.account_number ||
                       customer.login ||
+                      customer.traderId ||
+                      customer.client_uid ||
+                      customer.client_id ||
                       "-"
                     }}
                   </td>
                   <td
                     class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
                   >
-                    {{ customer.country || "-" }}
+                    {{ 
+                      customer.country || 
+                      customer.client_country || 
+                      customer.raw_data?.country ||
+                      customer.raw_data?.client_country ||
+                      "-" 
+                    }}
                   </td>
                   <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                     <span
@@ -657,7 +723,9 @@
                         customer.status === 'ACTIVE' ||
                         customer.status === 'Valid' ||
                         customer.status === 'UNKNOWN' ||
-                        customer.client_status === 'ACTIVE'
+                        customer.client_status === 'ACTIVE' ||
+                        customer.raw_data?.client_status === 'ACTIVE' ||
+                        customer.valid === true
                           ? 'bg-green-100/80 text-green-800 dark:bg-green-800/20 dark:text-green-400'
                           : 'bg-red-100/80 text-red-800 dark:bg-red-800/20 dark:text-red-400',
                       ]"
@@ -669,7 +737,9 @@
                             customer.status === 'ACTIVE' ||
                             customer.status === 'Valid' ||
                             customer.status === 'UNKNOWN' ||
-                            customer.client_status === 'ACTIVE'
+                            customer.client_status === 'ACTIVE' ||
+                            customer.raw_data?.client_status === 'ACTIVE' ||
+                            customer.valid === true
                               ? 'bg-green-400'
                               : 'bg-red-400',
                           ]"
@@ -680,7 +750,9 @@
                             customer.status === 'ACTIVE' ||
                             customer.status === 'Valid' ||
                             customer.status === 'UNKNOWN' ||
-                            customer.client_status === 'ACTIVE'
+                            customer.client_status === 'ACTIVE' ||
+                            customer.raw_data?.client_status === 'ACTIVE' ||
+                            customer.valid === true
                               ? 'bg-green-500'
                               : 'bg-red-500',
                           ]"
@@ -690,7 +762,9 @@
                         customer.status === "ACTIVE" ||
                         customer.status === "Valid" ||
                         customer.status === "UNKNOWN" ||
-                        customer.client_status === "ACTIVE"
+                        customer.client_status === "ACTIVE" ||
+                        customer.raw_data?.client_status === "ACTIVE" ||
+                        customer.valid === true
                           ? "Active"
                           : "Inactive"
                       }}</span>
@@ -698,7 +772,9 @@
                         customer.status === "ACTIVE" ||
                         customer.status === "Valid" ||
                         customer.status === "UNKNOWN" ||
-                        customer.client_status === "ACTIVE"
+                        customer.client_status === "ACTIVE" ||
+                        customer.raw_data?.client_status === "ACTIVE" ||
+                        customer.valid === true
                           ? "A"
                           : "I"
                       }}</span>
@@ -714,6 +790,8 @@
                                           parseFloat(customer.total_reward_usd) || 
                                           parseFloat(customer.raw_data?.reward_usd) || 
                                           parseFloat(customer.raw_data?.total_reward_usd) || 
+                                          parseFloat(customer.commission) ||
+                                          parseFloat(customer.profit) ||
                                           0;
                           return isNaN(rewardUsd) ? 0 : rewardUsd;
                         })()
@@ -726,6 +804,8 @@
                     ${{ formatNumber((() => {
                       const rebateUsd = parseFloat(customer.rebate_amount_usd) || 
                                       parseFloat(customer.raw_data?.rebate_amount_usd) || 
+                                      parseFloat(customer.rebate) ||
+                                      parseFloat(customer.cashback) ||
                                       0;
                       return isNaN(rebateUsd) ? 0 : rebateUsd;
                     })()) }}
@@ -740,7 +820,6 @@
                           ? 'bg-blue-100/80 text-blue-800 dark:bg-blue-800/20 dark:text-blue-400'
                           : getOwnerInfo(customer).type === 'janischa'
                           ? 'bg-purple-100/80 text-purple-800 dark:bg-purple-800/20 dark:text-purple-400'
-                          
                           : 'bg-gray-100/80 text-gray-800 dark:bg-gray-800/20 dark:text-gray-400'
                       ]"
                     >
@@ -752,7 +831,6 @@
                               ? 'bg-blue-400'
                               : getOwnerInfo(customer).type === 'janischa'
                               ? 'bg-purple-400'
-
                               : 'bg-gray-400'
                           ]"
                         ></span>
@@ -763,18 +841,55 @@
                               ? 'bg-blue-500'
                               : getOwnerInfo(customer).type === 'janischa'
                               ? 'bg-purple-500'
-
                               : 'bg-gray-500'
                           ]"
                         ></span>
                       </span>
                       {{ getOwnerInfo(customer).name }}
+                      <span v-if="customer.source === 'XM'" class="text-xs text-gray-500 ml-1">(XM)</span>
+                      <span v-else-if="customer.source === 'Exness1' || customer.source === 'Exness1_ClientAccount'" class="text-xs text-gray-500 ml-1">(Exness1)</span>
+                      <span v-else-if="customer.source === 'Exness2' || customer.source === 'Exness2_ClientAccount'" class="text-xs text-gray-500 ml-1">(Exness2)</span>
+                      <span v-else-if="customer.traderId || customer.raw_data?.traderId" class="text-xs text-gray-500 ml-1">(XM)</span>
+                      <span v-else-if="customer.partner_account && customer.partner_account.includes('Janischa')" class="text-xs text-gray-500 ml-1">(Exness1)</span>
+                      <span v-else-if="customer.partner_account && customer.partner_account.includes('ham')" class="text-xs text-gray-500 ml-1">(Exness2)</span>
                     </span>
                   </td>
                   <td
                     class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
                   >
-                    {{ customer.partner_account || "-" }}
+                    {{ 
+                      customer.reg_date || 
+                      customer.raw_data?.reg_date ||
+                      customer.signUpDate ||
+                      customer.raw_data?.signUpDate ||
+                      customer.created_at ||
+                      customer.registration_date ||
+                      "-" 
+                    }}
+                  </td>
+                  <td
+                    class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
+                  >
+                    {{ 
+                      customer.source || 
+                      customer.raw_data?.source ||
+                      (customer.traderId || customer.raw_data?.traderId ? 'XM' : 
+                       customer.partner_account && customer.partner_account.includes('Janischa') ? 'Exness1' :
+                       customer.partner_account && customer.partner_account.includes('ham') ? 'Exness2' : '-')
+                    }}
+                  </td>
+                  <td
+                    class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
+                  >
+                    {{ 
+                      customer.partner_account || 
+                      customer.raw_data?.partner_account ||
+                      customer.campaign ||
+                      customer.raw_data?.campaign ||
+                      customer.partner ||
+                      customer.raw_data?.partner ||
+                      "-" 
+                    }}
                   </td>
 
                 </tr>
@@ -895,6 +1010,7 @@ const currentPage = ref(1);
 const itemsPerPage = 10;
 const isLoading = ref(false);
 const error = ref(null);
+const debugInfo = ref({}); // เพิ่ม debug info
 const stats = ref({
   total_customers: 0,
   active_customers: 0,
@@ -942,81 +1058,20 @@ const filteredCustomers = computed(() => {
     });
   }
 
-  // กรองตามการค้นหา
+  // กรองตามการค้นหา (เฉพาะ Client Account)
   if (search) {
     const searchLower = search.toLowerCase();
-
-    console.log("กำลังค้นหา:", searchLower);
-    console.log("จำนวนลูกค้าทั้งหมด:", filtered.length);
-
-    const results = filtered.filter((customer) => {
-      // Function to search recursively in all fields
-      const searchInObject = (obj, searchTerm) => {
-        if (!obj || typeof obj !== "object") return false;
-
-        for (const [key, value] of Object.entries(obj)) {
-          if (value === null || value === undefined) continue;
-
-          if (
-            typeof value === "string" &&
-            value.toLowerCase().includes(searchTerm)
-          ) {
-            return true;
-          }
-
-          if (
-            typeof value === "number" &&
-            String(value).toLowerCase().includes(searchTerm)
-          ) {
-            return true;
-          }
-
-          if (typeof value === "object" && searchInObject(value, searchTerm)) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-      // Special search for raw_data fields (for JanischaClient)
-      const searchInRawData = (obj, searchTerm) => {
-        if (obj.raw_data && typeof obj.raw_data === "object") {
-          for (const [key, value] of Object.entries(obj.raw_data)) {
-            if (value === null || value === undefined) continue;
-
-            if (
-              typeof value === "string" &&
-              value.toLowerCase().includes(searchTerm)
-            ) {
-              return true;
-            }
-
-            if (
-              typeof value === "number" &&
-              String(value).toLowerCase().includes(searchTerm)
-            ) {
-              return true;
-            }
-          }
-        }
-        return false;
-      };
-
-      // Search in all fields of the customer object
-      const matches = searchInObject(customer, searchLower);
-
-      // Also search in raw_data fields
-      const rawDataMatches = searchInRawData(customer, searchLower);
-
-      if (matches || rawDataMatches) {
-        console.log("พบลูกค้าที่ตรงกับ:", customer);
-      }
-
-      return matches || rawDataMatches;
+    return filtered.filter((customer) => {
+      const clientAccount =
+        customer.client_account ||
+        customer.raw_data?.client_account ||
+        customer.account_number ||
+        customer.login ||
+        customer.traderId ||
+        customer.client_uid ||
+        customer.client_id;
+      return clientAccount && String(clientAccount).toLowerCase().includes(searchLower);
     });
-
-    console.log("ผลการค้นหา:", results.length, "รายการ");
-    return results;
   }
 
   return filtered;
@@ -1057,9 +1112,11 @@ const filteredStats = computed(() => {
                        parseFloat(c.total_reward_usd) || 
                        parseFloat(c.raw_data?.reward_usd) || 
                        parseFloat(c.raw_data?.total_reward_usd) || 
+                       parseFloat(c.commission) ||
+                       parseFloat(c.profit) ||
                        0;
       const result = sum + (isNaN(rewardUsd) ? 0 : rewardUsd);
-      console.log(`Customer reward calculation: ${c.reward_usd} || ${c.total_reward_usd} || ${c.raw_data?.reward_usd} || ${c.raw_data?.total_reward_usd} = ${rewardUsd}, sum = ${result}`);
+      console.log(`Customer reward calculation: ${c.reward_usd} || ${c.total_reward_usd} || ${c.raw_data?.reward_usd} || ${c.raw_data?.total_reward_usd} || ${c.commission} || ${c.profit} = ${rewardUsd}, sum = ${result}`);
       return result;
     },
     0
@@ -1067,9 +1124,13 @@ const filteredStats = computed(() => {
 
   const totalRebate = customersToShow.reduce(
     (sum, c) => {
-      const rebateUsd = parseFloat(c.rebate_amount_usd) || parseFloat(c.raw_data?.rebate_amount_usd) || 0;
+      const rebateUsd = parseFloat(c.rebate_amount_usd) || 
+                       parseFloat(c.raw_data?.rebate_amount_usd) || 
+                       parseFloat(c.rebate) ||
+                       parseFloat(c.cashback) ||
+                       0;
       const result = sum + (isNaN(rebateUsd) ? 0 : rebateUsd);
-      console.log(`Customer rebate calculation: ${c.rebate_amount_usd} || ${c.raw_data?.rebate_amount_usd} = ${rebateUsd}, sum = ${result}`);
+              console.log(`Customer rebate calculation: ${c.rebate_amount_usd} || ${c.raw_data?.rebate_amount_usd} || ${c.rebate} || ${c.cashback} = ${rebateUsd}, sum = ${result}`);
       return result;
     },
     0
@@ -1091,7 +1152,8 @@ const filteredStats = computed(() => {
         c.status === "Valid" ||
         c.status === "UNKNOWN" ||
         c.client_status === "ACTIVE" ||
-        c.raw_data?.client_status === "ACTIVE"
+        c.raw_data?.client_status === "ACTIVE" ||
+        c.valid === true
     ).length,
     total_reward_usd: isNaN(totalReward) ? 0 : totalReward,
     total_rebate_usd: isNaN(totalRebate) ? 0 : totalRebate,
@@ -1137,27 +1199,11 @@ const fetchData = async () => {
   isLoading.value = true;
   error.value = null;
 
-      try {
-      console.log("Fetching data from /admin/customers...");
+  try {
+    console.log("Fetching data from /admin/all-customers...");
 
-      // Try the main customers endpoint first
-      let response;
-      try {
-        response = await axios.get("/admin/customers");
-      } catch (mainError) {
-        console.log("Main endpoint failed, trying all-customers...");
-        try {
-          response = await axios.get("/admin/all-customers");
-        } catch (allCustomersError) {
-          console.log("Trying with date parameters...");
-          response = await axios.get("/admin/customers", {
-            params: {
-              startTime: startDate.value,
-              endTime: endDate.value,
-            },
-          });
-        }
-      }
+    // Call the all-customers endpoint that we just fixed
+    const response = await axios.get("/admin/all-customers");
 
     console.log("API Response:", response.data);
     console.log("Response status:", response.status);
@@ -1176,6 +1222,12 @@ const fetchData = async () => {
 
     customers.value = customersData;
 
+    // Handle debug info
+    if (response.data?.data?.debug_info) {
+      debugInfo.value = response.data.data.debug_info;
+      console.log("Debug info:", debugInfo.value);
+    }
+
     // Handle stats
     if (response.data?.data?.stats) {
       stats.value = response.data.data.stats;
@@ -1187,20 +1239,20 @@ const fetchData = async () => {
 
     // Debug: log the structure of the first customer and all field names
     if (customers.value.length > 0) {
-          console.log("ตัวอย่างข้อมูลลูกค้า:", customers.value[0]);
-    console.log("ชื่อฟิลด์ทั้งหมด:", Object.keys(customers.value[0]));
+      console.log("ตัวอย่างข้อมูลลูกค้า:", customers.value[0]);
+      console.log("ชื่อฟิลด์ทั้งหมด:", Object.keys(customers.value[0]));
 
-    // Log first few customers for debugging
-    customers.value.slice(0, 3).forEach((customer, index) => {
-      console.log(`ลูกค้าที่ ${index + 1}:`, customer);
-      console.log(`ลูกค้าที่ ${index + 1} reward_usd:`, customer.reward_usd, typeof customer.reward_usd);
-      console.log(`ลูกค้าที่ ${index + 1} total_reward_usd:`, customer.total_reward_usd, typeof customer.total_reward_usd);
-      console.log(`ลูกค้าที่ ${index + 1} rebate_amount_usd:`, customer.rebate_amount_usd, typeof customer.rebate_amount_usd);
-      console.log(`ลูกค้าที่ ${index + 1} raw_data:`, customer.raw_data);
-      console.log(`ลูกค้าที่ ${index + 1} raw_data.reward_usd:`, customer.raw_data?.reward_usd, typeof customer.raw_data?.reward_usd);
-      console.log(`ลูกค้าที่ ${index + 1} raw_data.total_reward_usd:`, customer.raw_data?.total_reward_usd, typeof customer.raw_data?.total_reward_usd);
-      console.log(`ลูกค้าที่ ${index + 1} raw_data.rebate_amount_usd:`, customer.raw_data?.rebate_amount_usd, typeof customer.raw_data?.rebate_amount_usd);
-    });
+      // Log first few customers for debugging
+      customers.value.slice(0, 3).forEach((customer, index) => {
+        console.log(`ลูกค้าที่ ${index + 1}:`, customer);
+        console.log(`ลูกค้าที่ ${index + 1} reward_usd:`, customer.reward_usd, typeof customer.reward_usd);
+        console.log(`ลูกค้าที่ ${index + 1} total_reward_usd:`, customer.total_reward_usd, typeof customer.total_reward_usd);
+        console.log(`ลูกค้าที่ ${index + 1} rebate_amount_usd:`, customer.rebate_amount_usd, typeof customer.rebate_amount_usd);
+        console.log(`ลูกค้าที่ ${index + 1} raw_data:`, customer.raw_data);
+        console.log(`ลูกค้าที่ ${index + 1} raw_data.reward_usd:`, customer.raw_data?.reward_usd, typeof customer.raw_data?.reward_usd);
+        console.log(`ลูกค้าที่ ${index + 1} raw_data.total_reward_usd:`, customer.raw_data?.total_reward_usd, typeof customer.raw_data?.total_reward_usd);
+        console.log(`ลูกค้าที่ ${index + 1} raw_data.rebate_amount_usd:`, customer.raw_data?.rebate_amount_usd, typeof customer.raw_data?.rebate_amount_usd);
+      });
     } else {
       console.log("ไม่มีข้อมูลลูกค้า");
       console.log("Response structure:", response.data);
@@ -1231,6 +1283,22 @@ const formatNumber = (number) => {
 // ฟังก์ชันเพื่อระบุว่าเป็นข้อมูลของ Ham, Janischa หรือ Kantapong
 const getOwnerInfo = (customer) => {
   const partnerAccount = customer.partner_account || customer.raw_data?.partner_account;
+  const clientAccount = customer.client_account || customer.raw_data?.client_account || customer.account_number || customer.login;
+  const source = customer.source || customer.raw_data?.source;
+  const dataSource = customer.data_source || customer.raw_data?.data_source;
+  
+  // ตรวจสอบจาก source และ data_source ก่อน (ใหม่)
+  if (source === 'XM' || dataSource === 'Ham' && (customer.traderId || customer.raw_data?.traderId)) {
+    return { name: "Ham", type: "ham" };
+  }
+  
+  if (source === 'Exness1_ClientAccount' || dataSource === 'Ham') {
+    return { name: "Ham", type: "ham" };
+  }
+  
+  if (source === 'Exness2_ClientAccount' || dataSource === 'Janischa') {
+    return { name: "Janischa", type: "janischa" };
+  }
   
   if (!partnerAccount) return { name: "ไม่ระบุ", type: "unknown" };
   
@@ -1253,6 +1321,29 @@ const getOwnerInfo = (customer) => {
     return { name: "Ham", type: "ham" };
   } else if (partnerAccount === "K.kan") {
     return { name: "Ham", type: "ham" };
+  }
+  
+  // ตรวจสอบจาก client_account หรือ login เพื่อระบุว่าเป็น XM หรือ Exness
+  if (clientAccount) {
+    // ถ้าเป็น XM (มี traderId หรือเป็น XM account)
+    if (customer.traderId || customer.raw_data?.traderId || 
+        (typeof clientAccount === 'string' && clientAccount.includes('XM'))) {
+      return { name: "Ham", type: "ham" };
+    }
+    
+    // ถ้าเป็น Exness account ของ Janischa (ตรวจสอบจาก partner_account หรือ email)
+    if (partnerAccount === "Janischa.trade@gmail.com" || 
+        partnerAccount === "janischa.exness@gmail.com" ||
+        (typeof partnerAccount === 'string' && partnerAccount.includes('Janischa'))) {
+      return { name: "Janischa", type: "janischa" };
+    }
+    
+    // ถ้าเป็น Exness account ของ Ham (ตรวจสอบจาก partner_account หรือ email)
+    if (partnerAccount === "hamsftmo@gmail.com" || 
+        partnerAccount === "ham.exness@gmail.com" ||
+        (typeof partnerAccount === 'string' && partnerAccount.includes('ham'))) {
+      return { name: "Ham", type: "ham" };
+    }
   }
   
   // Fallback: Check if customer has owner field from backend

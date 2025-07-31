@@ -305,12 +305,14 @@ class CustomersController extends Controller
     // Unified customer search from all sources
     public function allCustomers(Request $request)
     {
+        Log::info('=== START: allCustomers method ===');
         $all = collect();
+        $debugInfo = [];
 
-        // 1. Local DB clients
+        // 1. Local DB clients (fallback)
         $ham = HamClient::all();
         $janischa = JanischaClient::all();
-        $clients = \App\Models\Client::all(); // Add Client model data
+        $clients = \App\Models\Client::all();
         
         // Also get data directly from ham_clients table
         $hamClientsTable = DB::table('ham_clients')->get();
@@ -319,82 +321,150 @@ class CustomersController extends Controller
         $all = $all->concat($ham)->concat($janischa)->concat($clients)
                    ->concat($hamClientsTable)->concat($janischaClientsTable);
 
+        $debugInfo['local_db'] = $all->count();
         Log::info('Local DB clients count: ' . $all->count());
-        Log::info('Client model count: ' . $clients->count());
-        Log::info('Ham clients table count: ' . $hamClientsTable->count());
-        Log::info('Janischa clients table count: ' . $janischaClientsTable->count());
 
-        // 2. Exness/Janischa (ReportController)
+        // 2. XM (XMReportController@getTraderList) - Ham's data
         try {
-            $exness = app(\App\Http\Controllers\Admin\ReportController::class)->clients($request);
-            if (method_exists($exness, 'getData')) {
-                $exnessData = $exness->getData();
-                if (isset($exnessData['data']['clients'])) {
-                    $all = $all->concat($exnessData['data']['clients']);
-                }
-            } elseif (is_a($exness, 'Illuminate\Http\JsonResponse')) {
-                $data = $exness->getData(true);
-                if (isset($data['data']['clients'])) {
-                    $all = $all->concat($data['data']['clients']);
-                }
-            } elseif (is_object($exness) && method_exists($exness, 'toArray')) {
-                $exnessData = $exness->toArray();
-                if (isset($exnessData['data']['clients'])) {
-                    $all = $all->concat($exnessData['data']['clients']);
-                }
-            }
-        } catch (\Throwable $e) {
-            Log::error('Error fetching Exness/Janischa data: ' . $e->getMessage());
-            
-            // Fallback: Get data directly from JanischaClient model
-            try {
-                $janischaClients = \App\Models\JanischaClient::all();
-                Log::info('Fallback: Using JanischaClient model data, count: ' . $janischaClients->count());
-                $all = $all->concat($janischaClients);
-            } catch (\Throwable $fallbackError) {
-                Log::error('Error in JanischaClient fallback: ' . $fallbackError->getMessage());
-            }
-        }
-
-        // 3. Exness/Ham (Report1Controller)
-        try {
-            $exness1 = app(\App\Http\Controllers\Admin\Report1Controller::class)->clients1($request);
-            if (method_exists($exness1, 'getData')) {
-                $exnessData1 = $exness1->getData();
-                if (isset($exnessData1['data']['clients'])) {
-                    $all = $all->concat($exnessData1['data']['clients']);
-                }
-            } elseif (is_a($exness1, 'Illuminate\Http\JsonResponse')) {
-                $data = $exness1->getData(true);
-                if (isset($data['data']['clients'])) {
-                    $all = $all->concat($data['data']['clients']);
-                }
-            }
-        } catch (\Throwable $e) {
-            Log::error('Error fetching Exness/Ham data: ' . $e->getMessage());
-        }
-
-
-
-        // 5. XM (XMReportController)
-        try {
+            Log::info('=== Fetching XM data ===');
             $xm = app(\App\Http\Controllers\Admin\XMReportController::class)->getTraderList($request);
-            if (method_exists($xm, 'getData')) {
+            
+            $xmData = null;
+            if (is_a($xm, 'Illuminate\Http\JsonResponse')) {
+                $xmData = $xm->getData(true);
+                Log::info('XM response type: JsonResponse');
+            } elseif (method_exists($xm, 'getData')) {
                 $xmData = $xm->getData();
-                if (is_array($xmData)) {
-                    $all = $all->concat($xmData);
+                Log::info('XM response type: has getData method');
+            } elseif (is_array($xm)) {
+                $xmData = $xm;
+                Log::info('XM response type: Array');
+            } else {
+                Log::info('XM response type: ' . gettype($xm));
+            }
+            
+            if ($xmData && is_array($xmData)) {
+                $xmClients = collect($xmData)->map(function($client) {
+                    $client['source'] = 'XM';
+                    $client['data_source'] = 'Ham';
+                    return $client;
+                });
+                $all = $all->concat($xmClients);
+                $debugInfo['xm'] = $xmClients->count();
+                Log::info('XM (Ham) clients count: ' . $xmClients->count());
+                
+                // Debug: Log sample XM data
+                if ($xmClients->count() > 0) {
+                    Log::info('Sample XM client:', $xmClients->first());
                 }
-            } elseif (is_a($xm, 'Illuminate\Http\JsonResponse')) {
-                $data = $xm->getData(true);
-                if (is_array($data)) {
-                    $all = $all->concat($data);
-                }
+            } else {
+                Log::warning('XM data is null or not array. Data: ' . json_encode($xmData));
+                $debugInfo['xm'] = 0;
             }
         } catch (\Throwable $e) {
             Log::error('Error fetching XM data: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            $debugInfo['xm'] = 0;
         }
 
+        // 3. client_account1 (Report1Controller@clientAccount1Api) - Ham's data
+        try {
+            Log::info('=== Fetching client_account1 data ===');
+            
+            // Call the new API endpoint that returns JSON
+            $ca1 = app(\App\Http\Controllers\Admin\Report1Controller::class)->clientAccount1Api($request);
+            
+            $ca1Data = null;
+            if (is_a($ca1, 'Illuminate\Http\JsonResponse')) {
+                $ca1Data = $ca1->getData(true);
+                Log::info('client_account1 response type: JsonResponse');
+            } elseif (method_exists($ca1, 'getData')) {
+                $ca1Data = $ca1->getData();
+                Log::info('client_account1 response type: has getData method');
+            } elseif (is_array($ca1)) {
+                $ca1Data = $ca1;
+                Log::info('client_account1 response type: Array');
+            } else {
+                Log::info('client_account1 response type: ' . gettype($ca1));
+            }
+            
+            if ($ca1Data && isset($ca1Data['data']['clients'])) {
+                $ca1Clients = collect($ca1Data['data']['clients'])->map(function($client) {
+                    $client['source'] = 'Exness1_ClientAccount';
+                    $client['data_source'] = 'Ham';
+                    return $client;
+                });
+                $all = $all->concat($ca1Clients);
+                $debugInfo['client_account1'] = $ca1Clients->count();
+                Log::info('Exness1 Client Account (Ham) clients count: ' . $ca1Clients->count());
+                
+                // Debug: Log sample client_account1 data
+                if ($ca1Clients->count() > 0) {
+                    Log::info('Sample client_account1 client:', $ca1Clients->first());
+                }
+            } else {
+                Log::warning('client_account1 data is null or missing clients array. Data: ' . json_encode($ca1Data));
+                $debugInfo['client_account1'] = 0;
+            }
+        } catch (\Throwable $e) {
+            Log::error('Error fetching client_account1 data: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            $debugInfo['client_account1'] = 0;
+        }
+
+        // 4. client_account (Report2Controller@clientAccount2Api) - Ham's data
+        try {
+            Log::info('=== Fetching client_account data ===');
+            
+            // Call the new API endpoint that returns JSON
+            $ca2 = app(\App\Http\Controllers\Admin\Report2Controller::class)->clientAccount2Api($request);
+            
+            $ca2Data = null;
+            if (is_a($ca2, 'Illuminate\Http\JsonResponse')) {
+                $ca2Data = $ca2->getData(true);
+                Log::info('client_account response type: JsonResponse');
+            } elseif (method_exists($ca2, 'getData')) {
+                $ca2Data = $ca2->getData();
+                Log::info('client_account response type: has getData method');
+            } elseif (is_array($ca2)) {
+                $ca2Data = $ca2;
+                Log::info('client_account response type: Array');
+            } else {
+                Log::info('client_account response type: ' . gettype($ca2));
+            }
+            
+            if ($ca2Data && isset($ca2Data['data']['clients'])) {
+                $ca2Clients = collect($ca2Data['data']['clients'])->map(function($client) {
+                    $client['source'] = 'Exness2_ClientAccount';
+                    $client['data_source'] = 'Ham';
+                    return $client;
+                });
+                $all = $all->concat($ca2Clients);
+                $debugInfo['client_account'] = $ca2Clients->count();
+                Log::info('Exness2 Client Account (Ham) clients count: ' . $ca2Clients->count());
+                
+                // Debug: Log sample client_account data
+                if ($ca2Clients->count() > 0) {
+                    Log::info('Sample client_account client:', $ca2Clients->first());
+                }
+            } else {
+                Log::warning('client_account data is null or missing clients array. Data: ' . json_encode($ca2Data));
+                $debugInfo['client_account'] = 0;
+            }
+        } catch (\Throwable $e) {
+            Log::error('Error fetching client_account data: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            $debugInfo['client_account'] = 0;
+        }
+
+        // 5. Exness/Janischa (ReportController@clients) - Exness1
+        // REMOVED: exness1 and exness2 are no longer needed
+
+        // 6. Exness/Ham (Report1Controller@clients1) - Exness2
+        // REMOVED: exness1 and exness2 are no longer needed
+
         Log::info('Total clients before normalization: ' . $all->count());
+        Log::info('Debug info by source:', $debugInfo);
 
         // Debug: Log sample data before normalization
         if ($all->count() > 0) {
@@ -415,40 +485,37 @@ class CustomersController extends Controller
                 $arr = (array) $c;
             }
             
-            // Debug: Log the array structure (only for first few items to avoid spam)
-            static $logCount = 0;
-            if ($logCount < 3) {
-                Log::info('Normalizing client ' . $logCount . ':', $arr);
-                $logCount++;
-            }
-            
-                                    $normalized = [
-                            'client_uid' => $arr['client_uid'] ?? $arr['clientId'] ?? $arr['traderId'] ?? $arr['account'] ?? $arr['login'] ?? $arr['id'] ?? null,
-                            'client_id' => $arr['client_id'] ?? $arr['clientId'] ?? $arr['traderId'] ?? $arr['account'] ?? $arr['login'] ?? $arr['id'] ?? null,
-                            'client_account' => $arr['client_account'] ?? $arr['account'] ?? $arr['login'] ?? $arr['traderId'] ?? $arr['clientId'] ?? null,
-                            'partner_account' => $arr['partner_account'] ?? $arr['campaign'] ?? $arr['partner'] ?? null,
-                            'traderId' => $arr['traderId'] ?? $arr['trader_id'] ?? $arr['clientId'] ?? $arr['account'] ?? null,
-                            'client_name' => $arr['client_name'] ?? $arr['name'] ?? $arr['full_name'] ?? $arr['first_name'] ?? null,
-                            'account_number' => $arr['account_number'] ?? $arr['account'] ?? $arr['login'] ?? $arr['account_id'] ?? null,
-                            'login' => $arr['login'] ?? $arr['account'] ?? $arr['account_id'] ?? null,
-                            'exness_id' => $arr['exness_id'] ?? $arr['exnessId'] ?? $arr['broker_id'] ?? null,
-                            'country' => $arr['client_country'] ?? $arr['country'] ?? $arr['nationality'] ?? null,
-                            'status' => $arr['client_status'] ?? $arr['status'] ?? $arr['valid'] ?? $arr['is_active'] ?? null,
-                            'reg_date' => $arr['reg_date'] ?? $arr['signUpDate'] ?? $arr['created_at'] ?? $arr['registration_date'] ?? null,
-                            'reward_usd' => $arr['reward_usd'] ?? $arr['total_reward_usd'] ?? $arr['commission'] ?? $arr['profit'] ?? 0,
-                            'rebate_amount_usd' => $arr['rebate_amount_usd'] ?? $arr['rebate'] ?? $arr['cashback'] ?? 0,
-                            'raw_data' => $arr['raw_data'] ?? null, // Add raw_data for search
-                        ];
+            $normalized = [
+                'client_uid' => $arr['client_uid'] ?? $arr['clientId'] ?? $arr['traderId'] ?? $arr['account'] ?? $arr['login'] ?? $arr['id'] ?? null,
+                'client_id' => $arr['client_id'] ?? $arr['clientId'] ?? $arr['traderId'] ?? $arr['account'] ?? $arr['login'] ?? $arr['id'] ?? null,
+                'client_account' => $arr['client_account'] ?? $arr['account'] ?? $arr['login'] ?? $arr['traderId'] ?? $arr['clientId'] ?? null,
+                'partner_account' => $arr['partner_account'] ?? $arr['campaign'] ?? $arr['partner'] ?? null,
+                'traderId' => $arr['traderId'] ?? $arr['trader_id'] ?? $arr['clientId'] ?? $arr['account'] ?? null,
+                'client_name' => $arr['client_name'] ?? $arr['name'] ?? $arr['full_name'] ?? $arr['first_name'] ?? null,
+                'account_number' => $arr['account_number'] ?? $arr['account'] ?? $arr['login'] ?? $arr['account_id'] ?? null,
+                'login' => $arr['login'] ?? $arr['account'] ?? $arr['account_id'] ?? null,
+                'exness_id' => $arr['exness_id'] ?? $arr['exnessId'] ?? $arr['broker_id'] ?? null,
+                'country' => $arr['client_country'] ?? $arr['country'] ?? $arr['nationality'] ?? null,
+                'status' => $arr['client_status'] ?? $arr['status'] ?? $arr['valid'] ?? $arr['is_active'] ?? null,
+                'reg_date' => $arr['reg_date'] ?? $arr['signUpDate'] ?? $arr['created_at'] ?? $arr['registration_date'] ?? null,
+                'reward_usd' => $arr['reward_usd'] ?? $arr['total_reward_usd'] ?? $arr['commission'] ?? $arr['profit'] ?? 0,
+                'rebate_amount_usd' => $arr['rebate_amount_usd'] ?? $arr['rebate'] ?? $arr['cashback'] ?? 0,
+                'raw_data' => $arr['raw_data'] ?? null,
+                'source' => $arr['source'] ?? null,
+                'data_source' => $arr['data_source'] ?? null,
+            ];
             
             return $normalized;
         })->values();
 
         Log::info('Total clients after normalization: ' . $normalized->count());
+        Log::info('=== END: allCustomers method ===');
 
         return response()->json([
             'success' => true,
             'data' => [
                 'customers' => $normalized,
+                'debug_info' => $debugInfo
             ]
         ]);
     }

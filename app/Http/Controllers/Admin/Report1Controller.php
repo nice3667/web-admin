@@ -451,6 +451,136 @@ class Report1Controller extends Controller
         }
     }
 
+    public function clientAccount1Api(Request $request)
+    {
+        try {
+            Log::info('Fetching Ham client account data for API...');
+
+            // Try to get data from Exness API first, fallback to database
+            $dataSource = 'Database';
+            $apiError = null;
+            $userEmail = 'hamsftmo@gmail.com';
+
+            try {
+                $apiResponse = $this->hamExnessAuthService->getClientsData();
+
+                if (isset($apiResponse['error'])) {
+                    throw new \Exception($apiResponse['error']);
+                }
+
+                $apiClients = $apiResponse['data'] ?? [];
+                $dataSource = 'Exness API';
+
+                Log::info('Successfully fetched data from Exness API', [
+                    'count' => count($apiClients),
+                    'user' => 'hamsftmo@gmail.com'
+                ]);
+
+                // Use API data
+                $clients = collect($apiClients);
+
+            } catch (\Exception $e) {
+                Log::warning('Failed to fetch from Exness API, using database data', [
+                    'error' => $e->getMessage(),
+                    'user' => 'hamsftmo@gmail.com'
+                ]);
+
+                $apiError = $e->getMessage();
+
+                // Fallback to database
+                $query = HamClient::query();
+                $clients = $query->get();
+
+                // Convert to API format for consistency
+                $clients = $clients->map(function ($client) {
+                    return [
+                        'partner_account' => $client->partner_account,
+                        'client_uid' => $client->client_uid,
+                        'reg_date' => $client->reg_date,
+                        'client_country' => $client->client_country,
+                        'volume_lots' => $client->volume_lots,
+                        'volume_mln_usd' => $client->volume_mln_usd,
+                        'reward_usd' => $client->reward_usd,
+                        'client_status' => $client->client_status,
+                        'kyc_passed' => $client->kyc_passed,
+                        'ftd_received' => $client->ftd_received,
+                        'ftt_made' => $client->ftt_made,
+                    ];
+                });
+            }
+
+            // Format client data with calculated fields
+            $formattedClients = $clients->map(function ($client) {
+                $volumeLots = (float) ($client['volume_lots'] ?? 0);
+                $rewardUsd = (float) ($client['reward_usd'] ?? 0);
+
+                // Calculate status based on activity
+                $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
+
+                // KYC estimation based on activity level
+                $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
+
+                return [
+                    'partner_account' => $client['partner_account'] ?? '-',
+                    'client_uid' => $client['client_uid'] ?? '-',
+                    'client_account' => $client['client_account'] ?? '-',
+                    'reg_date' => $client['reg_date'],
+                    'client_country' => $client['client_country'] ?? '-',
+                    'volume_lots' => $volumeLots,
+                    'volume_mln_usd' => (float) ($client['volume_mln_usd'] ?? 0),
+                    'reward_usd' => $rewardUsd,
+                    'client_status' => $clientStatus,
+                    'kyc_passed' => $kycPassed,
+                    'ftd_received' => ($volumeLots > 0 || $rewardUsd > 0),
+                    'ftt_made' => ($volumeLots > 0)
+                ];
+            });
+
+            Log::info('Ham client account data formatted successfully for API', [
+                'count' => $formattedClients->count(),
+                'data_source' => $dataSource
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'clients' => $formattedClients->values(),
+                    'stats' => [
+                        'total_accounts' => $formattedClients->count(),
+                        'total_volume_lots' => $formattedClients->sum('volume_lots'),
+                        'total_volume_usd' => $formattedClients->sum('volume_mln_usd'),
+                        'total_profit' => $formattedClients->sum('reward_usd'),
+                        'total_client_uids' => $formattedClients->pluck('client_uid')->unique()->count()
+                    ],
+                    'data_source' => $dataSource,
+                    'user_email' => $userEmail,
+                    'error' => $apiError
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error in Report1Controller@clientAccount1Api: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'data' => [
+                    'clients' => [],
+                    'stats' => [
+                        'total_accounts' => 0,
+                        'total_volume_lots' => 0,
+                        'total_volume_usd' => 0,
+                        'total_profit' => 0,
+                        'total_client_uids' => 0
+                    ],
+                    'data_source' => 'Error',
+                    'user_email' => 'hamsftmo@gmail.com',
+                    'error' => 'เกิดข้อผิดพลาดในการดึงข้อมูล: ' . $e->getMessage()
+                ]
+            ], 500);
+        }
+    }
+
     public function clientTransaction1(Request $request)
     {
         try {
