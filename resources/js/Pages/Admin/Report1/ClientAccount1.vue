@@ -468,11 +468,11 @@ const endIndex = computed(() => filteredAccounts.value.length);
         class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-2xl rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 mb-6 lg:mb-8 border border-white/20 dark:border-slate-700/20 transform hover:scale-[1.01] lg:hover:scale-[1.02] transition-all duration-300"
       >
         <div
-          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-6 items-end"
+          class="grid items-end grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 lg:gap-6"
         >
           <div class="col-span-1">
             <label
-              class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+              class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
             >
               <span class="flex items-center gap-2">
                 <svg
@@ -505,81 +505,10 @@ const endIndex = computed(() => filteredAccounts.value.length);
               @input="applyFilters"
             />
           </div>
-          <div class="col-span-1">
-            <label
-              class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
-            >
-              <span class="flex items-center gap-2">
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 12h6"
-                  />
-                </svg>
-                Account Type
-              </span>
-            </label>
-            <select
-              v-model="filters.account_type"
-              class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
-              @change="applyFilters"
-            >
-              <option value="">All</option>
-              <option
-                v-for="type in accountTypeOptions"
-                :key="type"
-                :value="type"
-              >
-                {{ type }}
-              </option>
-            </select>
-          </div>
-          <div class="col-span-1">
-            <label
-              class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
-            >
-              <span class="flex items-center gap-2">
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-                Platform
-              </span>
-            </label>
-            <select
-              v-model="filters.platform"
-              class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
-              @change="applyFilters"
-            >
-              <option value="">All</option>
-              <option
-                v-for="platform in platformOptions"
-                :key="platform"
-                :value="platform"
-              >
-                {{ platform }}
-              </option>
-            </select>
-          </div>
+
           <div class="col-span-1 sm:col-span-2 lg:col-span-1">
             <label
-              class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+              class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
             >
               <span class="flex items-center gap-2">
                 <svg
@@ -612,7 +541,7 @@ const endIndex = computed(() => filteredAccounts.value.length);
           <!-- Reset Button -->
           <div class="col-span-1">
             <label
-              class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+              class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
             >
               <span class="flex items-center gap-2">
                 <svg
@@ -644,10 +573,10 @@ const endIndex = computed(() => filteredAccounts.value.length);
             v-if="signUpDateFilter === 'custom'"
             class="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-5"
           >
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label
-                  class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                  class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
                   <span class="flex items-center gap-2">
                     <svg
@@ -674,7 +603,7 @@ const endIndex = computed(() => filteredAccounts.value.length);
               </div>
               <div>
                 <label
-                  class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                  class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
                 >
                   <span class="flex items-center gap-2">
                     <svg
@@ -715,7 +644,7 @@ const endIndex = computed(() => filteredAccounts.value.length);
                 จำนวน Client UID
               </p>
               <p
-                class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
+                class="mt-2 text-3xl font-extrabold text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
               >
                 {{ computedStats.total_pending }}
               </p>
@@ -748,7 +677,7 @@ const endIndex = computed(() => filteredAccounts.value.length);
                 Volume (lots)
               </p>
               <p
-                class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
+                class="mt-2 text-3xl font-extrabold text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
               >
                 {{ computedStats.total_amount || "0.0000" }}
               </p>
@@ -781,7 +710,7 @@ const endIndex = computed(() => filteredAccounts.value.length);
                 Volume (USD)
               </p>
               <p
-                class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
+                class="mt-2 text-3xl font-extrabold text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
               >
                 {{ computedStats.due_today || "0.0000" }}
               </p>
@@ -814,7 +743,7 @@ const endIndex = computed(() => filteredAccounts.value.length);
                 Reward (USD)
               </p>
               <p
-                class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
+                class="mt-2 text-3xl font-extrabold text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
               >
                 {{ computedStats.overdue || "0.0000" }}
               </p>
@@ -1043,7 +972,7 @@ const endIndex = computed(() => filteredAccounts.value.length);
         v-if="
           props.clients && props.clients.data && props.clients.data.length > 0
         "
-        class="px-6 py-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg border-t border-blue-100/20 dark:border-slate-700/20"
+        class="px-6 py-4 border-t bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg border-blue-100/20 dark:border-slate-700/20"
       >
         <div class="flex items-center justify-between">
           <!-- Pagination Info -->
@@ -1062,14 +991,14 @@ const endIndex = computed(() => filteredAccounts.value.length);
             <Link
               v-if="props.clients.prev_page_url"
               :href="props.clients.prev_page_url"
-              class="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors duration-200"
+              class="px-4 py-2 text-sm font-medium text-blue-600 transition-colors duration-200 bg-white border border-blue-200 rounded-lg dark:text-blue-400 dark:bg-slate-800 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-slate-700"
               preserve-scroll
             >
               ก่อนหน้า
             </Link>
             <span
               v-else
-              class="px-4 py-2 text-sm font-medium text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg cursor-not-allowed"
+              class="px-4 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg cursor-not-allowed dark:text-gray-600 dark:bg-slate-900 dark:border-slate-700"
             >
               ก่อนหน้า
             </span>
@@ -1084,7 +1013,7 @@ const endIndex = computed(() => filteredAccounts.value.length);
                   !link.label.includes('...')
                 "
                 :href="link.url"
-                class="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200"
+                class="px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg"
                 :class="{
                   'text-white bg-blue-600 dark:bg-blue-500': link.active,
                   'text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-slate-700':
@@ -1096,7 +1025,7 @@ const endIndex = computed(() => filteredAccounts.value.length);
               </Link>
               <span
                 v-else-if="link.label.includes('...')"
-                class="px-4 py-2 text-sm font-medium text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg cursor-default"
+                class="px-4 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg cursor-default dark:text-gray-600 dark:bg-slate-900 dark:border-slate-700"
               >
                 ...
               </span>
@@ -1106,14 +1035,14 @@ const endIndex = computed(() => filteredAccounts.value.length);
             <Link
               v-if="props.clients.next_page_url"
               :href="props.clients.next_page_url"
-              class="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors duration-200"
+              class="px-4 py-2 text-sm font-medium text-blue-600 transition-colors duration-200 bg-white border border-blue-200 rounded-lg dark:text-blue-400 dark:bg-slate-800 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-slate-700"
               preserve-scroll
             >
               ถัดไป
             </Link>
             <span
               v-else
-              class="px-4 py-2 text-sm font-medium text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg cursor-not-allowed"
+              class="px-4 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg cursor-not-allowed dark:text-gray-600 dark:bg-slate-900 dark:border-slate-700"
             >
               ถัดไป
             </span>

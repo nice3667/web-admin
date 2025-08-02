@@ -28,13 +28,13 @@ import FormControl from "@/Components/FormControl.vue";
 import Pagination from "@/Components/Admin/Pagination.vue";
 import BaseIcon from "@/Components/BaseIcon.vue";
 import TopNavBar from "@/Components/TopNavBar.vue";
-import BottomNavBar from '@/Components/BottomNavBar.vue';
+import BottomNavBar from "@/Components/BottomNavBar.vue";
 
 const props = defineProps({
   clients: {
     type: Object,
     required: true,
-    default: () => ({})
+    default: () => ({}),
   },
   stats: {
     type: Object,
@@ -53,42 +53,126 @@ const props = defineProps({
   },
   error: {
     type: String,
-    default: null
+    default: null,
   },
   user_email: {
     type: String,
-    default: null
+    default: null,
   },
   data_source: {
     type: String,
-    default: 'Database'
-  }
+    default: "Database",
+  },
 });
 
 const isModalActive = ref(false);
 const showAdvancedSearch = ref(false);
 
 const filters = ref({
-  partner_account: props.filters.partner_account || "",
-  client_uid: props.filters.client_uid || "",
-  client_country: props.filters.client_country || "",
-  client_status: props.filters.client_status || "",
-  reg_date: props.filters.reg_date || "",
-  kyc_passed: props.filters.kyc_passed || "",
+  client_account: "",
+  partner_account: "",
+  client_uid: "",
+  client_country: "",
+  client_status: "",
+  reg_date: "",
 });
 
-// Initialize filters from props
-onMounted(() => {
-  filters.value = { ...props.filters };
-});
+const signUpDateFilter = ref("all");
+const startDate = ref("");
+const endDate = ref("");
 
-// Computed properties for data
 const accounts = computed(() => {
   return props.clients.data || [];
 });
 
+// Filtered accounts based on search input
+const filteredAccounts = computed(() => {
+  let result = accounts.value;
+
+  if (filters.value.client_account) {
+    const searchLower = filters.value.client_account.toLowerCase();
+    result = result.filter(
+      (account) =>
+        (account.client_account || "").toLowerCase().includes(searchLower) ||
+        (account.client_uid || "").toLowerCase().includes(searchLower) ||
+        (account.partner_account || "").toLowerCase().includes(searchLower)
+    );
+  }
+
+  if (filters.value.partner_account) {
+    const searchLower = filters.value.partner_account.toLowerCase();
+    result = result.filter((account) =>
+      (account.partner_account || "").toLowerCase().includes(searchLower)
+    );
+  }
+
+  if (filters.value.client_uid) {
+    const searchLower = filters.value.client_uid.toLowerCase();
+    result = result.filter((account) =>
+      (account.client_uid || "").toLowerCase().includes(searchLower)
+    );
+  }
+
+  if (filters.value.client_country) {
+    const searchLower = filters.value.client_country.toLowerCase();
+    result = result.filter((account) =>
+      (account.client_country || "").toLowerCase().includes(searchLower)
+    );
+  }
+
+  if (filters.value.client_status) {
+    result = result.filter(
+      (account) =>
+        (account.client_status || "").toLowerCase() ===
+        filters.value.client_status.toLowerCase()
+    );
+  }
+
+  if (filters.value.reg_date) {
+    result = result.filter((account) => {
+      if (!account.reg_date) return false;
+      const accountDate = new Date(account.reg_date)
+        .toISOString()
+        .split("T")[0];
+      return accountDate === filters.value.reg_date;
+    });
+  }
+
+  if (signUpDateFilter.value !== "all") {
+    const now = new Date();
+    let start = null;
+    let end = null;
+
+    if (signUpDateFilter.value === "1m") {
+      start = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      end = now;
+    } else if (signUpDateFilter.value === "2m") {
+      start = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
+      end = now;
+    } else if (
+      signUpDateFilter.value === "custom" &&
+      startDate.value &&
+      endDate.value
+    ) {
+      start = new Date(startDate.value);
+      end = new Date(endDate.value);
+    }
+
+    if (start && end) {
+      result = result.filter((account) => {
+        if (!account.reg_date) return false;
+        const regDate = new Date(account.reg_date);
+        return regDate >= start && regDate <= end;
+      });
+    }
+  }
+
+  return result;
+});
+
 // Apply search filters
 const applyFilters = () => {
+  currentPage.value = 1; // Reset to the first page when filters are applied
   router.get(
     "/admin/reports/client-account",
     { ...filters.value },
@@ -103,13 +187,16 @@ const applyFilters = () => {
 // Reset filters
 const resetFilters = () => {
   filters.value = {
+    client_account: "",
     partner_account: "",
     client_uid: "",
     client_country: "",
     client_status: "",
     reg_date: "",
-    kyc_passed: "",
   };
+  signUpDateFilter.value = "all";
+  startDate.value = "";
+  endDate.value = "";
   router.get(
     "/admin/reports/client-account",
     {},
@@ -264,7 +351,7 @@ const formattedStats = computed(() => {
     total_volume_lots: Number(stats.total_volume_lots ?? 0).toFixed(4),
     total_volume_usd: Number(stats.total_volume_usd ?? 0).toFixed(4),
     total_profit: Number(stats.total_profit ?? 0).toFixed(4),
-    total_client_uids: stats.total_client_uids ?? 0
+    total_client_uids: stats.total_client_uids ?? 0,
   };
 });
 
@@ -304,18 +391,24 @@ const getStatusText = (status) => {
 const itemsPerPage = 10;
 const currentPage = ref(props.clients.current_page || 1);
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage);
-const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage, accounts.value.length));
+const endIndex = computed(() =>
+  Math.min(startIndex.value + itemsPerPage, accounts.value.length)
+);
 const paginatedAccounts = computed(() => {
-  return accounts.value.slice(startIndex.value, endIndex.value);
+  return filteredAccounts.value.slice(startIndex.value, endIndex.value);
 });
 
-watch(() => props.clients.current_page, (val) => {
-  currentPage.value = val || 1;
-});
+watch(
+  () => props.clients.current_page,
+  (val) => {
+    currentPage.value = val || 1;
+  }
+);
 
 // Pagination logic (XM style)
 const goToPage = (page) => {
-  if (page < 1 || page > Math.ceil(accounts.value.length / itemsPerPage)) return;
+  if (page < 1 || page > Math.ceil(accounts.value.length / itemsPerPage))
+    return;
   currentPage.value = page;
 };
 
@@ -349,16 +442,19 @@ const displayedPages = computed(() => {
   }
   return pages;
 });
-
 </script>
 
 <template>
   <TopNavBar />
-  <div class="min-h-screen py-12 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+  <div
+    class="min-h-screen py-12 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900"
+  >
     <div class="mx-auto sm:px-6 lg:px-8">
       <!-- Page Title with Animation -->
       <div class="mb-8 text-center animate-fade-in">
-        <h1 class="text-4xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+        <h1
+          class="text-4xl font-extrabold text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
+        >
           บัญชีลูกค้า
         </h1>
         <p class="mt-3 text-lg text-gray-600 dark:text-gray-400">
@@ -367,174 +463,357 @@ const displayedPages = computed(() => {
       </div>
 
       <!-- ลูกค้า Partner Label -->
-      <div class="mb-2 text-3xl font-extrabold text-blue-700 dark:text-blue-300 animate-fade-in">
+      <div
+        class="mb-2 text-3xl font-extrabold text-blue-700 dark:text-blue-300 animate-fade-in"
+      >
         ลูกค้า Partner (Janischa)
       </div>
 
       <!-- Error Notification -->
-      <div v-if="error" class="mb-6 bg-red-50/80 dark:bg-red-900/20 backdrop-blur-lg overflow-hidden shadow-xl rounded-2xl p-6 border border-red-200/20 dark:border-red-800/20">
+      <div
+        v-if="error"
+        class="p-6 mb-6 overflow-hidden border shadow-xl bg-red-50/80 dark:bg-red-900/20 backdrop-blur-lg rounded-2xl border-red-200/20 dark:border-red-800/20"
+      >
         <div class="flex items-center">
-          <svg class="w-6 h-6 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          <svg
+            class="w-6 h-6 mr-3 text-red-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
           </svg>
-          <span class="text-red-700 dark:text-red-400 font-semibold">{{ error }}</span>
+          <span class="font-semibold text-red-700 dark:text-red-400">{{
+            error
+          }}</span>
         </div>
       </div>
 
       <!-- Data Source Info -->
-      <div class="mb-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/20">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div
+        class="p-6 mb-6 overflow-hidden border shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-2xl border-white/20 dark:border-slate-700/20"
+      >
+        <div
+          class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+        >
           <div class="flex items-center gap-4">
             <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              <span class="text-blue-600 dark:text-blue-400">แหล่งข้อมูล:</span> {{ data_source }}
+              <span class="text-blue-600 dark:text-blue-400">แหล่งข้อมูล:</span>
+              {{ data_source }}
             </div>
             <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              <span class="text-blue-600 dark:text-blue-400">อีเมล:</span> {{ user_email }}
+              <span class="text-blue-600 dark:text-blue-400">อีเมล:</span>
+              {{ user_email }}
             </div>
           </div>
-
         </div>
       </div>
 
       <!-- Filter Box (XM style) -->
-      <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-2xl rounded-2xl p-8 mb-8 border border-white/20 dark:border-slate-700/20 transform hover:scale-[1.02] transition-all duration-300">
-        <div class="flex flex-wrap gap-6 items-end">
-          <div class="flex-1 min-w-[200px]">
-            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+      <div
+        class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-2xl rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 mb-6 lg:mb-8 border border-white/20 dark:border-slate-700/20 transform hover:scale-[1.01] lg:hover:scale-[1.02] transition-all duration-300"
+      >
+        <div
+          class="grid items-end grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 lg:gap-6"
+        >
+          <div class="col-span-1">
+            <label
+              class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
+            >
               <span class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M11 9h2M12 17h.01"
+                  />
                 </svg>
-                Partner Account
+                Client Account
               </span>
             </label>
             <input
-              v-model="filters.partner_account"
+              v-model="filters.client_account"
               type="text"
-              placeholder="กรอก Partner Account..."
-              class="w-full px-4 py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200"
+              placeholder="ค้นหา Client Account จากทุกหน้า (Client Account, Account ID, etc.)"
+              class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
               @input="applyFilters"
-            >
+            />
           </div>
-          <div class="flex-1 min-w-[200px]">
-            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+
+          <div class="col-span-1 sm:col-span-2 lg:col-span-1">
+            <label
+              class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
+            >
               <span class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
                 </svg>
-                Client UID
+                Sign Up Date
               </span>
             </label>
-            <input
-              v-model="filters.client_uid"
-              type="text"
-              placeholder="กรอก Client UID..."
-              class="w-full px-4 py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200"
-              @input="applyFilters"
+            <select
+              v-model="signUpDateFilter"
+              class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
             >
+              <option value="all">ทั้งหมด</option>
+              <option value="1m">เปิดบัญชีเมื่อ 1 เดือนที่แล้ว</option>
+              <option value="2m">เปิดบัญชีเมื่อ 2 เดือนที่แล้ว</option>
+              <option value="custom">เลือกวันที่เอง</option>
+            </select>
           </div>
-          <div class="flex-1 min-w-[200px]">
-            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+
+          <!-- Reset Button -->
+          <div class="col-span-1">
+            <label
+              class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
+            >
               <span class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
                 </svg>
-                ประเทศ
+                Actions
               </span>
             </label>
-            <input
-              v-model="filters.client_country"
-              type="text"
-              placeholder="กรอกประเทศ..."
-              class="w-full px-4 py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200"
-              @input="applyFilters"
-            >
-          </div>
-          <div class="flex-1 min-w-[200px]">
-            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              <span class="flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-                วันที่ลงทะเบียน
-              </span>
-            </label>
-            <input
-              v-model="filters.reg_date"
-              type="date"
-              class="w-full px-4 py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200"
-              @change="applyFilters"
-            >
-          </div>
-          <div class="flex-none flex gap-2 ml-auto">
             <button
               @click="resetFilters"
-              class="px-8 py-3 rounded-xl bg-gradient-to-r from-gray-300 via-gray-200 to-gray-100 text-gray-700 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+              class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-gray-300 via-gray-200 to-gray-100 text-gray-700 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-slate-800 text-sm sm:text-base"
             >
               Reset
             </button>
+          </div>
+
+          <!-- Custom Date Range (Mobile: Full width) -->
+          <div
+            v-if="signUpDateFilter === 'custom'"
+            class="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-5"
+          >
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label
+                  class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
+                >
+                  <span class="flex items-center gap-2">
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    Start Date
+                  </span>
+                </label>
+                <input
+                  type="date"
+                  v-model="startDate"
+                  class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
+                />
+              </div>
+              <div>
+                <label
+                  class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
+                >
+                  <span class="flex items-center gap-2">
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    End Date
+                  </span>
+                </label>
+                <input
+                  type="date"
+                  v-model="endDate"
+                  class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Statistics Cards (XM style) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1">
+      <div class="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4">
+        <div
+          class="p-6 overflow-hidden transition-all duration-300 transform border shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-2xl border-white/20 dark:border-slate-700/20 hover:scale-105 hover:rotate-1"
+        >
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">บัญชีทั้งหมด</p>
-              <p class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                บัญชีทั้งหมด
+              </p>
+              <p
+                class="mt-2 text-3xl font-extrabold text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
+              >
                 {{ formattedStats.total_accounts }}
               </p>
             </div>
-            <div class="p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl rotate-3 transform transition-transform duration-300 hover:rotate-6">
-              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            <div
+              class="p-4 transition-transform duration-300 transform bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl rotate-3 hover:rotate-6"
+            >
+              <svg
+                class="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                ></path>
               </svg>
             </div>
           </div>
         </div>
-        <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1">
+        <div
+          class="p-6 overflow-hidden transition-all duration-300 transform border shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-2xl border-white/20 dark:border-slate-700/20 hover:scale-105 hover:rotate-1"
+        >
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Volume (lots)</p>
-              <p class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Volume (lots)
+              </p>
+              <p
+                class="mt-2 text-3xl font-extrabold text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
+              >
                 {{ formattedStats.total_volume_lots }}
               </p>
             </div>
-            <div class="p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl rotate-3 transform transition-transform duration-300 hover:rotate-6">
-              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+            <div
+              class="p-4 transition-transform duration-300 transform bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl rotate-3 hover:rotate-6"
+            >
+              <svg
+                class="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                ></path>
               </svg>
             </div>
           </div>
         </div>
-        <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1">
+        <div
+          class="p-6 overflow-hidden transition-all duration-300 transform border shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-2xl border-white/20 dark:border-slate-700/20 hover:scale-105 hover:rotate-1"
+        >
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Volume (USD)</p>
-              <p class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Volume (USD)
+              </p>
+              <p
+                class="mt-2 text-3xl font-extrabold text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
+              >
                 {{ formattedStats.total_volume_usd }}
               </p>
             </div>
-            <div class="p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl rotate-3 transform transition-transform duration-300 hover:rotate-6">
-              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+            <div
+              class="p-4 transition-transform duration-300 transform bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl rotate-3 hover:rotate-6"
+            >
+              <svg
+                class="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                ></path>
               </svg>
             </div>
           </div>
         </div>
-        <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1">
+        <div
+          class="p-6 overflow-hidden transition-all duration-300 transform border shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-2xl border-white/20 dark:border-slate-700/20 hover:scale-105 hover:rotate-1"
+        >
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Reward (USD)</p>
-              <p class="mt-2 text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Reward (USD)
+              </p>
+              <p
+                class="mt-2 text-3xl font-extrabold text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
+              >
                 {{ formattedStats.total_profit }}
               </p>
             </div>
-            <div class="p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl rotate-3 transform transition-transform duration-300 hover:rotate-6">
-              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+            <div
+              class="p-4 transition-transform duration-300 transform bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl rotate-3 hover:rotate-6"
+            >
+              <svg
+                class="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                ></path>
               </svg>
             </div>
           </div>
@@ -542,10 +821,16 @@ const displayedPages = computed(() => {
       </div>
 
       <!-- Table Section (XM style) -->
-      <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-2xl rounded-2xl border border-white/20 dark:border-slate-700/20">
-        <div class="px-8 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+      <div
+        class="overflow-hidden border shadow-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-2xl border-white/20 dark:border-slate-700/20"
+      >
+        <div
+          class="flex flex-col gap-2 px-8 py-6 md:flex-row md:items-center md:justify-between"
+        >
           <div>
-            <h3 class="text-2xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <h3
+              class="text-2xl font-bold text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
+            >
               รายชื่อบัญชีลูกค้า
             </h3>
             <p class="mt-2 text-gray-600 dark:text-gray-400">
@@ -555,82 +840,214 @@ const displayedPages = computed(() => {
         </div>
         <div class="border-t border-blue-100/20 dark:border-slate-700/20">
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-blue-100/20 dark:divide-slate-700/20">
-                              <thead class="bg-blue-50/50 dark:bg-slate-700/50">
-                  <tr>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Partner Account</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Client UID</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Client Account</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">วันที่ลงทะเบียน</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ประเทศ</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Volume (Lots)</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Volume (USD)</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Reward (USD)</th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">สถานะ</th>
-                  </tr>
-                </thead>
-                              <tbody class="bg-white/50 dark:bg-slate-800/50 divide-y divide-blue-100/20 dark:divide-slate-700/20">
-                  <tr v-if="accounts.length === 0">
-                    <td colspan="9" class="px-6 py-12 text-center text-sm text-gray-600 dark:text-gray-400">
-                      ไม่พบข้อมูลบัญชีลูกค้า
-                    </td>
-                  </tr>
-                  <tr v-for="account in paginatedAccounts" :key="account?.client_uid || Math.random()" class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-colors duration-200">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ account?.partner_account || "-" }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ account?.client_uid || "-" }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600 dark:text-blue-400">{{ account?.client_name || account?.client_email || account?.client_id || "-" }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{{ account?.reg_date ? formatDate(account.reg_date) : "-" }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{{ account?.client_country ? formatCountry(account.client_country) : "-" }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-indigo-600 dark:text-indigo-400">{{ account?.volume_lots ? formatNumber(account.volume_lots) : "0" }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-yellow-600 dark:text-yellow-400">${{ account?.volume_mln_usd ? formatCurrency(account.volume_mln_usd) : "0" }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-600 dark:text-red-400">${{ account?.reward_usd ? formatCurrency(account.reward_usd) : "0" }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm" :class="getStatusColor(account?.client_status)">
-                      <span
-                        :class="[
-                          'px-4 py-1.5 inline-flex items-center gap-1.5 text-xs font-semibold rounded-full',
-                          account?.client_status === 'ACTIVE'
-                            ? 'bg-green-100/80 text-green-800 dark:bg-green-800/20 dark:text-green-400'
-                            : account?.client_status === 'INACTIVE'
-                            ? 'bg-red-100/80 text-red-800 dark:bg-red-800/20 dark:text-red-400'
-                            : 'bg-gray-100/80 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200'
-                        ]"
-                      >
-                        <span class="relative flex h-2 w-2">
-                          <span :class="[
+            <table
+              class="min-w-full divide-y divide-blue-100/20 dark:divide-slate-700/20"
+            >
+              <thead class="bg-blue-50/50 dark:bg-slate-700/50">
+                <tr>
+                  <th
+                    scope="col"
+                    class="px-6 py-4 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase dark:text-gray-300"
+                  >
+                    Partner Account
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-6 py-4 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase dark:text-gray-300"
+                  >
+                    Client UID
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-6 py-4 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase dark:text-gray-300"
+                  >
+                    Client Account
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-6 py-4 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase dark:text-gray-300"
+                  >
+                    วันที่ลงทะเบียน
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-6 py-4 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase dark:text-gray-300"
+                  >
+                    ประเทศ
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-6 py-4 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase dark:text-gray-300"
+                  >
+                    Volume (Lots)
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-6 py-4 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase dark:text-gray-300"
+                  >
+                    Volume (USD)
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-6 py-4 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase dark:text-gray-300"
+                  >
+                    Reward (USD)
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-6 py-4 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase dark:text-gray-300"
+                  >
+                    สถานะ
+                  </th>
+                </tr>
+              </thead>
+              <tbody
+                class="divide-y bg-white/50 dark:bg-slate-800/50 divide-blue-100/20 dark:divide-slate-700/20"
+              >
+                <tr v-if="accounts.length === 0">
+                  <td
+                    colspan="9"
+                    class="px-6 py-12 text-sm text-center text-gray-600 dark:text-gray-400"
+                  >
+                    ไม่พบข้อมูลบัญชีลูกค้า
+                  </td>
+                </tr>
+                <tr
+                  v-for="account in paginatedAccounts"
+                  :key="account?.client_uid || Math.random()"
+                  class="transition-colors duration-200 hover:bg-blue-50/50 dark:hover:bg-slate-700/50"
+                >
+                  <td
+                    class="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                  >
+                    {{ account?.partner_account || "-" }}
+                  </td>
+                  <td
+                    class="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                  >
+                    {{ account?.client_uid || "-" }}
+                  </td>
+                  <td
+                    class="px-6 py-4 text-sm font-semibold text-blue-600 whitespace-nowrap dark:text-blue-400"
+                  >
+                    {{
+                      account?.client_name ||
+                      account?.client_email ||
+                      account?.client_id ||
+                      "-"
+                    }}
+                  </td>
+                  <td
+                    class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap dark:text-gray-300"
+                  >
+                    {{ account?.reg_date ? formatDate(account.reg_date) : "-" }}
+                  </td>
+                  <td
+                    class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap dark:text-gray-300"
+                  >
+                    {{
+                      account?.client_country
+                        ? formatCountry(account.client_country)
+                        : "-"
+                    }}
+                  </td>
+                  <td
+                    class="px-6 py-4 text-sm font-semibold text-indigo-600 whitespace-nowrap dark:text-indigo-400"
+                  >
+                    {{
+                      account?.volume_lots
+                        ? formatNumber(account.volume_lots)
+                        : "0"
+                    }}
+                  </td>
+                  <td
+                    class="px-6 py-4 text-sm font-semibold text-yellow-600 whitespace-nowrap dark:text-yellow-400"
+                  >
+                    ${{
+                      account?.volume_mln_usd
+                        ? formatCurrency(account.volume_mln_usd)
+                        : "0"
+                    }}
+                  </td>
+                  <td
+                    class="px-6 py-4 text-sm font-semibold text-red-600 whitespace-nowrap dark:text-red-400"
+                  >
+                    ${{
+                      account?.reward_usd
+                        ? formatCurrency(account.reward_usd)
+                        : "0"
+                    }}
+                  </td>
+                  <td
+                    class="px-6 py-4 text-sm whitespace-nowrap"
+                    :class="getStatusColor(account?.client_status)"
+                  >
+                    <span
+                      :class="[
+                        'px-4 py-1.5 inline-flex items-center gap-1.5 text-xs font-semibold rounded-full',
+                        account?.client_status === 'ACTIVE'
+                          ? 'bg-green-100/80 text-green-800 dark:bg-green-800/20 dark:text-green-400'
+                          : account?.client_status === 'INACTIVE'
+                          ? 'bg-red-100/80 text-red-800 dark:bg-red-800/20 dark:text-red-400'
+                          : 'bg-gray-100/80 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200',
+                      ]"
+                    >
+                      <span class="relative flex w-2 h-2">
+                        <span
+                          :class="[
                             'animate-ping absolute inline-flex h-full w-full rounded-full opacity-75',
-                            account?.client_status === 'ACTIVE' ? 'bg-green-400' : account?.client_status === 'INACTIVE' ? 'bg-red-400' : 'bg-gray-400'
-                          ]"></span>
-                          <span :class="[
+                            account?.client_status === 'ACTIVE'
+                              ? 'bg-green-400'
+                              : account?.client_status === 'INACTIVE'
+                              ? 'bg-red-400'
+                              : 'bg-gray-400',
+                          ]"
+                        ></span>
+                        <span
+                          :class="[
                             'relative inline-flex rounded-full h-2 w-2',
-                            account?.client_status === 'ACTIVE' ? 'bg-green-500' : account?.client_status === 'INACTIVE' ? 'bg-red-500' : 'bg-gray-500'
-                          ]"></span>
-                        </span>
-                        {{ getStatusText(account?.client_status) }}
+                            account?.client_status === 'ACTIVE'
+                              ? 'bg-green-500'
+                              : account?.client_status === 'INACTIVE'
+                              ? 'bg-red-500'
+                              : 'bg-gray-500',
+                          ]"
+                        ></span>
                       </span>
-                    </td>
-                  </tr>
-                </tbody>
+                      {{ getStatusText(account?.client_status) }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
             </table>
           </div>
           <!-- Pagination Controls (XM style) -->
-          <div class="px-6 py-4 bg-white/50 dark:bg-slate-800/50 border-t border-blue-100/20 dark:border-slate-700/20">
+          <div
+            class="px-6 py-4 border-t bg-white/50 dark:bg-slate-800/50 border-blue-100/20 dark:border-slate-700/20"
+          >
             <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <div
+                class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+              >
                 <span>Showing</span>
-                <span class="font-semibold text-gray-900 dark:text-white">{{ startIndex + 1 }}</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{
+                  startIndex + 1
+                }}</span>
                 <span>to</span>
-                <span class="font-semibold text-gray-900 dark:text-white">{{ endIndex }}</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{
+                  endIndex
+                }}</span>
                 <span>of</span>
-                <span class="font-semibold text-gray-900 dark:text-white">{{ accounts.length }}</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{
+                  accounts.length
+                }}</span>
                 <span>entries</span>
               </div>
               <div class="flex items-center gap-2">
                 <button
                   @click="goToPage(currentPage - 1)"
                   :disabled="currentPage === 1"
-                  class="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
-                    bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600
-                    border border-blue-100 dark:border-slate-600"
+                  class="px-4 py-2 text-sm font-medium text-gray-700 transition-colors duration-200 bg-white border border-blue-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600 dark:border-slate-600"
                 >
                   Previous
                 </button>
@@ -646,7 +1063,7 @@ const displayedPages = computed(() => {
                         ? 'bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-default'
                         : currentPage === page
                         ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600'
+                        : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600',
                     ]"
                   >
                     {{ page }}
@@ -654,10 +1071,10 @@ const displayedPages = computed(() => {
                 </div>
                 <button
                   @click="goToPage(currentPage + 1)"
-                  :disabled="currentPage === Math.ceil(accounts.length / itemsPerPage)"
-                  class="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
-                    bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600
-                    border border-blue-100 dark:border-slate-600"
+                  :disabled="
+                    currentPage === Math.ceil(accounts.length / itemsPerPage)
+                  "
+                  class="px-4 py-2 text-sm font-medium text-gray-700 transition-colors duration-200 bg-white border border-blue-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600 dark:border-slate-600"
                 >
                   Next
                 </button>
