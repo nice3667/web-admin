@@ -211,10 +211,137 @@
           <div class="mt-4 text-center">
             <button
               @click="syncData"
-              class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
+              :disabled="syncStatus === 'syncing'"
+              class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm mr-2 disabled:opacity-50"
             >
+              <svg v-if="syncStatus === 'syncing'" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
               Sync ข้อมูลใหม่
             </button>
+            
+            <button
+              @click="syncHamData"
+              :disabled="hamSyncStatus === 'syncing'"
+              class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm mr-2 disabled:opacity-50"
+            >
+              <svg v-if="hamSyncStatus === 'syncing'" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Sync Ham
+            </button>
+            
+            <button
+              @click="syncJanischaData"
+              :disabled="janischaSyncStatus === 'syncing'"
+              class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm mr-2 disabled:opacity-50"
+            >
+              <svg v-if="janischaSyncStatus === 'syncing'" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Sync Janischa
+            </button>
+            
+            <button
+              @click="toggleAutoSync"
+              :class="[
+                'px-4 py-2 rounded-lg transition-colors text-sm',
+                autoSyncEnabled 
+                  ? 'bg-orange-500 text-white hover:bg-orange-600' 
+                  : 'bg-gray-500 text-white hover:bg-gray-600'
+              ]"
+            >
+              <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              {{ autoSyncEnabled ? 'ปิด Auto Sync' : 'เปิด Auto Sync' }}
+            </button>
+          </div>
+          
+          <!-- Sync Status Display -->
+          <div class="mt-4 text-center space-y-2">
+            <!-- General Sync Status -->
+            <div v-if="syncMessage" class="text-sm">
+              <span v-if="syncStatus === 'syncing'" class="text-blue-600 dark:text-blue-400">
+                <svg class="animate-spin -ml-1 mr-1 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {{ syncMessage }}
+              </span>
+              <span v-else-if="syncStatus === 'success'" class="text-green-600 dark:text-green-400">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                {{ syncMessage }}
+              </span>
+              <span v-else-if="syncStatus === 'error'" class="text-red-600 dark:text-red-400">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                {{ syncMessage }}
+              </span>
+            </div>
+            
+            <!-- Ham Sync Status -->
+            <div v-if="hamSyncMessage" class="text-sm">
+              <span v-if="hamSyncStatus === 'syncing'" class="text-blue-600 dark:text-blue-400">
+                <svg class="animate-spin -ml-1 mr-1 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {{ hamSyncMessage }}
+              </span>
+              <span v-else-if="hamSyncStatus === 'success'" class="text-green-600 dark:text-green-400">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                {{ hamSyncMessage }}
+              </span>
+              <span v-else-if="hamSyncStatus === 'error'" class="text-red-600 dark:text-red-400">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                {{ hamSyncMessage }}
+              </span>
+            </div>
+            
+            <!-- Janischa Sync Status -->
+            <div v-if="janischaSyncMessage" class="text-sm">
+              <span v-if="janischaSyncStatus === 'syncing'" class="text-blue-600 dark:text-blue-400">
+                <svg class="animate-spin -ml-1 mr-1 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {{ janischaSyncMessage }}
+              </span>
+              <span v-else-if="janischaSyncStatus === 'success'" class="text-green-600 dark:text-green-400">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                {{ janischaSyncMessage }}
+              </span>
+              <span v-else-if="janischaSyncStatus === 'error'" class="text-red-600 dark:text-red-400">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                {{ janischaSyncMessage }}
+              </span>
+            </div>
+            
+            <!-- Auto Sync Status -->
+            <div v-if="autoSyncEnabled" class="text-xs text-gray-500 dark:text-gray-400">
+              <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Auto Sync เปิดอยู่ (ทุก {{ syncIntervalMinutes }} นาที)
+              <span v-if="lastSyncTime" class="ml-2">
+                Sync ล่าสุด: {{ new Date(lastSyncTime).toLocaleTimeString('th-TH') }}
+              </span>
+            </div>
           </div>
         </div>
         <!-- Owner Statistics -->
@@ -604,7 +731,7 @@
                 </tr>
                 <!-- Loading State -->
                 <tr
-                  v-else-if="isLoading"
+                  v-else-if="loading"
                   class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50"
                 >
                   <td
@@ -658,6 +785,17 @@
                     <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
                       (แสดงเฉพาะผลลัพธ์ที่กรอง)
                     </span>
+                    <div v-if="searchAccount.trim()" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      <p>💡 เคล็ดลับการค้นหา:</p>
+                      <p>• <strong>Client Account:</strong> ลองค้นหาด้วยตัวเลข Client Account (เช่น 405755987, 380975767)</p>
+                      <p>• <strong>Client UID:</strong> ลองค้นหาด้วย Client UID (เช่น 0e49b911, ecef872c)</p>
+                      <p>• <strong>Client ID:</strong> ลองค้นหาด้วย Client ID (เช่น 405755987, 183429510)</p>
+                      <p>• <strong>Trader ID:</strong> สำหรับ XM ลองค้นหาด้วย Trader ID (เช่น 380975767)</p>
+                      <p>• ตรวจสอบการสะกดคำให้ถูกต้อง</p>
+                      <p>• ข้อมูลอาจยังไม่ถูก sync จาก API ล่าสุด</p>
+                      <p>• <strong>แนะนำ:</strong> กดปุ่ม "Fetch Data" เพื่อ sync ข้อมูลใหม่จาก API</p>
+                      <p>• หากยังไม่พบ กรุณาตรวจสอบว่าข้อมูลอยู่ในระบบหรือไม่</p>
+                    </div>
                   </td>
                 </tr>
                 <!-- Data Rows -->
@@ -999,18 +1137,26 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import axios from "axios";
-import { Head } from "@inertiajs/vue3";
+import { Head, router } from "@inertiajs/vue3";
 import TopNavBar from "@/Components/TopNavBar.vue";
 import BottomNavBar from "@/Components/BottomNavBar.vue";
+import {
+  mdiAccountGroup,
+  mdiMagnify,
+  mdiFilterVariant,
+  mdiRefresh,
+  mdiSync,
+  mdiClockOutline,
+  mdiAlertCircleOutline,
+  mdiCheckCircleOutline,
+} from "@mdi/js";
 
 const customers = ref([]);
-const currentPage = ref(1);
-const itemsPerPage = 10;
-const isLoading = ref(false);
+const debugInfo = ref({});
+const loading = ref(false);
 const error = ref(null);
-const debugInfo = ref({}); // เพิ่ม debug info
 const stats = ref({
   total_customers: 0,
   active_customers: 0,
@@ -1018,11 +1164,23 @@ const stats = ref({
   total_rebate_usd: 0,
 });
 const searchAccount = ref("");
-const selectedOwner = ref("all"); // เพิ่มตัวแปรสำหรับกรองตาม Owner
-const startDate = ref(
-  new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-);
-const endDate = ref(new Date().toISOString().split("T")[0]);
+const selectedOwner = ref("all");
+const currentPage = ref(1);
+const itemsPerPage = ref(50);
+
+// Auto sync state
+const autoSyncInterval = ref(null);
+const lastSyncTime = ref(null);
+const syncStatus = ref('idle'); // 'idle', 'syncing', 'success', 'error'
+const syncMessage = ref('');
+const autoSyncEnabled = ref(true);
+const syncIntervalMinutes = ref(5);
+
+// Separate sync state for Ham and Janischa
+const hamSyncStatus = ref('idle');
+const janischaSyncStatus = ref('idle');
+const hamSyncMessage = ref('');
+const janischaSyncMessage = ref('');
 
 // Setup axios defaults
 axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
@@ -1039,10 +1197,10 @@ axios.interceptors.response.use(
 );
 
 const totalItems = computed(() => customers.value.length);
-const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage);
+const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.value));
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value);
 const endIndex = computed(() =>
-  Math.min(startIndex.value + itemsPerPage, totalItems.value)
+  Math.min(startIndex.value + itemsPerPage.value, totalItems.value)
 );
 const filteredCustomers = computed(() => {
   const search = searchAccount.value.trim();
@@ -1058,19 +1216,53 @@ const filteredCustomers = computed(() => {
     });
   }
 
-  // กรองตามการค้นหา (เฉพาะ Client Account)
+  // กรองตามการค้นหา (ครอบคลุมทุกฟิลด์)
   if (search) {
     const searchLower = search.toLowerCase();
+    console.log('Searching for:', searchLower);
+    
     return filtered.filter((customer) => {
-      const clientAccount =
-        customer.client_account ||
-        customer.raw_data?.client_account ||
-        customer.account_number ||
-        customer.login ||
-        customer.traderId ||
-        customer.client_uid ||
-        customer.client_id;
-      return clientAccount && String(clientAccount).toLowerCase().includes(searchLower);
+      // ค้นหาในทุกฟิลด์ที่เกี่ยวข้อง
+      const searchFields = [
+        customer.client_account,
+        customer.raw_data?.client_account,
+        customer.account_number,
+        customer.login,
+        customer.traderId,
+        customer.client_uid,
+        customer.client_id,
+        customer.partner_account,
+        customer.raw_data?.partner_account,
+        customer.client_name,
+        customer.raw_data?.client_name,
+        customer.country,
+        customer.raw_data?.country
+      ];
+      
+      // Debug: Log search fields for first few customers
+      if (filtered.indexOf(customer) < 3) {
+        console.log('Customer search fields:', {
+          client_account: customer.client_account,
+          raw_data_client_account: customer.raw_data?.client_account,
+          account_number: customer.account_number,
+          login: customer.login,
+          traderId: customer.traderId,
+          client_uid: customer.client_uid,
+          client_id: customer.client_id
+        });
+      }
+      
+      // ตรวจสอบว่ามีข้อมูลที่ตรงกับคำค้นหาหรือไม่
+      const found = searchFields.some(field => 
+        field && String(field).toLowerCase().includes(searchLower)
+      );
+      
+      // Debug: Log if found
+      if (found && filtered.indexOf(customer) < 3) {
+        console.log('Found match for customer:', customer);
+      }
+      
+      return found;
     });
   }
 
@@ -1196,7 +1388,7 @@ const previousPage = () => {
 };
 
 const fetchData = async () => {
-  isLoading.value = true;
+  loading.value = true;
   error.value = null;
 
   try {
@@ -1268,7 +1460,7 @@ const fetchData = async () => {
     error.value = e.message || "An error occurred while fetching data";
     customers.value = [];
   } finally {
-    isLoading.value = false;
+    loading.value = false;
   }
 };
 
@@ -1288,7 +1480,7 @@ const getOwnerInfo = (customer) => {
   const dataSource = customer.data_source || customer.raw_data?.data_source;
   
   // ตรวจสอบจาก source และ data_source ก่อน (ใหม่)
-  if (source === 'XM' || dataSource === 'Ham' && (customer.traderId || customer.raw_data?.traderId)) {
+  if (source === 'XM' || dataSource === 'Ham') {
     return { name: "Ham", type: "ham" };
   }
   
@@ -1316,8 +1508,6 @@ const getOwnerInfo = (customer) => {
   } else if (partnerAccount === "low") {
     return { name: "Ham", type: "ham" };
   } else if (partnerAccount === "pay U") {
-    return { name: "Ham", type: "ham" };
-  } else if (partnerAccount === "RB you") {
     return { name: "Ham", type: "ham" };
   } else if (partnerAccount === "K.kan") {
     return { name: "Ham", type: "ham" };
@@ -1366,24 +1556,150 @@ function resetFilters() {
 const syncData = async () => {
   try {
     console.log("Starting data sync...");
+    syncStatus.value = 'syncing';
+    syncMessage.value = 'กำลัง sync ข้อมูล...';
     
     // Call the sync command via API
     const response = await axios.post("/admin/sync-data");
     
     if (response.data.success) {
       console.log("Sync completed successfully");
+      syncStatus.value = 'success';
+      syncMessage.value = 'Sync สำเร็จแล้ว';
+      lastSyncTime.value = new Date();
+      
       // Refresh data after sync
       await fetchData();
+      
+      // Reset status after 3 seconds
+      setTimeout(() => {
+        syncStatus.value = 'idle';
+        syncMessage.value = '';
+      }, 3000);
     } else {
       console.error("Sync failed:", response.data.message);
+      syncStatus.value = 'error';
+      syncMessage.value = 'Sync ล้มเหลว: ' + response.data.message;
     }
   } catch (error) {
     console.error("Sync error:", error);
+    syncStatus.value = 'error';
+    syncMessage.value = 'Sync error: ' + error.message;
+  }
+};
+
+// Sync Ham data specifically
+const syncHamData = async () => {
+  try {
+    console.log("Starting Ham data sync...");
+    hamSyncStatus.value = 'syncing';
+    hamSyncMessage.value = 'กำลัง sync ข้อมูล Ham...';
+    
+    // Call Ham-specific sync
+    const response = await axios.post("/admin/sync-ham-data");
+    
+    if (response.data.success) {
+      console.log("Ham sync completed successfully");
+      hamSyncStatus.value = 'success';
+      hamSyncMessage.value = 'Sync Ham สำเร็จแล้ว';
+      
+      // Refresh data after sync
+      await fetchData();
+      
+      // Reset status after 3 seconds
+      setTimeout(() => {
+        hamSyncStatus.value = 'idle';
+        hamSyncMessage.value = '';
+      }, 3000);
+    } else {
+      console.error("Ham sync failed:", response.data.message);
+      hamSyncStatus.value = 'error';
+      hamSyncMessage.value = 'Sync Ham ล้มเหลว: ' + response.data.message;
+    }
+  } catch (error) {
+    console.error("Ham sync error:", error);
+    hamSyncStatus.value = 'error';
+    hamSyncMessage.value = 'Ham sync error: ' + error.message;
+  }
+};
+
+// Sync Janischa data specifically
+const syncJanischaData = async () => {
+  try {
+    console.log("Starting Janischa data sync...");
+    janischaSyncStatus.value = 'syncing';
+    janischaSyncMessage.value = 'กำลัง sync ข้อมูล Janischa...';
+    
+    // Call Janischa-specific sync
+    const response = await axios.post("/admin/sync-janischa-data");
+    
+    if (response.data.success) {
+      console.log("Janischa sync completed successfully");
+      janischaSyncStatus.value = 'success';
+      janischaSyncMessage.value = 'Sync Janischa สำเร็จแล้ว';
+      
+      // Refresh data after sync
+      await fetchData();
+      
+      // Reset status after 3 seconds
+      setTimeout(() => {
+        janischaSyncStatus.value = 'idle';
+        janischaSyncMessage.value = '';
+      }, 3000);
+    } else {
+      console.error("Janischa sync failed:", response.data.message);
+      janischaSyncStatus.value = 'error';
+      janischaSyncMessage.value = 'Sync Janischa ล้มเหลว: ' + response.data.message;
+    }
+  } catch (error) {
+    console.error("Janischa sync error:", error);
+    janischaSyncStatus.value = 'error';
+    janischaSyncMessage.value = 'Janischa sync error: ' + error.message;
+  }
+};
+
+// Auto sync function
+const startAutoSync = () => {
+  if (autoSyncInterval.value) {
+    clearInterval(autoSyncInterval.value);
+  }
+  
+  if (autoSyncEnabled.value) {
+    autoSyncInterval.value = setInterval(async () => {
+      console.log("Auto sync triggered...");
+      await syncData();
+    }, syncIntervalMinutes.value * 60 * 1000);
+    
+    console.log(`Auto sync started - interval: ${syncIntervalMinutes.value} minutes`);
+  }
+};
+
+// Stop auto sync
+const stopAutoSync = () => {
+  if (autoSyncInterval.value) {
+    clearInterval(autoSyncInterval.value);
+    autoSyncInterval.value = null;
+    console.log("Auto sync stopped");
+  }
+};
+
+// Toggle auto sync
+const toggleAutoSync = () => {
+  autoSyncEnabled.value = !autoSyncEnabled.value;
+  if (autoSyncEnabled.value) {
+    startAutoSync();
+  } else {
+    stopAutoSync();
   }
 };
 
 onMounted(() => {
   fetchData();
+  startAutoSync(); // Start auto sync when component mounts
+});
+
+onUnmounted(() => {
+  stopAutoSync(); // Clean up interval when component unmounts
 });
 
 const menuItems = [

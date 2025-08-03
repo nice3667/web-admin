@@ -49,8 +49,10 @@ Route::group([
         Route::get('/{clientUid}/details', 'CustomersController@getCustomerDetails')->name('details');
     });
 
-    // Sync Routes
-    Route::post('/sync-data', 'CustomersController@syncData')->name('sync-data');
+    // Sync routes
+    Route::post('/sync-data', 'CustomersController@syncData')->name('admin.sync-data');
+    Route::post('/sync-ham-data', 'CustomersController@syncHamData')->name('admin.sync-ham-data');
+    Route::post('/sync-janischa-data', 'CustomersController@syncJanischaData')->name('admin.sync-janischa-data');
 
     // All Customers API Route - moved outside admin group to avoid Inertia middleware
     Route::get('/all-customers', 'CustomersController@allCustomers')->name('all-customers');

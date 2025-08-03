@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
 
 class CustomersController extends Controller
 {
@@ -318,6 +319,37 @@ class CustomersController extends Controller
         $hamClientsTable = DB::table('ham_clients')->get();
         $janischaClientsTable = DB::table('janischa_clients')->get();
         
+        // Add source and data_source to local DB data
+        $ham = $ham->map(function($client) {
+            $client->source = 'LocalDB_Ham';
+            $client->data_source = 'Ham';
+            return $client;
+        });
+        
+        $janischa = $janischa->map(function($client) {
+            $client->source = 'LocalDB_Janischa';
+            $client->data_source = 'Janischa';
+            return $client;
+        });
+        
+        $clients = $clients->map(function($client) {
+            $client->source = 'LocalDB_General';
+            $client->data_source = 'Unknown';
+            return $client;
+        });
+        
+        $hamClientsTable = collect($hamClientsTable)->map(function($client) {
+            $client->source = 'LocalDB_HamTable';
+            $client->data_source = 'Ham';
+            return $client;
+        });
+        
+        $janischaClientsTable = collect($janischaClientsTable)->map(function($client) {
+            $client->source = 'LocalDB_JanischaTable';
+            $client->data_source = 'Janischa';
+            return $client;
+        });
+        
         $all = $all->concat($ham)->concat($janischa)->concat($clients)
                    ->concat($hamClientsTable)->concat($janischaClientsTable);
 
@@ -436,12 +468,12 @@ class CustomersController extends Controller
             if ($ca2Data && isset($ca2Data['data']['clients'])) {
                 $ca2Clients = collect($ca2Data['data']['clients'])->map(function($client) {
                     $client['source'] = 'Exness2_ClientAccount';
-                    $client['data_source'] = 'Ham';
+                    $client['data_source'] = 'Janischa';
                     return $client;
                 });
                 $all = $all->concat($ca2Clients);
                 $debugInfo['client_account'] = $ca2Clients->count();
-                Log::info('Exness2 Client Account (Ham) clients count: ' . $ca2Clients->count());
+                Log::info('Exness2 Client Account (Janischa) clients count: ' . $ca2Clients->count());
                 
                 // Debug: Log sample client_account data
                 if ($ca2Clients->count() > 0) {
@@ -518,5 +550,117 @@ class CustomersController extends Controller
                 'debug_info' => $debugInfo
             ]
         ]);
+    }
+
+    public function syncData(Request $request)
+    {
+        try {
+            Log::info('=== Starting Manual Sync ===');
+            
+            // Run sync commands
+            $this->runSyncCommands();
+            
+            Log::info('=== Manual Sync Completed ===');
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Sync completed successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Sync error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Sync failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function syncHamData(Request $request)
+    {
+        try {
+            Log::info('=== Starting Ham Data Sync ===');
+            
+            // Sync Ham-specific data
+            $this->runHamSyncCommands();
+            
+            Log::info('=== Ham Data Sync Completed ===');
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Ham data sync completed successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Ham sync error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Ham sync failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function syncJanischaData(Request $request)
+    {
+        try {
+            Log::info('=== Starting Janischa Data Sync ===');
+            
+            // Sync Janischa-specific data
+            $this->runJanischaSyncCommands();
+            
+            Log::info('=== Janischa Data Sync Completed ===');
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Janischa data sync completed successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Janischa sync error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Janischa sync failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    private function runSyncCommands()
+    {
+        // Run all sync commands
+        $this->runHamSyncCommands();
+        $this->runJanischaSyncCommands();
+    }
+    
+    private function runHamSyncCommands()
+    {
+        // Sync Ham data from various sources
+        Log::info('Running Ham sync commands...');
+        
+        // Sync XM data
+        try {
+            Artisan::call('xm:sync-traders');
+            Log::info('XM traders sync completed');
+        } catch (\Exception $e) {
+            Log::error('XM traders sync failed: ' . $e->getMessage());
+        }
+        
+        // Sync Exness1 data (Ham's data)
+        try {
+            Artisan::call('exness:sync-clients1');
+            Log::info('Exness1 clients sync completed');
+        } catch (\Exception $e) {
+            Log::error('Exness1 clients sync failed: ' . $e->getMessage());
+        }
+    }
+    
+    private function runJanischaSyncCommands()
+    {
+        // Sync Janischa data from various sources
+        Log::info('Running Janischa sync commands...');
+        
+        // Sync Exness2 data (Janischa's data)
+        try {
+            Artisan::call('exness:sync-clients2');
+            Log::info('Exness2 clients sync completed');
+        } catch (\Exception $e) {
+            Log::error('Exness2 clients sync failed: ' . $e->getMessage());
+        }
     }
 }
