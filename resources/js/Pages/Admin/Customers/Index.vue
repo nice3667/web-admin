@@ -1166,7 +1166,7 @@ const stats = ref({
 const searchAccount = ref("");
 const selectedOwner = ref("all");
 const currentPage = ref(1);
-const itemsPerPage = ref(50);
+const itemsPerPage = ref(15);
 
 // Auto sync state
 const autoSyncInterval = ref(null);

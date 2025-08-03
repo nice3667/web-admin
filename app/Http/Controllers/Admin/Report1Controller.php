@@ -313,6 +313,15 @@ class Report1Controller extends Controller
                 'total_client_uids' => $clients->pluck('client_uid')->unique()->count()
             ];
 
+            // Debug log for stats
+            Log::info('ClientAccount1 Stats calculated:', [
+                'total_accounts' => $stats['total_accounts'],
+                'total_volume_lots' => $stats['total_volume_lots'],
+                'total_volume_usd' => $stats['total_volume_usd'],
+                'total_profit' => $stats['total_profit'],
+                'total_client_uids' => $stats['total_client_uids']
+            ]);
+
 
 
             // Format client data with calculated fields
@@ -420,6 +429,13 @@ class Report1Controller extends Controller
             }
 
             $pagination['links'][] = ['url' => $pagination['next_page_url'], 'label' => 'Next &raquo;', 'active' => false];
+
+            // Debug log before sending to Vue
+            Log::info('Sending data to Vue component:', [
+                'stats' => $stats,
+                'clients_count' => count($pagination['data']),
+                'total_clients' => $pagination['total']
+            ]);
 
             return Inertia::render('Admin/Report1/ClientAccount1', [
                 'clients' => $pagination,

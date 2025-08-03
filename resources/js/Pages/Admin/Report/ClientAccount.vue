@@ -388,7 +388,7 @@ const getStatusText = (status) => {
 };
 
 // Add after filteredAccounts computed
-const itemsPerPage = 10;
+const itemsPerPage = 15;
 const currentPage = ref(props.clients.current_page || 1);
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage);
 const endIndex = computed(() =>

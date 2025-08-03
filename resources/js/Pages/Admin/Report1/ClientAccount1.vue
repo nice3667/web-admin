@@ -233,9 +233,9 @@ const filteredAccounts = computed(() => {
 const computedStats = computed(() => ({
   total_pending:
     props.stats?.total_pending || props.stats?.total_client_uids || 0,
-  total_amount: Number(props.stats?.total_amount || 0).toFixed(4),
-  due_today: Number(props.stats?.due_today || 0).toFixed(4),
-  overdue: Number(props.stats?.overdue || 0).toFixed(4),
+  total_amount: Number(props.stats?.total_volume_lots || 0).toFixed(4),
+  due_today: Number(props.stats?.total_volume_usd || 0).toFixed(4),
+  overdue: Number(props.stats?.total_profit || 0).toFixed(4),
 }));
 
 // Helper functions for status display
@@ -641,7 +641,7 @@ const endIndex = computed(() => filteredAccounts.value.length);
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                จำนวน Client UID
+                บัญชีทั้งหมด
               </p>
               <p
                 class="mt-2 text-3xl font-extrabold text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
