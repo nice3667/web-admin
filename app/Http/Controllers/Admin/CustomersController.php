@@ -21,12 +21,8 @@ class CustomersController extends Controller
         try {
             Log::info('Fetching customers data for search...');
 
-            // Get data from all client tables
-            $hamClients = $this->getClientsData(HamClient::class, $request);
-            $janischaClients = $this->getClientsData(JanischaClient::class, $request);
-
-            // Combine all clients
-            $allClients = $hamClients->concat($janischaClients);
+            // Get data from both Janischa and Ham clients
+            $allClients = $this->getClientsData($request);
 
             // Apply search filters
             $filters = [];
@@ -35,11 +31,70 @@ class CustomersController extends Controller
             if ($request->filled('search')) {
                 $searchTerm = $request->search;
                 $filteredClients = $filteredClients->filter(function($client) use ($searchTerm) {
-                    return stripos($client['client_uid'], $searchTerm) !== false ||
-                           stripos($client['client_id'], $searchTerm) !== false ||
-                           stripos($client['partner_account'], $searchTerm) !== false;
+                    // ค้นหาในทุกฟิลด์ที่เกี่ยวข้อง
+                    $searchFields = [
+                        $client['client_uid'] ?? '',
+                        $client['client_id'] ?? '',
+                        $client['client_account'] ?? '',
+                        $client['partner_account'] ?? '',
+                        $client['raw_data']['client_account'] ?? '',
+                        $client['raw_data']['client_id'] ?? '',
+                        $client['raw_data']['partner_account'] ?? '',
+                        $client['raw_data']['client_name'] ?? '',
+                        $client['raw_data']['account'] ?? '',
+                        $client['raw_data']['login'] ?? '',
+                        $client['raw_data']['traderId'] ?? '',
+                        $client['raw_data']['id'] ?? ''
+                    ];
+                    
+                    foreach ($searchFields as $field) {
+                        if (stripos($field, $searchTerm) !== false) {
+                            return true;
+                        }
+                    }
+                    return false;
                 });
                 $filters['search'] = $searchTerm;
+                
+                // ถ้าไม่พบข้อมูลและมีการค้นหา ให้ลอง sync ข้อมูลใหม่
+                if ($filteredClients->count() === 0) {
+                    Log::info('No results found for search term: ' . $searchTerm . ', attempting to sync fresh data...');
+                    
+                    // Run sync commands in background
+                    try {
+                        Artisan::call('exness:sync-clients1'); // Sync Ham data
+                        Artisan::call('exness:sync-clients2'); // Sync Janischa data
+                        Log::info('Background sync completed');
+                        
+                        // Get fresh data after sync
+                        $allClients = $this->getClientsData($request);
+                        $filteredClients = $allClients->filter(function($client) use ($searchTerm) {
+                            $searchFields = [
+                                $client['client_uid'] ?? '',
+                                $client['client_id'] ?? '',
+                                $client['client_account'] ?? '',
+                                $client['partner_account'] ?? '',
+                                $client['raw_data']['client_account'] ?? '',
+                                $client['raw_data']['client_id'] ?? '',
+                                $client['raw_data']['partner_account'] ?? '',
+                                $client['raw_data']['client_name'] ?? '',
+                                $client['raw_data']['account'] ?? '',
+                                $client['raw_data']['login'] ?? '',
+                                $client['raw_data']['traderId'] ?? '',
+                                $client['raw_data']['id'] ?? ''
+                            ];
+                            
+                            foreach ($searchFields as $field) {
+                                if (stripos($field, $searchTerm) !== false) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        });
+                    } catch (\Exception $e) {
+                        Log::error('Background sync failed: ' . $e->getMessage());
+                    }
+                }
             }
 
             if ($request->filled('client_status')) {
@@ -60,9 +115,9 @@ class CustomersController extends Controller
             // Calculate statistics
             $stats = [
                 'total_customers' => $filteredClients->count(),
-                'total_volume_lots' => $filteredClients->sum('total_volume_lots'),
-                'total_volume_usd' => $filteredClients->sum('total_volume_mln_usd'),
-                'total_reward_usd' => $filteredClients->sum('total_reward_usd'),
+                'total_volume_lots' => $filteredClients->sum('volume_lots'),
+                'total_volume_usd' => $filteredClients->sum('volume_mln_usd'),
+                'total_reward_usd' => $filteredClients->sum('reward_usd'),
                 'total_rebate_usd' => 0,
                 'active_customers' => $filteredClients->where('client_status', 'ACTIVE')->count(),
                 'inactive_customers' => $filteredClients->where('client_status', 'INACTIVE')->count(),
@@ -81,11 +136,18 @@ class CustomersController extends Controller
                 ]);
             }
 
+            // เพิ่มข้อความแจ้งเตือนเมื่อไม่พบข้อมูล
+            $searchMessage = null;
+            if ($request->filled('search') && $filteredClients->count() === 0) {
+                $searchMessage = 'ไม่พบลูกค้าที่ตรงกับเงื่อนไขการค้นหา "' . $request->search . '" (แสดงเฉพาะผลลัพธ์ที่กรอง) - ลอง sync ข้อมูลใหม่หรือตรวจสอบคำค้นหา';
+            }
+
             return Inertia::render('Admin/Customers/Index', [
                 'customers' => $filteredClients->values(),
                 'stats' => $stats,
                 'users' => $users,
-                'filters' => $filters
+                'filters' => $filters,
+                'searchMessage' => $searchMessage
             ]);
 
         } catch (\Exception $e) {
@@ -117,48 +179,96 @@ class CustomersController extends Controller
         }
     }
 
-    private function getClientsData($modelClass, Request $request)
+    private function getClientsData(Request $request)
     {
-        $query = $modelClass::query();
+        // ดึงข้อมูลจากทั้ง Janischa และ Ham clients
+        $janischaQuery = JanischaClient::query();
+        $hamQuery = HamClient::query();
 
-        // Apply search filters
+        // Apply search filters to both queries
         if ($request->filled('search')) {
             $searchTerm = $request->search;
-            $query->where(function($q) use ($searchTerm) {
+            $janischaQuery->where(function($q) use ($searchTerm) {
                 $q->where('client_uid', 'like', '%' . $searchTerm . '%')
                   ->orWhere('partner_account', 'like', '%' . $searchTerm . '%')
-                  ->orWhere('client_id', 'like', '%' . $searchTerm . '%');
+                  ->orWhere('client_id', 'like', '%' . $searchTerm . '%')
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.client_account") LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.client_id") LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.partner_account") LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.client_name") LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.account") LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.login") LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.traderId") LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.id") LIKE ?', ['%' . $searchTerm . '%']);
+            });
+            $hamQuery->where(function($q) use ($searchTerm) {
+                $q->where('client_uid', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('partner_account', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('client_id', 'like', '%' . $searchTerm . '%')
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.client_account") LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.client_id") LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.partner_account") LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.client_name") LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.account") LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.login") LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.traderId") LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('JSON_EXTRACT(raw_data, "$.id") LIKE ?', ['%' . $searchTerm . '%']);
             });
         }
 
         if ($request->filled('client_status')) {
-            $query->where('client_status', $request->client_status);
+            $janischaQuery->where('client_status', $request->client_status);
+            $hamQuery->where('client_status', $request->client_status);
         }
 
-        // Use pagination at database level for better performance
-        $perPage = 50; // Increased from no pagination for better UX
-        $clients = $query
-            ->selectRaw('
-                client_uid,
-                MAX(partner_account) as partner_account,
-                MAX(client_id) as client_id,
-                MAX(reg_date) as reg_date,
-                MAX(client_country) as client_country,
-                SUM(volume_lots) as total_volume_lots,
-                SUM(volume_mln_usd) as total_volume_mln_usd,
-                SUM(reward_usd) as total_reward_usd,
-                MAX(client_status) as client_status,
-                MAX(kyc_passed) as kyc_passed,
-                MAX(ftd_received) as ftd_received,
-                MAX(ftt_made) as ftt_made,
-                MAX(last_sync_at) as last_sync_at
-            ')
-            ->groupBy('client_uid')
-            ->orderBy('reg_date', 'desc')
-            ->paginate($perPage);
+        // ดึงข้อมูลจากทั้งสองตาราง
+        $janischaClients = $janischaQuery->get();
+        $hamClients = $hamQuery->get();
+
+        // รวมข้อมูลจากทั้งสองตารางและจัดการข้อมูลที่ซ้ำกัน
+        $allClients = $janischaClients->concat($hamClients);
+        
+        // Group by client_uid และรวมข้อมูล
+        $groupedClients = $allClients->groupBy('client_uid')->map(function ($clients) {
+            // หา record ที่มี raw_data ที่ดีที่สุด (มี client_account)
+            $bestClient = $clients->first();
+            foreach ($clients as $client) {
+                if ($client->raw_data && is_array($client->raw_data) && 
+                    isset($client->raw_data['client_account']) && 
+                    !empty($client->raw_data['client_account'])) {
+                    $bestClient = $client;
+                    break;
+                }
+            }
+            
+            // รวมข้อมูลตัวเลข
+            $totalVolumeLots = $clients->sum('volume_lots');
+            $totalVolumeMlnUsd = $clients->sum('volume_mln_usd');
+            $totalRewardUsd = $clients->sum('reward_usd');
+            
+            // ใช้ข้อมูลจาก record ที่ดีที่สุดสำหรับข้อมูลที่ไม่ใช่ตัวเลข
+            $client = (object) [
+                'client_uid' => $bestClient->client_uid,
+                'partner_account' => $bestClient->partner_account,
+                'client_id' => $bestClient->client_id,
+                'reg_date' => $bestClient->reg_date,
+                'client_country' => $bestClient->client_country,
+                'total_volume_lots' => $totalVolumeLots,
+                'total_volume_mln_usd' => $totalVolumeMlnUsd,
+                'total_reward_usd' => $totalRewardUsd,
+                'client_status' => $bestClient->client_status,
+                'kyc_passed' => $bestClient->kyc_passed,
+                'ftd_received' => $bestClient->ftd_received,
+                'ftt_made' => $bestClient->ftt_made,
+                'last_sync_at' => $bestClient->last_sync_at,
+                'raw_data' => $bestClient->raw_data
+            ];
+            
+            return $client;
+        })->values();
 
         // Format client data and add owner information
-        $clients->getCollection()->transform(function ($client) {
+        $groupedClients->transform(function ($client) {
             // Determine status from activity
             $volumeLots = (float)($client->total_volume_lots ?? 0);
             $rewardUsd = (float)($client->total_reward_usd ?? 0);
@@ -167,10 +277,14 @@ class CustomersController extends Controller
             // KYC estimation based on activity level
             $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
 
+            // ดึง client_account จาก raw_data สำหรับ Janischa
+            $clientAccount = $this->getClientAccount($client);
+
             return [
                 'client_uid' => $client->client_uid ?? '-',
                 'partner_account' => $client->partner_account ?? '-',
                 'client_id' => $client->client_id ?? '-',
+                'client_account' => $clientAccount,
                 'reg_date' => $client->reg_date,
                 'client_country' => $client->client_country ?? '-',
                 'volume_lots' => $volumeLots,
@@ -185,17 +299,76 @@ class CustomersController extends Controller
             ];
         });
 
-        return $clients;
+        return $groupedClients;
+    }
+
+    private function getClientAccount($client)
+    {
+        // Debug: Log raw_data structure for troubleshooting
+        if ($client->raw_data) {
+            Log::info('Client raw_data:', [
+                'client_uid' => $client->client_uid,
+                'raw_data' => $client->raw_data,
+                'has_client_account' => isset($client->raw_data['client_account']),
+                'has_client_name' => isset($client->raw_data['client_name']),
+                'client_id' => $client->client_id,
+            ]);
+        }
+
+        // Try to get client_account from raw_data first (สำหรับ Janischa)
+        if ($client->raw_data && is_array($client->raw_data)) {
+            // ตรวจสอบ client_account ใน raw_data (สำหรับ Janischa)
+            if (isset($client->raw_data['client_account']) && !empty($client->raw_data['client_account'])) {
+                return (string)$client->raw_data['client_account'];
+            }
+            
+            // ตรวจสอบ client_name ใน raw_data
+            if (isset($client->raw_data['client_name']) && !empty($client->raw_data['client_name'])) {
+                return (string)$client->raw_data['client_name'];
+            }
+            
+            // ตรวจสอบฟิลด์อื่นๆ ที่อาจเป็น account number
+            $possibleFields = ['account', 'login', 'account_number', 'account_id', 'traderId', 'id'];
+            foreach ($possibleFields as $field) {
+                if (isset($client->raw_data[$field]) && !empty($client->raw_data[$field])) {
+                    return (string)$client->raw_data[$field];
+                }
+            }
+        }
+        
+        // Fallback to database fields - use client_id as client_account
+        if (!empty($client->client_id)) {
+            // ตรวจสอบว่า client_id เป็น account number จริงหรือไม่ (เป็นตัวเลขและไม่ใช่รูปแบบ JAN001)
+            if (is_numeric($client->client_id) && !preg_match('/^[A-Z]+/', $client->client_id)) {
+                return (string)$client->client_id;
+            }
+        }
+        
+        // ใช้ client_uid เป็น fallback สุดท้าย
+        if (!empty($client->client_uid)) {
+            // ตรวจสอบว่า client_uid เป็น account number จริงหรือไม่
+            if (is_numeric($client->client_uid) && !preg_match('/^[A-Z]+/', $client->client_uid)) {
+                return (string)$client->client_uid;
+            }
+        }
+        
+        return '-';
     }
 
     private function getOwnerInfo($clientUid)
     {
-        $owners = [
-            'hamsftmo@gmail.com' => 'Ham',
-            'Janischa.trade@gmail.com' => 'Janischa'
-        ];
-
-        return $owners[$clientUid] ?? 'Unknown';
+        // ตรวจสอบว่า client_uid อยู่ในตารางไหน
+        $janischaClient = JanischaClient::where('client_uid', $clientUid)->first();
+        if ($janischaClient) {
+            return 'Janischa';
+        }
+        
+        $hamClient = HamClient::where('client_uid', $clientUid)->first();
+        if ($hamClient) {
+            return 'Ham';
+        }
+        
+        return 'Unknown';
     }
 
     public function assignOwner(Request $request)
@@ -273,8 +446,8 @@ class CustomersController extends Controller
     {
         try {
             // Get data from all client tables
-            $hamClients = $this->getClientsData(HamClient::class, $request);
-            $janischaClients = $this->getClientsData(JanischaClient::class, $request);
+            $hamClients = $this->getClientsData($request);
+            $janischaClients = $this->getClientsData($request);
 
             // Combine all clients
             $allClients = $hamClients->concat($janischaClients);
@@ -379,25 +552,36 @@ class CustomersController extends Controller
                     
                     $clients = $query->get();
                     
-                    // Convert to API format for consistency
-                    $clients = $clients->map(function ($client) {
-                        return [
-                            'partner_account' => $client->partner_account,
-                            'client_uid' => $client->client_uid,
-                            'client_name' => $client->raw_data['client_account'] ?? $client->raw_data['client_name'] ?? $client->client_id ?? $client->client_uid ?? null,
-                            'client_email' => $client->raw_data['client_email'] ?? null,
-                            'client_id' => $client->client_id ?? $client->client_uid ?? null,
-                            'reg_date' => $client->reg_date,
-                            'client_country' => $client->client_country,
-                            'volume_lots' => $client->volume_lots,
-                            'volume_mln_usd' => $client->volume_mln_usd,
-                            'reward_usd' => $client->reward_usd,
-                            'client_status' => $client->client_status,
-                            'kyc_passed' => $client->kyc_passed,
-                            'ftd_received' => $client->ftd_received,
-                            'ftt_made' => $client->ftt_made,
-                        ];
-                    });
+                                    // Convert to API format for consistency
+                $clients = $clients->map(function ($client) {
+                    // ดึง client_account จาก raw_data สำหรับ Janischa
+                    $clientAccount = null;
+                    if ($client->raw_data && is_array($client->raw_data)) {
+                        if (isset($client->raw_data['client_account']) && !empty($client->raw_data['client_account'])) {
+                            $clientAccount = (string)$client->raw_data['client_account'];
+                        } elseif (isset($client->raw_data['client_name']) && !empty($client->raw_data['client_name'])) {
+                            $clientAccount = (string)$client->raw_data['client_name'];
+                        }
+                    }
+                    
+                    return [
+                        'partner_account' => $client->partner_account,
+                        'client_uid' => $client->client_uid,
+                        'client_account' => $clientAccount ?? $client->client_id ?? $client->client_uid ?? null,
+                        'client_name' => $clientAccount ?? $client->client_id ?? $client->client_uid ?? null,
+                        'client_email' => $client->raw_data['client_email'] ?? null,
+                        'client_id' => $client->client_id ?? $client->client_uid ?? null,
+                        'reg_date' => $client->reg_date,
+                        'client_country' => $client->client_country,
+                        'volume_lots' => $client->volume_lots,
+                        'volume_mln_usd' => $client->volume_mln_usd,
+                        'reward_usd' => $client->reward_usd,
+                        'client_status' => $client->client_status,
+                        'kyc_passed' => $client->kyc_passed,
+                        'ftd_received' => $client->ftd_received,
+                        'ftt_made' => $client->ftt_made,
+                    ];
+                });
                 }
             }
             
@@ -418,6 +602,7 @@ class CustomersController extends Controller
                 return [
                     'partner_account' => $client['partner_account'] ?? '-',
                     'client_uid' => $client['client_uid'] ?? '-',
+                    'client_account' => $client['client_account'] ?? $client['client_id'] ?? $client['client_uid'] ?? '-',
                     'client_name' => $client['client_account'] ?? $client['client_id'] ?? $client['client_uid'] ?? null,
                     'client_email' => $client['client_email'] ?? null,
                     'client_id' => $client['client_id'] ?? $client['client_uid'] ?? null,

@@ -35,6 +35,39 @@
         </span>
       </div>
 
+      <!-- Search Message Alert -->
+      <div v-if="searchMessage" class="mb-4 lg:mb-6">
+        <div class="bg-yellow-50/80 dark:bg-yellow-900/20 backdrop-blur-lg overflow-hidden shadow-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-yellow-200/20 dark:border-yellow-700/20">
+          <div class="flex items-center">
+            <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            <div>
+              <h3 class="text-lg font-semibold text-yellow-800 dark:text-yellow-200">
+                ไม่พบข้อมูล
+              </h3>
+              <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                {{ searchMessage }}
+              </p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <button
+                  @click="syncData"
+                  class="px-3 py-1.5 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Sync ข้อมูลใหม่
+                </button>
+                <button
+                  @click="resetFilters"
+                  class="px-3 py-1.5 bg-gray-500 text-white text-xs rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  ล้างการค้นหา
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Filter Section (XM style) -->
       <div
         class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-2xl rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 mb-6 lg:mb-8 border border-white/20 dark:border-slate-700/20 transform hover:scale-[1.01] lg:hover:scale-[1.02] transition-all duration-300"
@@ -821,10 +854,10 @@
                   >
                     {{
                       customer.client_uid ||
-                      customer.client_id ||
-                      customer.traderId ||
                       customer.raw_data?.client_uid ||
+                      customer.client_id ||
                       customer.raw_data?.client_id ||
+                      customer.traderId ||
                       customer.raw_data?.traderId ||
                       "-"
                     }}
@@ -833,13 +866,11 @@
                     class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
                   >
                     {{
-                      customer.raw_data?.client_account ||
                       customer.client_account ||
+                      customer.raw_data?.client_account ||
                       customer.account_number ||
                       customer.login ||
                       customer.traderId ||
-                      customer.client_uid ||
-                      customer.client_id ||
                       "-"
                     }}
                   </td>
@@ -996,12 +1027,12 @@
                     class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
                   >
                     {{ 
-                      customer.reg_date || 
-                      customer.raw_data?.reg_date ||
-                      customer.signUpDate ||
-                      customer.raw_data?.signUpDate ||
-                      customer.created_at ||
-                      customer.registration_date ||
+                      formatDate(customer.reg_date) || 
+                      formatDate(customer.raw_data?.reg_date) ||
+                      formatDate(customer.signUpDate) ||
+                      formatDate(customer.raw_data?.signUpDate) ||
+                      formatDate(customer.created_at) ||
+                      formatDate(customer.registration_date) ||
                       "-" 
                     }}
                   </td>
@@ -1012,8 +1043,8 @@
                       customer.source || 
                       customer.raw_data?.source ||
                       (customer.traderId || customer.raw_data?.traderId ? 'XM' : 
-                       customer.partner_account && customer.partner_account.includes('Janischa') ? 'Exness1' :
-                       customer.partner_account && customer.partner_account.includes('ham') ? 'Exness2' : '-')
+                       customer.partner_account && customer.partner_account.includes('Janischa') ? 'Exness1_ClientAccount' :
+                       customer.partner_account && customer.partner_account.includes('ham') ? 'Exness2_ClientAccount' : '-')
                     }}
                   </td>
                   <td
@@ -1026,7 +1057,12 @@
                       customer.raw_data?.campaign ||
                       customer.partner ||
                       customer.raw_data?.partner ||
-                      "-" 
+                      (customer.source === 'XM' ? 'XM Partner' :
+                       customer.source === 'Exness1' || customer.source === 'Exness1_ClientAccount' ? 'Janischa' :
+                       customer.source === 'Exness2' || customer.source === 'Exness2_ClientAccount' ? 'Ham' :
+                       customer.traderId || customer.raw_data?.traderId ? 'XM Partner' :
+                       customer.partner_account && customer.partner_account.includes('Janischa') ? 'Janischa' :
+                       customer.partner_account && customer.partner_account.includes('ham') ? 'Ham' : '-')
                     }}
                   </td>
 
@@ -1153,11 +1189,40 @@ import {
   mdiCheckCircleOutline,
 } from "@mdi/js";
 
-const customers = ref([]);
+// รับ props จาก Inertia
+const props = defineProps({
+  customers: {
+    type: Array,
+    default: () => [],
+  },
+  stats: {
+    type: Object,
+    default: () => ({}),
+  },
+  users: {
+    type: Array,
+    default: () => [],
+  },
+  filters: {
+    type: Object,
+    default: () => ({}),
+  },
+  error: {
+    type: String,
+    default: null,
+  },
+  searchMessage: {
+    type: String,
+    default: null,
+  },
+});
+
+const customers = ref(props.customers || []);
 const debugInfo = ref({});
 const loading = ref(false);
-const error = ref(null);
-const stats = ref({
+const error = ref(props.error);
+const searchMessage = ref(props.searchMessage);
+const stats = ref(props.stats || {
   total_customers: 0,
   active_customers: 0,
   total_reward_usd: 0,
@@ -1470,6 +1535,19 @@ const formatNumber = (number) => {
     return "0";
   }
   return new Intl.NumberFormat("en-US").format(number);
+};
+
+// ฟังก์ชันแปลงวันที่ให้อยู่ในรูปแบบที่อ่านง่าย
+const formatDate = (date) => {
+  if (!date) return "-";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "-";
+  // แสดงเป็น dd/MM/yyyy
+  return d.toLocaleDateString("th-TH", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
 };
 
 // ฟังก์ชันเพื่อระบุว่าเป็นข้อมูลของ Ham, Janischa หรือ Kantapong

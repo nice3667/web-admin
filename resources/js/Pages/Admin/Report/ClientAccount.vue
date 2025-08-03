@@ -23,7 +23,7 @@ import CardBoxModal from "@/Components/CardBoxModal.vue";
 import NotificationBar from "@/Components/NotificationBar.vue";
 import BaseButton from "@/Components/BaseButton.vue";
 import BaseButtons from "@/Components/BaseButtons.vue";
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, computed, watch, onUnmounted } from "vue";
 import FormControl from "@/Components/FormControl.vue";
 import Pagination from "@/Components/Admin/Pagination.vue";
 import BaseIcon from "@/Components/BaseIcon.vue";
@@ -170,18 +170,28 @@ const filteredAccounts = computed(() => {
   return result;
 });
 
-// Apply search filters
+// Apply search filters with debounce
+let searchTimeout = null;
 const applyFilters = () => {
-  currentPage.value = 1; // Reset to the first page when filters are applied
-  router.get(
-    "/admin/reports/client-account",
-    { ...filters.value },
-    {
-      preserveState: true,
-      preserveScroll: true,
-    }
-  );
-  showAdvancedSearch.value = false;
+  // Clear existing timeout
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+  
+  // Set new timeout for debounced search
+  searchTimeout = setTimeout(() => {
+    currentPage.value = 1; // Reset to the first page when filters are applied
+    // Use client-side filtering instead of server request
+    // router.get(
+    //   "/admin/reports/client-account",
+    //   { ...filters.value },
+    //   {
+    //     preserveState: true,
+    //     preserveScroll: true,
+    //   }
+    // );
+    showAdvancedSearch.value = false;
+  }, 300); // 300ms delay
 };
 
 // Reset filters
@@ -197,14 +207,16 @@ const resetFilters = () => {
   signUpDateFilter.value = "all";
   startDate.value = "";
   endDate.value = "";
-  router.get(
-    "/admin/reports/client-account",
-    {},
-    {
-      preserveState: true,
-      preserveScroll: true,
-    }
-  );
+  currentPage.value = 1; // Reset to the first page when filters are reset
+  // Use client-side filtering instead of server request
+  // router.get(
+  //   "/admin/reports/client-account",
+  //   {},
+  //   {
+  //     preserveState: true,
+  //     preserveScroll: true,
+  //   }
+  // );
 };
 
 // Format functions
@@ -442,6 +454,13 @@ const displayedPages = computed(() => {
   }
   return pages;
 });
+
+// Cleanup timeout on component unmount
+onUnmounted(() => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+});
 </script>
 
 <template>
@@ -580,6 +599,7 @@ const displayedPages = computed(() => {
             </label>
             <select
               v-model="signUpDateFilter"
+              @change="applyFilters"
               class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
             >
               <option value="all">ทั้งหมด</option>
@@ -649,6 +669,7 @@ const displayedPages = computed(() => {
                 <input
                   type="date"
                   v-model="startDate"
+                  @change="applyFilters"
                   class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
                 />
               </div>
@@ -676,6 +697,7 @@ const displayedPages = computed(() => {
                 <input
                   type="date"
                   v-model="endDate"
+                  @change="applyFilters"
                   class="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 border-blue-100 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:border-blue-500 dark:focus:border-blue-400 focus:ring focus:ring-blue-200 dark:focus:ring-blue-800 transition duration-200 text-sm sm:text-base"
                 />
               </div>

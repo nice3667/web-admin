@@ -994,13 +994,13 @@ const endIndex = computed(() => filteredAccounts.value.length);
               class="px-4 py-2 text-sm font-medium text-blue-600 transition-colors duration-200 bg-white border border-blue-200 rounded-lg dark:text-blue-400 dark:bg-slate-800 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-slate-700"
               preserve-scroll
             >
-              ก่อนหน้า
+              Previous
             </Link>
             <span
               v-else
               class="px-4 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg cursor-not-allowed dark:text-gray-600 dark:bg-slate-900 dark:border-slate-700"
             >
-              ก่อนหน้า
+              Previous
             </span>
 
             <!-- Page Numbers -->
@@ -1038,13 +1038,13 @@ const endIndex = computed(() => filteredAccounts.value.length);
               class="px-4 py-2 text-sm font-medium text-blue-600 transition-colors duration-200 bg-white border border-blue-200 rounded-lg dark:text-blue-400 dark:bg-slate-800 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-slate-700"
               preserve-scroll
             >
-              ถัดไป
+              Next
             </Link>
             <span
               v-else
               class="px-4 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg cursor-not-allowed dark:text-gray-600 dark:bg-slate-900 dark:border-slate-700"
             >
-              ถัดไป
+              Next
             </span>
           </div>
         </div>
