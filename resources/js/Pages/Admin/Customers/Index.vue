@@ -1,25 +1,35 @@
 <template>
   <TopNavBar />
-  <Head :title="`ค้นหาข้อมูลลูกค้า${searchAccount.trim() || selectedOwner !== 'all' ? ' (Filtered)' : ''}`" />
+  <Head
+    :title="`ค้นหาข้อมูลลูกค้า${
+      searchAccount.trim() || selectedOwner !== 'all' ? ' (Filtered)' : ''
+    }`"
+  />
   <div
     class="min-h-screen py-4 sm:py-8 lg:py-12 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900"
   >
-    <div class="mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="px-4 mx-auto sm:px-6 lg:px-8">
       <!-- Page Title with Animation -->
-      <div class="mb-6 lg:mb-8 text-center animate-fade-in">
+      <div class="mb-6 text-center lg:mb-8 animate-fade-in">
         <h1
-          class="text-2xl sm:text-3xl lg:text-4xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
+          class="text-2xl font-extrabold text-transparent sm:text-3xl lg:text-4xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
         >
           Customer Dashboard
-          <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-sm font-normal text-blue-600 dark:text-blue-400">
+          <span
+            v-if="searchAccount.trim() || selectedOwner !== 'all'"
+            class="text-sm font-normal text-blue-600 dark:text-blue-400"
+          >
             (Filtered)
           </span>
         </h1>
         <p
-          class="mt-2 lg:mt-3 text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-400"
+          class="mt-2 text-sm text-gray-600 lg:mt-3 sm:text-base lg:text-lg dark:text-gray-400"
         >
           View and analyze customer statistics and performance metrics
-          <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+          <span
+            v-if="searchAccount.trim() || selectedOwner !== 'all'"
+            class="text-blue-600 dark:text-blue-400"
+          >
             (แสดงเฉพาะผลลัพธ์ที่กรอง)
           </span>
         </p>
@@ -27,29 +37,46 @@
 
       <!-- Customer Partner Label -->
       <div
-        class="mb-4 lg:mb-2 text-xl sm:text-2xl lg:text-3xl font-extrabold text-blue-700 dark:text-blue-300 animate-fade-in text-center lg:text-left"
+        class="mb-4 text-xl font-extrabold text-center text-blue-700 lg:mb-2 sm:text-2xl lg:text-3xl dark:text-blue-300 animate-fade-in lg:text-left"
       >
         Customer Management
-        <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-sm font-normal text-blue-600 dark:text-blue-400">
+        <span
+          v-if="searchAccount.trim() || selectedOwner !== 'all'"
+          class="text-sm font-normal text-blue-600 dark:text-blue-400"
+        >
           (Filtered)
         </span>
       </div>
 
       <!-- Search Message Alert -->
       <div v-if="searchMessage" class="mb-4 lg:mb-6">
-        <div class="bg-yellow-50/80 dark:bg-yellow-900/20 backdrop-blur-lg overflow-hidden shadow-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-yellow-200/20 dark:border-yellow-700/20">
+        <div
+          class="p-4 overflow-hidden border shadow-xl bg-yellow-50/80 dark:bg-yellow-900/20 backdrop-blur-lg rounded-xl lg:rounded-2xl lg:p-6 border-yellow-200/20 dark:border-yellow-700/20"
+        >
           <div class="flex items-center">
-            <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            <svg
+              class="w-6 h-6 mr-3 text-yellow-600 dark:text-yellow-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+              ></path>
             </svg>
             <div>
-              <h3 class="text-lg font-semibold text-yellow-800 dark:text-yellow-200">
+              <h3
+                class="text-lg font-semibold text-yellow-800 dark:text-yellow-200"
+              >
                 ไม่พบข้อมูล
               </h3>
-              <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+              <p class="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
                 {{ searchMessage }}
               </p>
-              <div class="mt-3 flex flex-wrap gap-2">
+              <div class="flex flex-wrap gap-2 mt-3">
                 <button
                   @click="syncData"
                   class="px-3 py-1.5 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-colors"
@@ -73,11 +100,11 @@
         class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-2xl rounded-xl lg:rounded-2xl p-4 sm:p-6 lg:p-8 mb-6 lg:mb-8 border border-white/20 dark:border-slate-700/20 transform hover:scale-[1.01] lg:hover:scale-[1.02] transition-all duration-300"
       >
         <div
-          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-6 items-end"
+          class="grid items-end grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 lg:gap-6"
         >
           <div class="col-span-1">
             <label
-              class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+              class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
             >
               <span class="flex items-center gap-2">
                 <svg
@@ -111,7 +138,7 @@
           </div>
           <div class="col-span-1">
             <label
-              class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+              class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
             >
               <span class="flex items-center gap-2">
                 <svg
@@ -137,12 +164,11 @@
               <option value="all">ทั้งหมด</option>
               <option value="ham">Ham</option>
               <option value="janischa">Janischa</option>
-
             </select>
           </div>
           <div class="col-span-1">
             <label
-              class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+              class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
             >
               <span class="flex items-center gap-2">
                 <svg
@@ -172,284 +198,181 @@
       </div>
 
       <!-- Statistics Cards (XM style) -->
-                <div
-            class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8"
-          >
+      <div
+        class="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2 xl:grid-cols-3 lg:gap-6 lg:mb-8"
+      >
         <!-- Debug Info -->
-        <div
-          class="col-span-full bg-yellow-50/80 dark:bg-yellow-900/20 backdrop-blur-lg overflow-hidden shadow-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-yellow-200/20 dark:border-yellow-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1"
+        <!-- <div
+          class="p-4 overflow-hidden transition-all duration-300 transform border shadow-xl col-span-full bg-yellow-50/80 dark:bg-yellow-900/20 backdrop-blur-lg rounded-xl lg:rounded-2xl lg:p-6 border-yellow-200/20 dark:border-yellow-700/20 hover:scale-105 hover:rotate-1"
         >
-          <h3 class="text-lg font-bold text-yellow-900 dark:text-yellow-100 mb-4">
+          <h3
+            class="mb-4 text-lg font-bold text-yellow-900 dark:text-yellow-100"
+          >
             Debug Info - ข้อมูลจากแต่ละแหล่ง
           </h3>
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             <div class="text-center">
-              <p class="text-sm font-semibold text-yellow-700 dark:text-yellow-300">Local DB</p>
-              <p class="text-xl font-bold text-yellow-600">{{ debugInfo.local_db || 0 }}</p>
+              <p
+                class="text-sm font-semibold text-yellow-700 dark:text-yellow-300"
+              >
+                Local DB
+              </p>
+              <p class="text-xl font-bold text-yellow-600">
+                {{ debugInfo.local_db || 0 }}
+              </p>
             </div>
             <div class="text-center">
-              <p class="text-sm font-semibold text-blue-700 dark:text-blue-300">XM (Ham)</p>
-              <p class="text-xl font-bold text-blue-600">{{ debugInfo.xm || 0 }}</p>
+              <p class="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                XM (Ham)
+              </p>
+              <p class="text-xl font-bold text-blue-600">
+                {{ debugInfo.xm || 0 }}
+              </p>
             </div>
             <div class="text-center">
-              <p class="text-sm font-semibold text-purple-700 dark:text-purple-300">Client Account 1 (Ham)</p>
-              <p class="text-xl font-bold text-purple-600">{{ debugInfo.client_account1 || 0 }}</p>
+              <p
+                class="text-sm font-semibold text-purple-700 dark:text-purple-300"
+              >
+                Client Account 1 (Ham)
+              </p>
+              <p class="text-xl font-bold text-purple-600">
+                {{ debugInfo.client_account1 || 0 }}
+              </p>
             </div>
             <div class="text-center">
-              <p class="text-sm font-semibold text-green-700 dark:text-green-300">Client Account (Janischa)</p>
-              <p class="text-xl font-bold text-green-600">{{ debugInfo.client_account || 0 }}</p>
+              <p
+                class="text-sm font-semibold text-green-700 dark:text-green-300"
+              >
+                Client Account (Janischa)
+              </p>
+              <p class="text-xl font-bold text-green-600">
+                {{ debugInfo.client_account || 0 }}
+              </p>
             </div>
           </div>
           <div class="mt-4 text-center">
             <p class="text-sm text-yellow-700 dark:text-yellow-300">
-              รวมทั้งหมด: {{ Object.values(debugInfo).reduce((sum, val) => sum + (val || 0), 0) }} รายการ
+              รวมทั้งหมด:
+              {{
+                Object.values(debugInfo).reduce(
+                  (sum, val) => sum + (val || 0),
+                  0
+                )
+              }}
+              รายการ
             </p>
           </div>
-        </div>
+        </div> -->
         <!-- Sync Status -->
-        <div
-          class="col-span-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1"
-        >
-          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            สถานะการ Sync ข้อมูล (รวม XM)
-          </h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="text-center">
-              <div class="flex items-center justify-center mb-2">
-                <span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Ham (รวม XM)</span>
-              </div>
-              <p class="text-2xl font-bold text-blue-600">{{ 
-                customers.filter(c => getOwnerInfo(c).type === 'ham').length 
-              }}</p>
-              <p class="text-xs text-gray-500">ในฐานข้อมูล</p>
-              <p class="text-xs text-blue-600 dark:text-blue-400">
-                ~1,363 จาก Exness API + ~1,216 จาก XM API + Client Account Data
-              </p>
-            </div>
-            <div class="text-center">
-              <div class="flex items-center justify-center mb-2">
-                <span class="w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
-                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Janischa</span>
-              </div>
-              <p class="text-2xl font-bold text-purple-600">{{ 
-                customers.filter(c => getOwnerInfo(c).type === 'janischa').length 
-              }}</p>
-              <p class="text-xs text-gray-500">ในฐานข้อมูล</p>
-              <p class="text-xs text-purple-600 dark:text-purple-400">
-                ~357 จาก Exness API + Client Account Data
-              </p>
-            </div>
-          </div>
-          <div class="mt-4 text-center">
-            <button
-              @click="syncData"
-              :disabled="syncStatus === 'syncing'"
-              class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm mr-2 disabled:opacity-50"
-            >
-              <svg v-if="syncStatus === 'syncing'" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Sync ข้อมูลใหม่
-            </button>
-            
-            <button
-              @click="syncHamData"
-              :disabled="hamSyncStatus === 'syncing'"
-              class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm mr-2 disabled:opacity-50"
-            >
-              <svg v-if="hamSyncStatus === 'syncing'" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Sync Ham
-            </button>
-            
-            <button
-              @click="syncJanischaData"
-              :disabled="janischaSyncStatus === 'syncing'"
-              class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm mr-2 disabled:opacity-50"
-            >
-              <svg v-if="janischaSyncStatus === 'syncing'" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Sync Janischa
-            </button>
-            
-            <button
-              @click="toggleAutoSync"
-              :class="[
-                'px-4 py-2 rounded-lg transition-colors text-sm',
-                autoSyncEnabled 
-                  ? 'bg-orange-500 text-white hover:bg-orange-600' 
-                  : 'bg-gray-500 text-white hover:bg-gray-600'
-              ]"
-            >
-              <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              {{ autoSyncEnabled ? 'ปิด Auto Sync' : 'เปิด Auto Sync' }}
-            </button>
-          </div>
-          
-          <!-- Sync Status Display -->
-          <div class="mt-4 text-center space-y-2">
-            <!-- General Sync Status -->
-            <div v-if="syncMessage" class="text-sm">
-              <span v-if="syncStatus === 'syncing'" class="text-blue-600 dark:text-blue-400">
-                <svg class="animate-spin -ml-1 mr-1 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {{ syncMessage }}
-              </span>
-              <span v-else-if="syncStatus === 'success'" class="text-green-600 dark:text-green-400">
-                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                {{ syncMessage }}
-              </span>
-              <span v-else-if="syncStatus === 'error'" class="text-red-600 dark:text-red-400">
-                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                {{ syncMessage }}
-              </span>
-            </div>
-            
-            <!-- Ham Sync Status -->
-            <div v-if="hamSyncMessage" class="text-sm">
-              <span v-if="hamSyncStatus === 'syncing'" class="text-blue-600 dark:text-blue-400">
-                <svg class="animate-spin -ml-1 mr-1 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {{ hamSyncMessage }}
-              </span>
-              <span v-else-if="hamSyncStatus === 'success'" class="text-green-600 dark:text-green-400">
-                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                {{ hamSyncMessage }}
-              </span>
-              <span v-else-if="hamSyncStatus === 'error'" class="text-red-600 dark:text-red-400">
-                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                {{ hamSyncMessage }}
-              </span>
-            </div>
-            
-            <!-- Janischa Sync Status -->
-            <div v-if="janischaSyncMessage" class="text-sm">
-              <span v-if="janischaSyncStatus === 'syncing'" class="text-blue-600 dark:text-blue-400">
-                <svg class="animate-spin -ml-1 mr-1 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {{ janischaSyncMessage }}
-              </span>
-              <span v-else-if="janischaSyncStatus === 'success'" class="text-green-600 dark:text-green-400">
-                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                {{ janischaSyncMessage }}
-              </span>
-              <span v-else-if="janischaSyncStatus === 'error'" class="text-red-600 dark:text-red-400">
-                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                {{ janischaSyncMessage }}
-              </span>
-            </div>
-            
-            <!-- Auto Sync Status -->
-            <div v-if="autoSyncEnabled" class="text-xs text-gray-500 dark:text-gray-400">
-              <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              Auto Sync เปิดอยู่ (ทุก {{ syncIntervalMinutes }} นาที)
-              <span v-if="lastSyncTime" class="ml-2">
-                Sync ล่าสุด: {{ new Date(lastSyncTime).toLocaleTimeString('th-TH') }}
-              </span>
-            </div>
-          </div>
-        </div>
+
         <!-- Owner Statistics -->
-        <div
-          class="col-span-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1"
+        <!-- <div
+          class="p-4 overflow-hidden transition-all duration-300 transform border shadow-xl col-span-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-xl lg:rounded-2xl lg:p-6 border-white/20 dark:border-slate-700/20 hover:scale-105 hover:rotate-1"
         >
-          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+          <h3 class="mb-4 text-lg font-bold text-gray-900 dark:text-white">
             สถิติแยกตาม Owner (รวม XM)
-            <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-sm font-normal text-blue-600 dark:text-blue-400">
+            <span
+              v-if="searchAccount.trim() || selectedOwner !== 'all'"
+              class="text-sm font-normal text-blue-600 dark:text-blue-400"
+            >
               (แสดงเฉพาะผลลัพธ์ที่กรอง)
             </span>
           </h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="text-center">
               <div class="flex items-center justify-center mb-2">
-                <span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Ham (รวม XM)</span>
+                <span class="w-3 h-3 mr-2 bg-blue-500 rounded-full"></span>
+                <span
+                  class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                  >Ham (รวม XM)</span
+                >
               </div>
-              <p class="text-2xl font-bold text-blue-600">{{ 
-                customers.filter(c => getOwnerInfo(c).type === 'ham').length 
-              }}</p>
+              <p class="text-2xl font-bold text-blue-600">
+                {{
+                  customers.filter((c) => getOwnerInfo(c).type === "ham").length
+                }}
+              </p>
               <p class="text-xs text-gray-500">ลูกค้า</p>
               <p class="text-xs text-blue-600 dark:text-blue-400">
                 (Exness + XM + Client Account)
               </p>
-              <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-blue-600 dark:text-blue-400">
-                {{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'ham').length }} ในผลลัพธ์
+              <p
+                v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                class="text-xs text-blue-600 dark:text-blue-400"
+              >
+                {{
+                  filteredCustomers.filter(
+                    (c) => getOwnerInfo(c).type === "ham"
+                  ).length
+                }}
+                ในผลลัพธ์
               </p>
             </div>
             <div class="text-center">
               <div class="flex items-center justify-center mb-2">
-                <span class="w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
-                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Janischa</span>
+                <span class="w-3 h-3 mr-2 bg-purple-500 rounded-full"></span>
+                <span
+                  class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                  >Janischa</span
+                >
               </div>
-              <p class="text-2xl font-bold text-purple-600">{{ 
-                customers.filter(c => getOwnerInfo(c).type === 'janischa').length 
-              }}</p>
+              <p class="text-2xl font-bold text-purple-600">
+                {{
+                  customers.filter((c) => getOwnerInfo(c).type === "janischa")
+                    .length
+                }}
+              </p>
               <p class="text-xs text-gray-500">ลูกค้า</p>
               <p class="text-xs text-purple-600 dark:text-purple-400">
                 (Exness + Client Account)
               </p>
-              <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-purple-600 dark:text-purple-400">
-                {{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'janischa').length }} ในผลลัพธ์
+              <p
+                v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                class="text-xs text-purple-600 dark:text-purple-400"
+              >
+                {{
+                  filteredCustomers.filter(
+                    (c) => getOwnerInfo(c).type === "janischa"
+                  ).length
+                }}
+                ในผลลัพธ์
               </p>
             </div>
-
           </div>
-        </div>
+        </div> -->
         <div
-          class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1"
+          class="p-4 overflow-hidden transition-all duration-300 transform border shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-xl lg:rounded-2xl lg:p-6 border-white/20 dark:border-slate-700/20 hover:scale-105 hover:rotate-1"
         >
           <div class="flex items-center justify-between">
             <div class="flex-1 min-w-0">
               <p
-                class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 truncate"
+                class="text-xs font-semibold text-gray-600 truncate sm:text-sm dark:text-gray-400"
               >
                 Total Customers
-                <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+                <span
+                  v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                  class="text-blue-600 dark:text-blue-400"
+                >
                   (Filtered)
                 </span>
               </p>
               <p
-                class="mt-1 lg:mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
+                class="mt-1 text-xl font-extrabold text-transparent lg:mt-2 sm:text-2xl lg:text-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
               >
                 {{ formatNumber(filteredStats.total_customers) }}
               </p>
-              <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-blue-600 dark:text-blue-400 mt-1">
+              <p
+                v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                class="mt-1 text-xs text-blue-600 dark:text-blue-400"
+              >
                 จาก {{ customers.length }} รายการทั้งหมด
               </p>
             </div>
             <div
-              class="p-3 lg:p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-xl lg:rounded-2xl rotate-3 transform transition-transform duration-300 hover:rotate-6 flex-shrink-0"
+              class="flex-shrink-0 p-3 transition-transform duration-300 transform lg:p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-xl lg:rounded-2xl rotate-3 hover:rotate-6"
             >
               <svg
-                class="w-6 h-6 lg:w-8 lg:h-8 text-white"
+                class="w-6 h-6 text-white lg:w-8 lg:h-8"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -465,32 +388,50 @@
           </div>
         </div>
         <div
-          class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1"
+          class="p-4 overflow-hidden transition-all duration-300 transform border shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-xl lg:rounded-2xl lg:p-6 border-white/20 dark:border-slate-700/20 hover:scale-105 hover:rotate-1"
         >
           <div class="flex items-center justify-between">
             <div class="flex-1 min-w-0">
               <p
-                class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 truncate"
+                class="text-xs font-semibold text-gray-600 truncate sm:text-sm dark:text-gray-400"
               >
                 Active Customers
-                <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+                <span
+                  v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                  class="text-blue-600 dark:text-blue-400"
+                >
                   (Filtered)
                 </span>
               </p>
               <p
-                class="mt-1 lg:mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
+                class="mt-1 text-xl font-extrabold text-transparent lg:mt-2 sm:text-2xl lg:text-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
               >
                 {{ formatNumber(filteredStats.active_customers) }}
               </p>
-              <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                จาก {{ customers.filter(c => c.status === "ACTIVE" || c.status === "Valid" || c.status === "UNKNOWN" || c.client_status === "ACTIVE" || c.raw_data?.client_status === "ACTIVE" || c.valid === true).length }} รายการทั้งหมด
+              <p
+                v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                class="mt-1 text-xs text-blue-600 dark:text-blue-400"
+              >
+                จาก
+                {{
+                  customers.filter(
+                    (c) =>
+                      c.status === "ACTIVE" ||
+                      c.status === "Valid" ||
+                      c.status === "UNKNOWN" ||
+                      c.client_status === "ACTIVE" ||
+                      c.raw_data?.client_status === "ACTIVE" ||
+                      c.valid === true
+                  ).length
+                }}
+                รายการทั้งหมด
               </p>
             </div>
             <div
-              class="p-3 lg:p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-xl lg:rounded-2xl rotate-3 transform transition-transform duration-300 hover:rotate-6 flex-shrink-0"
+              class="flex-shrink-0 p-3 transition-transform duration-300 transform lg:p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-xl lg:rounded-2xl rotate-3 hover:rotate-6"
             >
               <svg
-                class="w-6 h-6 lg:w-8 lg:h-8 text-white"
+                class="w-6 h-6 text-white lg:w-8 lg:h-8"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -506,41 +447,53 @@
           </div>
         </div>
         <div
-          class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1"
+          class="p-4 overflow-hidden transition-all duration-300 transform border shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-xl lg:rounded-2xl lg:p-6 border-white/20 dark:border-slate-700/20 hover:scale-105 hover:rotate-1"
         >
           <div class="flex items-center justify-between">
             <div class="flex-1 min-w-0">
               <p
-                class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 truncate"
+                class="text-xs font-semibold text-gray-600 truncate sm:text-sm dark:text-gray-400"
               >
                 Total Reward (USD)
-                <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+                <span
+                  v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                  class="text-blue-600 dark:text-blue-400"
+                >
                   (Filtered)
                 </span>
               </p>
               <p
-                class="mt-1 lg:mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
+                class="mt-1 text-xl font-extrabold text-transparent lg:mt-2 sm:text-2xl lg:text-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
               >
                 ${{ formatNumber(filteredStats.total_reward_usd) }}
               </p>
-              <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                จาก ${{ formatNumber(customers.reduce((sum, c) => {
-                  const rewardUsd = parseFloat(c.reward_usd) || 
-                                  parseFloat(c.total_reward_usd) || 
-                                  parseFloat(c.raw_data?.reward_usd) || 
-                                  parseFloat(c.raw_data?.total_reward_usd) || 
-                                  parseFloat(c.commission) ||
-                                  parseFloat(c.profit) ||
-                                  0;
-                  return sum + (isNaN(rewardUsd) ? 0 : rewardUsd);
-                }, 0)) }} ทั้งหมด
+              <p
+                v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                class="mt-1 text-xs text-blue-600 dark:text-blue-400"
+              >
+                จาก ${{
+                  formatNumber(
+                    customers.reduce((sum, c) => {
+                      const rewardUsd =
+                        parseFloat(c.reward_usd) ||
+                        parseFloat(c.total_reward_usd) ||
+                        parseFloat(c.raw_data?.reward_usd) ||
+                        parseFloat(c.raw_data?.total_reward_usd) ||
+                        parseFloat(c.commission) ||
+                        parseFloat(c.profit) ||
+                        0;
+                      return sum + (isNaN(rewardUsd) ? 0 : rewardUsd);
+                    }, 0)
+                  )
+                }}
+                ทั้งหมด
               </p>
             </div>
             <div
-              class="p-3 lg:p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-xl lg:rounded-2xl rotate-3 transform transition-transform duration-300 hover:rotate-6 flex-shrink-0"
+              class="flex-shrink-0 p-3 transition-transform duration-300 transform lg:p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-xl lg:rounded-2xl rotate-3 hover:rotate-6"
             >
               <svg
-                class="w-6 h-6 lg:w-8 lg:h-8 text-white"
+                class="w-6 h-6 text-white lg:w-8 lg:h-8"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -555,13 +508,13 @@
             </div>
           </div>
         </div>
-        <div
-          class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-xl rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-white/20 dark:border-slate-700/20 transform transition-all duration-300 hover:scale-105 hover:rotate-1"
+        <!-- <div
+          class="p-4 overflow-hidden transition-all duration-300 transform border shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-xl lg:rounded-2xl lg:p-6 border-white/20 dark:border-slate-700/20 hover:scale-105 hover:rotate-1"
         >
           <div class="flex items-center justify-between">
             <div class="flex-1 min-w-0">
               <p
-                class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 truncate"
+                class="text-xs font-semibold text-gray-600 truncate sm:text-sm dark:text-gray-400"
               >
                 Total Rebate (USD)
                 <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
@@ -569,14 +522,14 @@
                 </span>
               </p>
               <p
-                class="mt-1 lg:mt-2 text-xl sm:text-2xl lg:text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
+                class="mt-1 text-xl font-extrabold text-transparent lg:mt-2 sm:text-2xl lg:text-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
               >
                 ${{ formatNumber(filteredStats.total_rebate_usd) }}
               </p>
-              <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-xs text-blue-600 dark:text-blue-400 mt-1">
+              <p v-if="searchAccount.trim() || selectedOwner !== 'all'" class="mt-1 text-xs text-blue-600 dark:text-blue-400">
                 จาก ${{ formatNumber(customers.reduce((sum, c) => {
-                  const rebateUsd = parseFloat(c.rebate_amount_usd) || 
-                                  parseFloat(c.raw_data?.rebate_amount_usd) || 
+                  const rebateUsd = parseFloat(c.rebate_amount_usd) ||
+                                  parseFloat(c.raw_data?.rebate_amount_usd) ||
                                   parseFloat(c.rebate) ||
                                   parseFloat(c.cashback) ||
                                   0;
@@ -585,10 +538,10 @@
               </p>
             </div>
             <div
-              class="p-3 lg:p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-xl lg:rounded-2xl rotate-3 transform transition-transform duration-300 hover:rotate-6 flex-shrink-0"
+              class="flex-shrink-0 p-3 transition-transform duration-300 transform lg:p-4 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-xl lg:rounded-2xl rotate-3 hover:rotate-6"
             >
               <svg
-                class="w-6 h-6 lg:w-8 lg:h-8 text-white"
+                class="w-6 h-6 text-white lg:w-8 lg:h-8"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -602,51 +555,91 @@
               </svg>
             </div>
           </div>
-        </div>
+        </div> -->
       </div>
 
       <!-- Customers Table (XM style) -->
       <div
-        class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg overflow-hidden shadow-2xl rounded-xl lg:rounded-2xl border border-white/20 dark:border-slate-700/20"
+        class="overflow-hidden border shadow-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-xl lg:rounded-2xl border-white/20 dark:border-slate-700/20"
       >
         <div
-          class="px-4 sm:px-6 lg:px-8 py-4 lg:py-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+          class="flex flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 lg:py-6 lg:flex-row lg:items-center lg:justify-between"
         >
           <div>
             <h3
-              class="text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent"
+              class="text-xl font-bold text-transparent lg:text-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text"
             >
               Customers List
-              <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-sm font-normal text-blue-600 dark:text-blue-400">
+              <span
+                v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                class="text-sm font-normal text-blue-600 dark:text-blue-400"
+              >
                 (Filtered Results)
               </span>
             </h3>
             <p
-              class="mt-1 lg:mt-2 text-sm lg:text-base text-gray-600 dark:text-gray-400"
+              class="mt-1 text-sm text-gray-600 lg:mt-2 lg:text-base dark:text-gray-400"
             >
               Detailed information about all customers and their current status
-              <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+              <span
+                v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                class="text-blue-600 dark:text-blue-400"
+              >
                 (แสดงเฉพาะผลลัพธ์ที่กรอง)
               </span>
             </p>
             <!-- แสดงผลการค้นหาและกรอง -->
-            <div v-if="searchAccount.trim() || selectedOwner !== 'all'" class="mt-2">
+            <div
+              v-if="searchAccount.trim() || selectedOwner !== 'all'"
+              class="mt-2"
+            >
               <p class="text-sm text-blue-600 dark:text-blue-400">
-                <span v-if="searchAccount.trim()" class="font-semibold">ค้นหา:</span> 
-                <span v-if="searchAccount.trim()">{{ searchAccount.trim() }}</span>
-                <span v-if="searchAccount.trim() && selectedOwner !== 'all'" class="mx-2">•</span>
-                <span v-if="selectedOwner !== 'all'" class="font-semibold">Owner:</span> 
+                <span v-if="searchAccount.trim()" class="font-semibold"
+                  >ค้นหา:</span
+                >
+                <span v-if="searchAccount.trim()">{{
+                  searchAccount.trim()
+                }}</span>
+                <span
+                  v-if="searchAccount.trim() && selectedOwner !== 'all'"
+                  class="mx-2"
+                  >•</span
+                >
+                <span v-if="selectedOwner !== 'all'" class="font-semibold"
+                  >Owner:</span
+                >
                 <span v-if="selectedOwner !== 'all'">
-                  {{ selectedOwner === "ham" ? "Ham" : selectedOwner === "janischa" ? "Janischa" : "ไม่ระบุ" }}
+                  {{
+                    selectedOwner === "ham"
+                      ? "Ham"
+                      : selectedOwner === "janischa"
+                      ? "Janischa"
+                      : "ไม่ระบุ"
+                  }}
                 </span>
               </p>
-              <p class="text-sm text-green-600 dark:text-green-400 mt-1">
+              <p class="mt-1 text-sm text-green-600 dark:text-green-400">
                 พบ {{ filteredCustomers.length }} รายการ
                 <span v-if="filteredCustomers.length > 0">
-                  ({{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'ham').length }} Ham (รวม XM), 
-                  {{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'janischa').length }} Janischa, 
-                   
-                  {{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'unknown').length }} ไม่ระบุ)
+                  ({{
+                    filteredCustomers.filter(
+                      (c) => getOwnerInfo(c).type === "ham"
+                    ).length
+                  }}
+                  Ham (รวม XM),
+                  {{
+                    filteredCustomers.filter(
+                      (c) => getOwnerInfo(c).type === "janischa"
+                    ).length
+                  }}
+                  Janischa,
+
+                  {{
+                    filteredCustomers.filter(
+                      (c) => getOwnerInfo(c).type === "unknown"
+                    ).length
+                  }}
+                  ไม่ระบุ)
                 </span>
               </p>
             </div>
@@ -658,7 +651,7 @@
             >
               <span class="flex items-center justify-center gap-2">
                 <svg
-                  class="w-4 h-4 lg:w-5 lg:h-5 transform group-hover:rotate-180 transition-transform duration-500"
+                  class="w-4 h-4 transition-transform duration-500 transform lg:w-5 lg:h-5 group-hover:rotate-180"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -686,78 +679,74 @@
                 <tr>
                   <th
                     scope="col"
-                    class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    class="px-3 py-3 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase sm:px-6 sm:py-4 dark:text-gray-300"
                   >
                     Client UID
                   </th>
                   <th
                     scope="col"
-                    class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    class="px-3 py-3 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase sm:px-6 sm:py-4 dark:text-gray-300"
                   >
                     Client Account
                   </th>
                   <th
                     scope="col"
-                    class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    class="px-3 py-3 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase sm:px-6 sm:py-4 dark:text-gray-300"
                   >
                     Country
                   </th>
                   <th
                     scope="col"
-                    class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    class="px-3 py-3 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase sm:px-6 sm:py-4 dark:text-gray-300"
                   >
                     Status
                   </th>
                   <th
                     scope="col"
-                    class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    class="px-3 py-3 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase sm:px-6 sm:py-4 dark:text-gray-300"
                   >
                     Reward (USD)
                   </th>
                   <th
                     scope="col"
-                    class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
-                  >
-                    Rebate (USD)
-                  </th>
-                  <th
-                    scope="col"
-                    class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    class="px-3 py-3 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase sm:px-6 sm:py-4 dark:text-gray-300"
                   >
                     Owner
                   </th>
                   <th
                     scope="col"
-                    class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    class="px-3 py-3 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase sm:px-6 sm:py-4 dark:text-gray-300"
                   >
                     Registration Date
                   </th>
                   <th
                     scope="col"
-                    class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    class="px-3 py-3 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase sm:px-6 sm:py-4 dark:text-gray-300"
                   >
                     Source
                   </th>
                   <th
                     scope="col"
-                    class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                    class="px-3 py-3 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase sm:px-6 sm:py-4 dark:text-gray-300"
                   >
                     Partner Account
                   </th>
-
                 </tr>
               </thead>
               <tbody
-                class="bg-white/50 dark:bg-slate-800/50 divide-y divide-blue-100/20 dark:divide-slate-700/20"
+                class="divide-y bg-white/50 dark:bg-slate-800/50 divide-blue-100/20 dark:divide-slate-700/20"
               >
                 <!-- Show prompt if no customers found -->
                 <tr v-if="!searchAccount.trim() && customers.length === 0">
                   <td
                     colspan="10"
-                    class="px-3 sm:px-6 py-12 text-center text-gray-400 dark:text-gray-500"
+                    class="px-3 py-12 text-center text-gray-400 sm:px-6 dark:text-gray-500"
                   >
                     ไม่มีข้อมูลลูกค้า กรุณากดปุ่ม "Fetch Data" เพื่อโหลดข้อมูล
-                    <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+                    <span
+                      v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                      class="text-blue-600 dark:text-blue-400"
+                    >
                       (แสดงเฉพาะผลลัพธ์ที่กรอง)
                     </span>
                   </td>
@@ -769,11 +758,11 @@
                 >
                   <td
                     colspan="10"
-                    class="px-3 sm:px-6 py-8 lg:py-12 text-center"
+                    class="px-3 py-8 text-center sm:px-6 lg:py-12"
                   >
                     <div class="flex items-center justify-center">
                       <svg
-                        class="animate-spin h-6 w-6 lg:h-8 lg:w-8 text-blue-500"
+                        class="w-6 h-6 text-blue-500 animate-spin lg:h-8 lg:w-8"
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -793,8 +782,13 @@
                         ></path>
                       </svg>
                       <span
-                        class="ml-3 text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400"
-                        >Loading data...<span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400"> (Filtered)</span></span
+                        class="ml-3 text-xs font-medium text-gray-600 sm:text-sm dark:text-gray-400"
+                        >Loading data...<span
+                          v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                          class="text-blue-600 dark:text-blue-400"
+                        >
+                          (Filtered)</span
+                        ></span
                       >
                     </div>
                   </td>
@@ -806,28 +800,65 @@
                 >
                   <td
                     colspan="10"
-                    class="px-3 sm:px-6 py-8 lg:py-12 text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400"
+                    class="px-3 py-8 text-xs text-center text-gray-600 sm:px-6 lg:py-12 sm:text-sm dark:text-gray-400"
                   >
                     {{
                       customers.length === 0
                         ? 'ไม่มีข้อมูลลูกค้า กรุณากดปุ่ม "Fetch Data" เพื่อโหลดข้อมูล'
                         : searchAccount.trim() || selectedOwner !== "all"
-                        ? `ไม่พบลูกค้าที่ตรงกับเงื่อนไขการค้นหา${searchAccount.trim() ? ` "${searchAccount.trim()}"` : ""}${selectedOwner !== "all" ? ` และ Owner: ${selectedOwner === "ham" ? "Ham" : selectedOwner === "janischa" ? "Janischa" : "ไม่ระบุ"}` : ""}`
+                        ? `ไม่พบลูกค้าที่ตรงกับเงื่อนไขการค้นหา${
+                            searchAccount.trim()
+                              ? ` "${searchAccount.trim()}"`
+                              : ""
+                          }${
+                            selectedOwner !== "all"
+                              ? ` และ Owner: ${
+                                  selectedOwner === "ham"
+                                    ? "Ham"
+                                    : selectedOwner === "janischa"
+                                    ? "Janischa"
+                                    : "ไม่ระบุ"
+                                }`
+                              : ""
+                          }`
                         : "ไม่พบลูกค้าที่ตรงกับเงื่อนไขการค้นหา"
                     }}
-                    <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-blue-600 dark:text-blue-400">
+                    <span
+                      v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                      class="text-blue-600 dark:text-blue-400"
+                    >
                       (แสดงเฉพาะผลลัพธ์ที่กรอง)
                     </span>
-                    <div v-if="searchAccount.trim()" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    <div
+                      v-if="searchAccount.trim()"
+                      class="mt-2 text-xs text-gray-500 dark:text-gray-400"
+                    >
                       <p>💡 เคล็ดลับการค้นหา:</p>
-                      <p>• <strong>Client Account:</strong> ลองค้นหาด้วยตัวเลข Client Account (เช่น 405755987, 380975767)</p>
-                      <p>• <strong>Client UID:</strong> ลองค้นหาด้วย Client UID (เช่น 0e49b911, ecef872c)</p>
-                      <p>• <strong>Client ID:</strong> ลองค้นหาด้วย Client ID (เช่น 405755987, 183429510)</p>
-                      <p>• <strong>Trader ID:</strong> สำหรับ XM ลองค้นหาด้วย Trader ID (เช่น 380975767)</p>
+                      <p>
+                        • <strong>Client Account:</strong> ลองค้นหาด้วยตัวเลข
+                        Client Account (เช่น 405755987, 380975767)
+                      </p>
+                      <p>
+                        • <strong>Client UID:</strong> ลองค้นหาด้วย Client UID
+                        (เช่น 0e49b911, ecef872c)
+                      </p>
+                      <p>
+                        • <strong>Client ID:</strong> ลองค้นหาด้วย Client ID
+                        (เช่น 405755987, 183429510)
+                      </p>
+                      <p>
+                        • <strong>Trader ID:</strong> สำหรับ XM ลองค้นหาด้วย
+                        Trader ID (เช่น 380975767)
+                      </p>
                       <p>• ตรวจสอบการสะกดคำให้ถูกต้อง</p>
                       <p>• ข้อมูลอาจยังไม่ถูก sync จาก API ล่าสุด</p>
-                      <p>• <strong>แนะนำ:</strong> กดปุ่ม "Fetch Data" เพื่อ sync ข้อมูลใหม่จาก API</p>
-                      <p>• หากยังไม่พบ กรุณาตรวจสอบว่าข้อมูลอยู่ในระบบหรือไม่</p>
+                      <p>
+                        • <strong>แนะนำ:</strong> กดปุ่ม "Fetch Data" เพื่อ sync
+                        ข้อมูลใหม่จาก API
+                      </p>
+                      <p>
+                        • หากยังไม่พบ กรุณาตรวจสอบว่าข้อมูลอยู่ในระบบหรือไม่
+                      </p>
                     </div>
                   </td>
                 </tr>
@@ -847,10 +878,10 @@
                     customer.source ||
                     Math.random()
                   "
-                  class="hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                  class="transition-colors duration-200 hover:bg-blue-50/50 dark:hover:bg-slate-700/50"
                 >
                   <td
-                    class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white"
+                    class="px-3 py-3 text-xs font-medium text-gray-900 sm:px-6 sm:py-4 whitespace-nowrap sm:text-sm dark:text-white"
                   >
                     {{
                       customer.client_uid ||
@@ -863,7 +894,7 @@
                     }}
                   </td>
                   <td
-                    class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
+                    class="px-3 py-3 text-xs text-gray-600 sm:px-6 sm:py-4 whitespace-nowrap sm:text-sm dark:text-gray-300"
                   >
                     {{
                       customer.client_account ||
@@ -875,17 +906,17 @@
                     }}
                   </td>
                   <td
-                    class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
+                    class="px-3 py-3 text-xs text-gray-600 sm:px-6 sm:py-4 whitespace-nowrap sm:text-sm dark:text-gray-300"
                   >
-                    {{ 
-                      customer.country || 
-                      customer.client_country || 
+                    {{
+                      customer.country ||
+                      customer.client_country ||
                       customer.raw_data?.country ||
                       customer.raw_data?.client_country ||
-                      "-" 
+                      "-"
                     }}
                   </td>
-                  <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                  <td class="px-3 py-3 sm:px-6 sm:py-4 whitespace-nowrap">
                     <span
                       :class="[
                         'px-2 sm:px-4 py-1 sm:py-1.5 inline-flex items-center gap-1 sm:gap-1.5 text-xs font-semibold rounded-full',
@@ -950,37 +981,26 @@
                     </span>
                   </td>
                   <td
-                    class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
+                    class="px-3 py-3 text-xs text-gray-600 sm:px-6 sm:py-4 whitespace-nowrap sm:text-sm dark:text-gray-300"
                   >
                     ${{
                       formatNumber(
                         (() => {
-                          const rewardUsd = parseFloat(customer.reward_usd) || 
-                                          parseFloat(customer.total_reward_usd) || 
-                                          parseFloat(customer.raw_data?.reward_usd) || 
-                                          parseFloat(customer.raw_data?.total_reward_usd) || 
-                                          parseFloat(customer.commission) ||
-                                          parseFloat(customer.profit) ||
-                                          0;
+                          const rewardUsd =
+                            parseFloat(customer.reward_usd) ||
+                            parseFloat(customer.total_reward_usd) ||
+                            parseFloat(customer.raw_data?.reward_usd) ||
+                            parseFloat(customer.raw_data?.total_reward_usd) ||
+                            parseFloat(customer.commission) ||
+                            parseFloat(customer.profit) ||
+                            0;
                           return isNaN(rewardUsd) ? 0 : rewardUsd;
                         })()
                       )
                     }}
                   </td>
                   <td
-                    class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
-                  >
-                    ${{ formatNumber((() => {
-                      const rebateUsd = parseFloat(customer.rebate_amount_usd) || 
-                                      parseFloat(customer.raw_data?.rebate_amount_usd) || 
-                                      parseFloat(customer.rebate) ||
-                                      parseFloat(customer.cashback) ||
-                                      0;
-                      return isNaN(rebateUsd) ? 0 : rebateUsd;
-                    })()) }}
-                  </td>
-                  <td
-                    class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm"
+                    class="px-3 py-3 text-xs sm:px-6 sm:py-4 whitespace-nowrap sm:text-sm"
                   >
                     <span
                       :class="[
@@ -989,7 +1009,7 @@
                           ? 'bg-blue-100/80 text-blue-800 dark:bg-blue-800/20 dark:text-blue-400'
                           : getOwnerInfo(customer).type === 'janischa'
                           ? 'bg-purple-100/80 text-purple-800 dark:bg-purple-800/20 dark:text-purple-400'
-                          : 'bg-gray-100/80 text-gray-800 dark:bg-gray-800/20 dark:text-gray-400'
+                          : 'bg-gray-100/80 text-gray-800 dark:bg-gray-800/20 dark:text-gray-400',
                       ]"
                     >
                       <span class="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
@@ -1000,7 +1020,7 @@
                               ? 'bg-blue-400'
                               : getOwnerInfo(customer).type === 'janischa'
                               ? 'bg-purple-400'
-                              : 'bg-gray-400'
+                              : 'bg-gray-400',
                           ]"
                         ></span>
                         <span
@@ -1010,62 +1030,116 @@
                               ? 'bg-blue-500'
                               : getOwnerInfo(customer).type === 'janischa'
                               ? 'bg-purple-500'
-                              : 'bg-gray-500'
+                              : 'bg-gray-500',
                           ]"
                         ></span>
                       </span>
                       {{ getOwnerInfo(customer).name }}
-                      <span v-if="customer.source === 'XM'" class="text-xs text-gray-500 ml-1">(XM)</span>
-                      <span v-else-if="customer.source === 'Exness1' || customer.source === 'Exness1_ClientAccount'" class="text-xs text-gray-500 ml-1">(Exness1)</span>
-                      <span v-else-if="customer.source === 'Exness2' || customer.source === 'Exness2_ClientAccount'" class="text-xs text-gray-500 ml-1">(Exness2)</span>
-                      <span v-else-if="customer.traderId || customer.raw_data?.traderId" class="text-xs text-gray-500 ml-1">(XM)</span>
-                      <span v-else-if="customer.partner_account && customer.partner_account.includes('Janischa')" class="text-xs text-gray-500 ml-1">(Exness1)</span>
-                      <span v-else-if="customer.partner_account && customer.partner_account.includes('ham')" class="text-xs text-gray-500 ml-1">(Exness2)</span>
+                      <span
+                        v-if="customer.source === 'XM'"
+                        class="ml-1 text-xs text-gray-500"
+                        >(XM)</span
+                      >
+                      <span
+                        v-else-if="
+                          customer.source === 'Exness1' ||
+                          customer.source === 'Exness1_ClientAccount'
+                        "
+                        class="ml-1 text-xs text-gray-500"
+                        >(Exness1)</span
+                      >
+                      <span
+                        v-else-if="
+                          customer.source === 'Exness2' ||
+                          customer.source === 'Exness2_ClientAccount'
+                        "
+                        class="ml-1 text-xs text-gray-500"
+                        >(Exness2)</span
+                      >
+                      <span
+                        v-else-if="
+                          customer.traderId || customer.raw_data?.traderId
+                        "
+                        class="ml-1 text-xs text-gray-500"
+                        >(XM)</span
+                      >
+                      <span
+                        v-else-if="
+                          customer.partner_account &&
+                          customer.partner_account.includes('Janischa')
+                        "
+                        class="ml-1 text-xs text-gray-500"
+                        >(Exness1)</span
+                      >
+                      <span
+                        v-else-if="
+                          customer.partner_account &&
+                          customer.partner_account.includes('ham')
+                        "
+                        class="ml-1 text-xs text-gray-500"
+                        >(Exness2)</span
+                      >
                     </span>
                   </td>
                   <td
-                    class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
+                    class="px-3 py-3 text-xs text-gray-600 sm:px-6 sm:py-4 whitespace-nowrap sm:text-sm dark:text-gray-300"
                   >
-                    {{ 
-                      formatDate(customer.reg_date) || 
+                    {{
+                      formatDate(customer.reg_date) ||
                       formatDate(customer.raw_data?.reg_date) ||
                       formatDate(customer.signUpDate) ||
                       formatDate(customer.raw_data?.signUpDate) ||
                       formatDate(customer.created_at) ||
                       formatDate(customer.registration_date) ||
-                      "-" 
+                      "-"
                     }}
                   </td>
                   <td
-                    class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
+                    class="px-3 py-3 text-xs text-gray-600 sm:px-6 sm:py-4 whitespace-nowrap sm:text-sm dark:text-gray-300"
                   >
-                    {{ 
-                      customer.source || 
+                    {{
+                      customer.source ||
                       customer.raw_data?.source ||
-                      (customer.traderId || customer.raw_data?.traderId ? 'XM' : 
-                       customer.partner_account && customer.partner_account.includes('Janischa') ? 'Exness1_ClientAccount' :
-                       customer.partner_account && customer.partner_account.includes('ham') ? 'Exness2_ClientAccount' : '-')
+                      (customer.traderId || customer.raw_data?.traderId
+                        ? "XM"
+                        : customer.partner_account &&
+                          customer.partner_account.includes("Janischa")
+                        ? "Exness1_ClientAccount"
+                        : customer.partner_account &&
+                          customer.partner_account.includes("ham")
+                        ? "Exness2_ClientAccount"
+                        : "-")
                     }}
                   </td>
                   <td
-                    class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-300"
+                    class="px-3 py-3 text-xs text-gray-600 sm:px-6 sm:py-4 whitespace-nowrap sm:text-sm dark:text-gray-300"
                   >
-                    {{ 
-                      customer.partner_account || 
+                    {{
+                      customer.partner_account ||
                       customer.raw_data?.partner_account ||
                       customer.campaign ||
                       customer.raw_data?.campaign ||
                       customer.partner ||
                       customer.raw_data?.partner ||
-                      (customer.source === 'XM' ? 'XM Partner' :
-                       customer.source === 'Exness1' || customer.source === 'Exness1_ClientAccount' ? 'Janischa' :
-                       customer.source === 'Exness2' || customer.source === 'Exness2_ClientAccount' ? 'Ham' :
-                       customer.traderId || customer.raw_data?.traderId ? 'XM Partner' :
-                       customer.partner_account && customer.partner_account.includes('Janischa') ? 'Janischa' :
-                       customer.partner_account && customer.partner_account.includes('ham') ? 'Ham' : '-')
+                      (customer.source === "XM"
+                        ? "XM Partner"
+                        : customer.source === "Exness1" ||
+                          customer.source === "Exness1_ClientAccount"
+                        ? "Janischa"
+                        : customer.source === "Exness2" ||
+                          customer.source === "Exness2_ClientAccount"
+                        ? "Ham"
+                        : customer.traderId || customer.raw_data?.traderId
+                        ? "XM Partner"
+                        : customer.partner_account &&
+                          customer.partner_account.includes("Janischa")
+                        ? "Janischa"
+                        : customer.partner_account &&
+                          customer.partner_account.includes("ham")
+                        ? "Ham"
+                        : "-")
                     }}
                   </td>
-
                 </tr>
               </tbody>
             </table>
@@ -1073,13 +1147,13 @@
 
           <!-- Pagination Controls -->
           <div
-            class="px-4 sm:px-6 py-4 bg-white/50 dark:bg-slate-800/50 border-t border-blue-100/20 dark:border-slate-700/20"
+            class="px-4 py-4 border-t sm:px-6 bg-white/50 dark:bg-slate-800/50 border-blue-100/20 dark:border-slate-700/20"
           >
             <div
-              class="flex flex-col sm:flex-row items-center justify-between gap-4"
+              class="flex flex-col items-center justify-between gap-4 sm:flex-row"
             >
               <div
-                class="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left"
+                class="flex items-center gap-2 text-xs text-center text-gray-600 sm:text-sm dark:text-gray-400 sm:text-left"
               >
                 <span>Showing</span>
                 <span class="font-semibold text-gray-900 dark:text-white">{{
@@ -1094,13 +1168,31 @@
                   totalItems
                 }}</span>
                 <span class="hidden sm:inline">entries</span>
-                <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="ml-2 text-blue-600 dark:text-blue-400">
+                <span
+                  v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                  class="ml-2 text-blue-600 dark:text-blue-400"
+                >
                   (จาก {{ filteredCustomers.length }} รายการที่กรอง)
                   <span class="text-xs">
-                    ({{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'ham').length }} Ham (รวม XM), 
-                    {{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'janischa').length }} Janischa, 
+                    ({{
+                      filteredCustomers.filter(
+                        (c) => getOwnerInfo(c).type === "ham"
+                      ).length
+                    }}
+                    Ham (รวม XM),
+                    {{
+                      filteredCustomers.filter(
+                        (c) => getOwnerInfo(c).type === "janischa"
+                      ).length
+                    }}
+                    Janischa,
 
-                    {{ filteredCustomers.filter(c => getOwnerInfo(c).type === 'unknown').length }} ไม่ระบุ)
+                    {{
+                      filteredCustomers.filter(
+                        (c) => getOwnerInfo(c).type === "unknown"
+                      ).length
+                    }}
+                    ไม่ระบุ)
                   </span>
                 </span>
               </div>
@@ -1109,7 +1201,7 @@
                 <button
                   @click="previousPage"
                   :disabled="currentPage === 1"
-                  class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600 border border-blue-100 dark:border-slate-600"
+                  class="px-3 py-2 text-xs font-medium text-gray-700 transition-colors duration-200 bg-white border border-blue-100 rounded-lg sm:px-4 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600 dark:border-slate-600"
                 >
                   <span class="hidden sm:inline">Previous</span>
                   <span class="sm:hidden">Prev</span>
@@ -1132,7 +1224,7 @@
                 <button
                   @click="nextPage"
                   :disabled="currentPage === totalPages"
-                  class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600 border border-blue-100 dark:border-slate-600"
+                  class="px-3 py-2 text-xs font-medium text-gray-700 transition-colors duration-200 bg-white border border-blue-100 rounded-lg sm:px-4 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-600 dark:border-slate-600"
                 >
                   <span class="hidden sm:inline">Next</span>
                   <span class="sm:hidden">→</span>
@@ -1147,23 +1239,29 @@
     <!-- Error Section -->
     <div
       v-if="error"
-      class="mt-8 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+      class="p-4 mt-8 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/20 dark:border-red-800"
     >
-      <h4 class="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
+      <h4 class="mb-2 text-lg font-semibold text-red-800 dark:text-red-200">
         Error Loading Data
-        <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-sm font-normal text-red-600 dark:text-red-400">
+        <span
+          v-if="searchAccount.trim() || selectedOwner !== 'all'"
+          class="text-sm font-normal text-red-600 dark:text-red-400"
+        >
           (Filtered)
         </span>
       </h4>
-              <p class="text-red-700 dark:text-red-300">
-          {{ error }}
-          <span v-if="searchAccount.trim() || selectedOwner !== 'all'" class="text-red-600 dark:text-red-400">
-            (แสดงเฉพาะผลลัพธ์ที่กรอง)
-          </span>
-        </p>
+      <p class="text-red-700 dark:text-red-300">
+        {{ error }}
+        <span
+          v-if="searchAccount.trim() || selectedOwner !== 'all'"
+          class="text-red-600 dark:text-red-400"
+        >
+          (แสดงเฉพาะผลลัพธ์ที่กรอง)
+        </span>
+      </p>
       <button
         @click="fetchData"
-        class="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+        class="px-4 py-2 mt-2 text-white bg-red-600 rounded hover:bg-red-700"
       >
         Retry
       </button>
@@ -1222,12 +1320,14 @@ const debugInfo = ref({});
 const loading = ref(false);
 const error = ref(props.error);
 const searchMessage = ref(props.searchMessage);
-const stats = ref(props.stats || {
-  total_customers: 0,
-  active_customers: 0,
-  total_reward_usd: 0,
-  total_rebate_usd: 0,
-});
+const stats = ref(
+  props.stats || {
+    total_customers: 0,
+    active_customers: 0,
+    total_reward_usd: 0,
+    total_rebate_usd: 0,
+  }
+);
 const searchAccount = ref("");
 const selectedOwner = ref("all");
 const currentPage = ref(1);
@@ -1236,16 +1336,16 @@ const itemsPerPage = ref(15);
 // Auto sync state
 const autoSyncInterval = ref(null);
 const lastSyncTime = ref(null);
-const syncStatus = ref('idle'); // 'idle', 'syncing', 'success', 'error'
-const syncMessage = ref('');
+const syncStatus = ref("idle"); // 'idle', 'syncing', 'success', 'error'
+const syncMessage = ref("");
 const autoSyncEnabled = ref(true);
 const syncIntervalMinutes = ref(5);
 
 // Separate sync state for Ham and Janischa
-const hamSyncStatus = ref('idle');
-const janischaSyncStatus = ref('idle');
-const hamSyncMessage = ref('');
-const janischaSyncMessage = ref('');
+const hamSyncStatus = ref("idle");
+const janischaSyncStatus = ref("idle");
+const hamSyncMessage = ref("");
+const janischaSyncMessage = ref("");
 
 // Setup axios defaults
 axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
@@ -1262,7 +1362,9 @@ axios.interceptors.response.use(
 );
 
 const totalItems = computed(() => customers.value.length);
-const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.value));
+const totalPages = computed(() =>
+  Math.ceil(totalItems.value / itemsPerPage.value)
+);
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value);
 const endIndex = computed(() =>
   Math.min(startIndex.value + itemsPerPage.value, totalItems.value)
@@ -1270,7 +1372,7 @@ const endIndex = computed(() =>
 const filteredCustomers = computed(() => {
   const search = searchAccount.value.trim();
   const ownerFilter = selectedOwner.value;
-  
+
   let filtered = customers.value;
 
   // กรองตาม Owner
@@ -1284,8 +1386,8 @@ const filteredCustomers = computed(() => {
   // กรองตามการค้นหา (ครอบคลุมทุกฟิลด์)
   if (search) {
     const searchLower = search.toLowerCase();
-    console.log('Searching for:', searchLower);
-    
+    console.log("Searching for:", searchLower);
+
     return filtered.filter((customer) => {
       // ค้นหาในทุกฟิลด์ที่เกี่ยวข้อง
       const searchFields = [
@@ -1301,32 +1403,32 @@ const filteredCustomers = computed(() => {
         customer.client_name,
         customer.raw_data?.client_name,
         customer.country,
-        customer.raw_data?.country
+        customer.raw_data?.country,
       ];
-      
+
       // Debug: Log search fields for first few customers
       if (filtered.indexOf(customer) < 3) {
-        console.log('Customer search fields:', {
+        console.log("Customer search fields:", {
           client_account: customer.client_account,
           raw_data_client_account: customer.raw_data?.client_account,
           account_number: customer.account_number,
           login: customer.login,
           traderId: customer.traderId,
           client_uid: customer.client_uid,
-          client_id: customer.client_id
+          client_id: customer.client_id,
         });
       }
-      
+
       // ตรวจสอบว่ามีข้อมูลที่ตรงกับคำค้นหาหรือไม่
-      const found = searchFields.some(field => 
-        field && String(field).toLowerCase().includes(searchLower)
+      const found = searchFields.some(
+        (field) => field && String(field).toLowerCase().includes(searchLower)
       );
-      
+
       // Debug: Log if found
       if (found && filtered.indexOf(customer) < 3) {
-        console.log('Found match for customer:', customer);
+        console.log("Found match for customer:", customer);
       }
-      
+
       return found;
     });
   }
@@ -1344,61 +1446,67 @@ const filteredStats = computed(() => {
   // Debug: Log some customer data to understand the structure
   if (customersToShow.length > 0) {
     console.log("Debug filteredStats - First customer:", customersToShow[0]);
-    console.log("Debug filteredStats - reward_usd types:", customersToShow.slice(0, 3).map(c => ({
-      reward_usd: c.reward_usd,
-      total_reward_usd: c.total_reward_usd,
-      rebate_amount_usd: c.rebate_amount_usd,
-      raw_data_reward_usd: c.raw_data?.reward_usd,
-      raw_data_total_reward_usd: c.raw_data?.total_reward_usd,
-      raw_data_rebate_amount_usd: c.raw_data?.rebate_amount_usd,
-      types: {
-        reward_usd: typeof c.reward_usd,
-        total_reward_usd: typeof c.total_reward_usd,
-        rebate_amount_usd: typeof c.rebate_amount_usd,
-        raw_data_reward_usd: typeof c.raw_data?.reward_usd,
-        raw_data_total_reward_usd: typeof c.raw_data?.total_reward_usd,
-        raw_data_rebate_amount_usd: typeof c.raw_data?.rebate_amount_usd
-      }
-    })));
+    console.log(
+      "Debug filteredStats - reward_usd types:",
+      customersToShow.slice(0, 3).map((c) => ({
+        reward_usd: c.reward_usd,
+        total_reward_usd: c.total_reward_usd,
+        rebate_amount_usd: c.rebate_amount_usd,
+        raw_data_reward_usd: c.raw_data?.reward_usd,
+        raw_data_total_reward_usd: c.raw_data?.total_reward_usd,
+        raw_data_rebate_amount_usd: c.raw_data?.rebate_amount_usd,
+        types: {
+          reward_usd: typeof c.reward_usd,
+          total_reward_usd: typeof c.total_reward_usd,
+          rebate_amount_usd: typeof c.rebate_amount_usd,
+          raw_data_reward_usd: typeof c.raw_data?.reward_usd,
+          raw_data_total_reward_usd: typeof c.raw_data?.total_reward_usd,
+          raw_data_rebate_amount_usd: typeof c.raw_data?.rebate_amount_usd,
+        },
+      }))
+    );
   }
 
-  const totalReward = customersToShow.reduce(
-    (sum, c) => {
-      // Check both direct properties and raw_data properties
-      const rewardUsd = parseFloat(c.reward_usd) || 
-                       parseFloat(c.total_reward_usd) || 
-                       parseFloat(c.raw_data?.reward_usd) || 
-                       parseFloat(c.raw_data?.total_reward_usd) || 
-                       parseFloat(c.commission) ||
-                       parseFloat(c.profit) ||
-                       0;
-      const result = sum + (isNaN(rewardUsd) ? 0 : rewardUsd);
-      console.log(`Customer reward calculation: ${c.reward_usd} || ${c.total_reward_usd} || ${c.raw_data?.reward_usd} || ${c.raw_data?.total_reward_usd} || ${c.commission} || ${c.profit} = ${rewardUsd}, sum = ${result}`);
-      return result;
-    },
-    0
-  );
+  const totalReward = customersToShow.reduce((sum, c) => {
+    // Check both direct properties and raw_data properties
+    const rewardUsd =
+      parseFloat(c.reward_usd) ||
+      parseFloat(c.total_reward_usd) ||
+      parseFloat(c.raw_data?.reward_usd) ||
+      parseFloat(c.raw_data?.total_reward_usd) ||
+      parseFloat(c.commission) ||
+      parseFloat(c.profit) ||
+      0;
+    const result = sum + (isNaN(rewardUsd) ? 0 : rewardUsd);
+    console.log(
+      `Customer reward calculation: ${c.reward_usd} || ${c.total_reward_usd} || ${c.raw_data?.reward_usd} || ${c.raw_data?.total_reward_usd} || ${c.commission} || ${c.profit} = ${rewardUsd}, sum = ${result}`
+    );
+    return result;
+  }, 0);
 
-  const totalRebate = customersToShow.reduce(
-    (sum, c) => {
-      const rebateUsd = parseFloat(c.rebate_amount_usd) || 
-                       parseFloat(c.raw_data?.rebate_amount_usd) || 
-                       parseFloat(c.rebate) ||
-                       parseFloat(c.cashback) ||
-                       0;
-      const result = sum + (isNaN(rebateUsd) ? 0 : rebateUsd);
-              console.log(`Customer rebate calculation: ${c.rebate_amount_usd} || ${c.raw_data?.rebate_amount_usd} || ${c.rebate} || ${c.cashback} = ${rebateUsd}, sum = ${result}`);
-      return result;
-    },
-    0
-  );
+  const totalRebate = customersToShow.reduce((sum, c) => {
+    const rebateUsd =
+      parseFloat(c.rebate_amount_usd) ||
+      parseFloat(c.raw_data?.rebate_amount_usd) ||
+      parseFloat(c.rebate) ||
+      parseFloat(c.cashback) ||
+      0;
+    const result = sum + (isNaN(rebateUsd) ? 0 : rebateUsd);
+    console.log(
+      `Customer rebate calculation: ${c.rebate_amount_usd} || ${c.raw_data?.rebate_amount_usd} || ${c.rebate} || ${c.cashback} = ${rebateUsd}, sum = ${result}`
+    );
+    return result;
+  }, 0);
 
-  console.log("Debug filteredStats - Final totals:", { totalReward, totalRebate });
-  console.log("Debug filteredStats - isNaN check:", { 
-    totalRewardIsNaN: isNaN(totalReward), 
+  console.log("Debug filteredStats - Final totals:", {
+    totalReward,
+    totalRebate,
+  });
+  console.log("Debug filteredStats - isNaN check:", {
+    totalRewardIsNaN: isNaN(totalReward),
     totalRebateIsNaN: isNaN(totalRebate),
     totalRewardType: typeof totalReward,
-    totalRebateType: typeof totalRebate
+    totalRebateType: typeof totalRebate,
   });
 
   return {
@@ -1502,13 +1610,37 @@ const fetchData = async () => {
       // Log first few customers for debugging
       customers.value.slice(0, 3).forEach((customer, index) => {
         console.log(`ลูกค้าที่ ${index + 1}:`, customer);
-        console.log(`ลูกค้าที่ ${index + 1} reward_usd:`, customer.reward_usd, typeof customer.reward_usd);
-        console.log(`ลูกค้าที่ ${index + 1} total_reward_usd:`, customer.total_reward_usd, typeof customer.total_reward_usd);
-        console.log(`ลูกค้าที่ ${index + 1} rebate_amount_usd:`, customer.rebate_amount_usd, typeof customer.rebate_amount_usd);
+        console.log(
+          `ลูกค้าที่ ${index + 1} reward_usd:`,
+          customer.reward_usd,
+          typeof customer.reward_usd
+        );
+        console.log(
+          `ลูกค้าที่ ${index + 1} total_reward_usd:`,
+          customer.total_reward_usd,
+          typeof customer.total_reward_usd
+        );
+        console.log(
+          `ลูกค้าที่ ${index + 1} rebate_amount_usd:`,
+          customer.rebate_amount_usd,
+          typeof customer.rebate_amount_usd
+        );
         console.log(`ลูกค้าที่ ${index + 1} raw_data:`, customer.raw_data);
-        console.log(`ลูกค้าที่ ${index + 1} raw_data.reward_usd:`, customer.raw_data?.reward_usd, typeof customer.raw_data?.reward_usd);
-        console.log(`ลูกค้าที่ ${index + 1} raw_data.total_reward_usd:`, customer.raw_data?.total_reward_usd, typeof customer.raw_data?.total_reward_usd);
-        console.log(`ลูกค้าที่ ${index + 1} raw_data.rebate_amount_usd:`, customer.raw_data?.rebate_amount_usd, typeof customer.raw_data?.rebate_amount_usd);
+        console.log(
+          `ลูกค้าที่ ${index + 1} raw_data.reward_usd:`,
+          customer.raw_data?.reward_usd,
+          typeof customer.raw_data?.reward_usd
+        );
+        console.log(
+          `ลูกค้าที่ ${index + 1} raw_data.total_reward_usd:`,
+          customer.raw_data?.total_reward_usd,
+          typeof customer.raw_data?.total_reward_usd
+        );
+        console.log(
+          `ลูกค้าที่ ${index + 1} raw_data.rebate_amount_usd:`,
+          customer.raw_data?.rebate_amount_usd,
+          typeof customer.raw_data?.rebate_amount_usd
+        );
       });
     } else {
       console.log("ไม่มีข้อมูลลูกค้า");
@@ -1552,26 +1684,31 @@ const formatDate = (date) => {
 
 // ฟังก์ชันเพื่อระบุว่าเป็นข้อมูลของ Ham, Janischa หรือ Kantapong
 const getOwnerInfo = (customer) => {
-  const partnerAccount = customer.partner_account || customer.raw_data?.partner_account;
-  const clientAccount = customer.client_account || customer.raw_data?.client_account || customer.account_number || customer.login;
+  const partnerAccount =
+    customer.partner_account || customer.raw_data?.partner_account;
+  const clientAccount =
+    customer.client_account ||
+    customer.raw_data?.client_account ||
+    customer.account_number ||
+    customer.login;
   const source = customer.source || customer.raw_data?.source;
   const dataSource = customer.data_source || customer.raw_data?.data_source;
-  
+
   // ตรวจสอบจาก source และ data_source ก่อน (ใหม่)
-  if (source === 'XM' || dataSource === 'Ham') {
+  if (source === "XM" || dataSource === "Ham") {
     return { name: "Ham", type: "ham" };
   }
-  
-  if (source === 'Exness1_ClientAccount' || dataSource === 'Ham') {
+
+  if (source === "Exness1_ClientAccount" || dataSource === "Ham") {
     return { name: "Ham", type: "ham" };
   }
-  
-  if (source === 'Exness2_ClientAccount' || dataSource === 'Janischa') {
+
+  if (source === "Exness2_ClientAccount" || dataSource === "Janischa") {
     return { name: "Janischa", type: "janischa" };
   }
-  
+
   if (!partnerAccount) return { name: "ไม่ระบุ", type: "unknown" };
-  
+
   // ตรวจสอบ partner_account เพื่อระบุว่าเป็นของใคร
   if (partnerAccount === "1172984151037556173") {
     return { name: "Ham", type: "ham" };
@@ -1590,30 +1727,38 @@ const getOwnerInfo = (customer) => {
   } else if (partnerAccount === "K.kan") {
     return { name: "Ham", type: "ham" };
   }
-  
+
   // ตรวจสอบจาก client_account หรือ login เพื่อระบุว่าเป็น XM หรือ Exness
   if (clientAccount) {
     // ถ้าเป็น XM (มี traderId หรือเป็น XM account)
-    if (customer.traderId || customer.raw_data?.traderId || 
-        (typeof clientAccount === 'string' && clientAccount.includes('XM'))) {
+    if (
+      customer.traderId ||
+      customer.raw_data?.traderId ||
+      (typeof clientAccount === "string" && clientAccount.includes("XM"))
+    ) {
       return { name: "Ham", type: "ham" };
     }
-    
+
     // ถ้าเป็น Exness account ของ Janischa (ตรวจสอบจาก partner_account หรือ email)
-    if (partnerAccount === "Janischa.trade@gmail.com" || 
-        partnerAccount === "janischa.exness@gmail.com" ||
-        (typeof partnerAccount === 'string' && partnerAccount.includes('Janischa'))) {
+    if (
+      partnerAccount === "Janischa.trade@gmail.com" ||
+      partnerAccount === "janischa.exness@gmail.com" ||
+      (typeof partnerAccount === "string" &&
+        partnerAccount.includes("Janischa"))
+    ) {
       return { name: "Janischa", type: "janischa" };
     }
-    
+
     // ถ้าเป็น Exness account ของ Ham (ตรวจสอบจาก partner_account หรือ email)
-    if (partnerAccount === "hamsftmo@gmail.com" || 
-        partnerAccount === "ham.exness@gmail.com" ||
-        (typeof partnerAccount === 'string' && partnerAccount.includes('ham'))) {
+    if (
+      partnerAccount === "hamsftmo@gmail.com" ||
+      partnerAccount === "ham.exness@gmail.com" ||
+      (typeof partnerAccount === "string" && partnerAccount.includes("ham"))
+    ) {
       return { name: "Ham", type: "ham" };
     }
   }
-  
+
   // Fallback: Check if customer has owner field from backend
   if (customer.owner) {
     if (customer.owner === "Ham") {
@@ -1622,7 +1767,7 @@ const getOwnerInfo = (customer) => {
       return { name: "Janischa", type: "janischa" };
     }
   }
-  
+
   return { name: "ไม่ระบุ", type: "unknown" };
 };
 
@@ -1634,35 +1779,35 @@ function resetFilters() {
 const syncData = async () => {
   try {
     console.log("Starting data sync...");
-    syncStatus.value = 'syncing';
-    syncMessage.value = 'กำลัง sync ข้อมูล...';
-    
+    syncStatus.value = "syncing";
+    syncMessage.value = "กำลัง sync ข้อมูล...";
+
     // Call the sync command via API
     const response = await axios.post("/admin/sync-data");
-    
+
     if (response.data.success) {
       console.log("Sync completed successfully");
-      syncStatus.value = 'success';
-      syncMessage.value = 'Sync สำเร็จแล้ว';
+      syncStatus.value = "success";
+      syncMessage.value = "Sync สำเร็จแล้ว";
       lastSyncTime.value = new Date();
-      
+
       // Refresh data after sync
       await fetchData();
-      
+
       // Reset status after 3 seconds
       setTimeout(() => {
-        syncStatus.value = 'idle';
-        syncMessage.value = '';
+        syncStatus.value = "idle";
+        syncMessage.value = "";
       }, 3000);
     } else {
       console.error("Sync failed:", response.data.message);
-      syncStatus.value = 'error';
-      syncMessage.value = 'Sync ล้มเหลว: ' + response.data.message;
+      syncStatus.value = "error";
+      syncMessage.value = "Sync ล้มเหลว: " + response.data.message;
     }
   } catch (error) {
     console.error("Sync error:", error);
-    syncStatus.value = 'error';
-    syncMessage.value = 'Sync error: ' + error.message;
+    syncStatus.value = "error";
+    syncMessage.value = "Sync error: " + error.message;
   }
 };
 
@@ -1670,34 +1815,34 @@ const syncData = async () => {
 const syncHamData = async () => {
   try {
     console.log("Starting Ham data sync...");
-    hamSyncStatus.value = 'syncing';
-    hamSyncMessage.value = 'กำลัง sync ข้อมูล Ham...';
-    
+    hamSyncStatus.value = "syncing";
+    hamSyncMessage.value = "กำลัง sync ข้อมูล Ham...";
+
     // Call Ham-specific sync
     const response = await axios.post("/admin/sync-ham-data");
-    
+
     if (response.data.success) {
       console.log("Ham sync completed successfully");
-      hamSyncStatus.value = 'success';
-      hamSyncMessage.value = 'Sync Ham สำเร็จแล้ว';
-      
+      hamSyncStatus.value = "success";
+      hamSyncMessage.value = "Sync Ham สำเร็จแล้ว";
+
       // Refresh data after sync
       await fetchData();
-      
+
       // Reset status after 3 seconds
       setTimeout(() => {
-        hamSyncStatus.value = 'idle';
-        hamSyncMessage.value = '';
+        hamSyncStatus.value = "idle";
+        hamSyncMessage.value = "";
       }, 3000);
     } else {
       console.error("Ham sync failed:", response.data.message);
-      hamSyncStatus.value = 'error';
-      hamSyncMessage.value = 'Sync Ham ล้มเหลว: ' + response.data.message;
+      hamSyncStatus.value = "error";
+      hamSyncMessage.value = "Sync Ham ล้มเหลว: " + response.data.message;
     }
   } catch (error) {
     console.error("Ham sync error:", error);
-    hamSyncStatus.value = 'error';
-    hamSyncMessage.value = 'Ham sync error: ' + error.message;
+    hamSyncStatus.value = "error";
+    hamSyncMessage.value = "Ham sync error: " + error.message;
   }
 };
 
@@ -1705,34 +1850,35 @@ const syncHamData = async () => {
 const syncJanischaData = async () => {
   try {
     console.log("Starting Janischa data sync...");
-    janischaSyncStatus.value = 'syncing';
-    janischaSyncMessage.value = 'กำลัง sync ข้อมูล Janischa...';
-    
+    janischaSyncStatus.value = "syncing";
+    janischaSyncMessage.value = "กำลัง sync ข้อมูล Janischa...";
+
     // Call Janischa-specific sync
     const response = await axios.post("/admin/sync-janischa-data");
-    
+
     if (response.data.success) {
       console.log("Janischa sync completed successfully");
-      janischaSyncStatus.value = 'success';
-      janischaSyncMessage.value = 'Sync Janischa สำเร็จแล้ว';
-      
+      janischaSyncStatus.value = "success";
+      janischaSyncMessage.value = "Sync Janischa สำเร็จแล้ว";
+
       // Refresh data after sync
       await fetchData();
-      
+
       // Reset status after 3 seconds
       setTimeout(() => {
-        janischaSyncStatus.value = 'idle';
-        janischaSyncMessage.value = '';
+        janischaSyncStatus.value = "idle";
+        janischaSyncMessage.value = "";
       }, 3000);
     } else {
       console.error("Janischa sync failed:", response.data.message);
-      janischaSyncStatus.value = 'error';
-      janischaSyncMessage.value = 'Sync Janischa ล้มเหลว: ' + response.data.message;
+      janischaSyncStatus.value = "error";
+      janischaSyncMessage.value =
+        "Sync Janischa ล้มเหลว: " + response.data.message;
     }
   } catch (error) {
     console.error("Janischa sync error:", error);
-    janischaSyncStatus.value = 'error';
-    janischaSyncMessage.value = 'Janischa sync error: ' + error.message;
+    janischaSyncStatus.value = "error";
+    janischaSyncMessage.value = "Janischa sync error: " + error.message;
   }
 };
 
@@ -1741,14 +1887,16 @@ const startAutoSync = () => {
   if (autoSyncInterval.value) {
     clearInterval(autoSyncInterval.value);
   }
-  
+
   if (autoSyncEnabled.value) {
     autoSyncInterval.value = setInterval(async () => {
       console.log("Auto sync triggered...");
       await syncData();
     }, syncIntervalMinutes.value * 60 * 1000);
-    
-    console.log(`Auto sync started - interval: ${syncIntervalMinutes.value} minutes`);
+
+    console.log(
+      `Auto sync started - interval: ${syncIntervalMinutes.value} minutes`
+    );
   }
 };
 
