@@ -97,4 +97,51 @@ Route::group([
         Route::get('/rebate', [XMReportController::class, 'getLotRebateStatistics'])->name('xm.rebate');
         Route::get('/check-missing-country', [XMReportController::class, 'checkMissingCountryData'])->name('xm.check-missing-country');
     });
+
 });
+
+// Debug Routes - ต้องอยู่ภายนอก admin group เพื่อหลีกเลี่ยง Inertia middleware
+Route::get('/debug-ham-clients', function () {
+    // Include the debug script
+    ob_start();
+    include_once __DIR__ . '/../debug_ham_clients.php';
+    $output = ob_get_clean();
+    
+    // Return as plain text with proper headers
+    return response($output, 200, [
+        'Content-Type' => 'text/plain; charset=utf-8',
+        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+        'Pragma' => 'no-cache',
+        'Expires' => '0'
+    ]);
+})->name('debug.ham-clients');
+
+Route::get('/debug-xm-clients', function () {
+    // Include the debug script
+    ob_start();
+    include_once __DIR__ . '/../debug_xm_clients.php';
+    $output = ob_get_clean();
+    
+    // Return as plain text with proper headers
+    return response($output, 200, [
+        'Content-Type' => 'text/plain; charset=utf-8',
+        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+        'Pragma' => 'no-cache',
+        'Expires' => '0'
+    ]);
+})->name('debug.xm-clients');
+
+Route::get('/debug-janischa-clients', function () {
+    // Include the debug script
+    ob_start();
+    include_once __DIR__ . '/../debug_janischa_clients.php';
+    $output = ob_get_clean();
+    
+    // Return as plain text with proper headers
+    return response($output, 200, [
+        'Content-Type' => 'text/plain; charset=utf-8',
+        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+        'Pragma' => 'no-cache',
+        'Expires' => '0'
+    ]);
+})->name('debug.janischa-clients');

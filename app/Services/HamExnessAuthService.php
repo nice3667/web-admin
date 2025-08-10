@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Cache;
 class HamExnessAuthService
 {
     private string $email = 'hamsftmo@gmail.com';
-    private string $password = 'Ham@240446';
+    private string $password = 'Tradewaen@2025';
 
     public function retrieveToken(): ?string
     {

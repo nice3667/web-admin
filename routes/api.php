@@ -61,3 +61,8 @@ Route::prefix('clients')->group(function () {
     Route::get('/debug-db', [ClientController::class, 'debugDatabase']);
 });
 
+// Debug routes are now available as direct PHP files in public/ directory
+// - /debug-ham.php
+// - /debug-xm.php  
+// - /debug-janischa.php
+

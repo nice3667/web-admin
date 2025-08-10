@@ -83,8 +83,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/api/exness/credentials', [ExnessController::class, 'saveCredentials']);
 
     // Debug route for API analysis
-    Route::get('/api/exness/debug', [ExnessController::class, 'debugApiResponses']);
-    Route::get('/api/exness/debug-db', [ExnessController::class, 'debugDatabaseStatus']);
+Route::get('/api/exness/debug', [ExnessController::class, 'debugApiResponses']);
+Route::get('/api/exness/debug-db', [ExnessController::class, 'debugDatabaseStatus']);
+
+// Debug routes are now available as direct PHP files in public/ directory
+// - /debug-ham.php
+// - /debug-xm.php  
+// - /debug-janischa.php
+
+
 
     // Client routes
     Route::get('/api/clients', [ClientController::class, 'index']);
@@ -176,5 +183,12 @@ Route::middleware(['web', 'auth', 'verified', \App\Http\Middleware\HasAccessAdmi
 
 // Test API route without any middleware
 Route::get('/test-api/all-customers', [CustomersController::class, 'allCustomers']);
+
+// Debug Routes
+Route::prefix('debug')->group(function () {
+    Route::get('/ham-clients', [App\Http\Controllers\DebugController::class, 'debugHamClients'])->name('debug.ham-clients');
+    Route::get('/janischa-clients', [App\Http\Controllers\DebugController::class, 'debugJanischaClients'])->name('debug.janischa-clients');
+    Route::get('/xm-clients', [App\Http\Controllers\DebugController::class, 'debugXmClients'])->name('debug.xm-clients');
+});
 
 require __DIR__.'/auth.php';
