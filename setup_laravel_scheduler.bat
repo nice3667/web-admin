@@ -49,3 +49,4 @@ echo To view scheduled tasks:
 echo php artisan schedule:list
 echo.
 pause
+

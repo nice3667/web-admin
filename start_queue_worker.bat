@@ -22,3 +22,4 @@ echo The queue worker has stopped.
 echo To restart, run this script again.
 echo.
 pause
+

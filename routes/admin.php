@@ -54,10 +54,8 @@ Route::group([
     Route::post('/sync-ham-data', 'CustomersController@syncHamData')->name('admin.sync-ham-data');
     Route::post('/sync-janischa-data', 'CustomersController@syncJanischaData')->name('admin.sync-janischa-data');
 
-    // All Customers API Route - moved outside admin group to avoid Inertia middleware
+    // API Routes for JSON responses (inside admin group but with JSON responses)
     Route::get('/all-customers', 'CustomersController@allCustomers')->name('all-customers');
-
-    // API Routes for JSON responses (outside admin group to avoid Inertia middleware)
     Route::get('/api/reports1/client-account1', 'Report1Controller@clientAccount1Api')->name('api.reports1.client-account1');
     Route::get('/api/reports2/client-account2', 'Report2Controller@clientAccount2Api')->name('api.reports2.client-account2');
 
@@ -145,3 +143,18 @@ Route::get('/debug-janischa-clients', function () {
         'Expires' => '0'
     ]);
 })->name('debug.janischa-clients');
+
+Route::get('/debug-partner-accounts', function () {
+    // Include the debug script
+    ob_start();
+    include_once __DIR__ . '/../debug_partner_accounts.php';
+    $output = ob_get_clean();
+    
+    // Return as plain text with proper headers
+    return response($output, 200, [
+        'Content-Type' => 'text/plain; charset=utf-8',
+        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+        'Pragma' => 'no-cache',
+        'Expires' => '0'
+    ]);
+})->name('debug.partner-accounts');

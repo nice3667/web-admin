@@ -225,8 +225,55 @@ class CustomersController extends Controller
         $janischaClients = $janischaQuery->get();
         $hamClients = $hamQuery->get();
 
-        // รวมข้อมูลจากทั้งสองตารางและจัดการข้อมูลที่ซ้ำกัน
-        $allClients = $janischaClients->concat($hamClients);
+        // ดึงข้อมูลจาก XM API
+        $xmClients = collect();
+        try {
+            $xmController = app(\App\Http\Controllers\Admin\XMReportController::class);
+            $xmResponse = $xmController->getTraderList(request());
+            
+            if ($xmResponse->getStatusCode() === 200) {
+                $xmData = json_decode($xmResponse->getContent(), true);
+                
+                if (is_array($xmData) && !isset($xmData['error'])) {
+                    $xmClients = collect($xmData)->map(function ($client) {
+                        return (object) [
+                            'client_uid' => $client['traderId'] ?? $client['clientId'] ?? null,
+                            'partner_account' => $client['campaign'] ?? 'XM',
+                            'client_id' => $client['clientId'] ?? $client['traderId'] ?? null,
+                            'reg_date' => $client['signUpDate'] ?? null,
+                            'client_country' => $client['country'] ?? 'ไม่ระบุ',
+                            'total_volume_lots' => 0,
+                            'total_volume_mln_usd' => 0,
+                            'total_reward_usd' => 0,
+                            'client_status' => $client['valid'] ? 'ACTIVE' : 'INACTIVE',
+                            'kyc_passed' => $client['valid'] ? true : null,
+                            'ftd_received' => $client['valid'],
+                            'ftt_made' => $client['valid'],
+                            'last_sync_at' => now(),
+                            'raw_data' => [
+                                'client_account' => $client['traderId'] ?? $client['clientId'] ?? null,
+                                'client_name' => $client['traderId'] ?? $client['clientId'] ?? null,
+                                'account_type' => $client['accountType'] ?? 'ไม่ระบุ',
+                                'trading_platform' => $client['tradingPlatform'] ?? 'ไม่ระบุ',
+                                'archived' => $client['archived'] ?? false,
+                                'source' => 'XM API'
+                            ]
+                        ];
+                    });
+                    
+                    Log::info('Successfully fetched XM data for customers page', [
+                        'count' => $xmClients->count()
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to fetch XM data for customers page', [
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // รวมข้อมูลจากทั้งสามแหล่งและจัดการข้อมูลที่ซ้ำกัน
+        $allClients = $janischaClients->concat($hamClients)->concat($xmClients);
         
         // Group by client_uid และรวมข้อมูล
         $groupedClients = $allClients->groupBy('client_uid')->map(function ($clients) {
@@ -734,6 +781,240 @@ class CustomersController extends Controller
             Log::error('Error fetching admin/reports1/client-account1 data: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
             $debugInfo['admin_reports1_client_account1'] = 0;
+        }
+
+        // 3. Get data from XM - Using database data with XM partner_account filter
+        try {
+            Log::info('=== Fetching XM data ===');
+            
+            // Get XM clients from database (filter by partner_account containing XM)
+            $query = DB::table('clients')
+                ->where('partner_account', 'like', '%XM%')
+                ->orWhere('partner_account', 'like', '%xm%');
+            
+            // Apply additional filters if provided
+            if ($request->filled('partner_account')) {
+                $query->where('partner_account', 'like', '%' . $request->partner_account . '%');
+            }
+            if ($request->filled('client_uid')) {
+                $query->where('client_uid', 'like', '%' . $request->client_uid . '%');
+            }
+            if ($request->filled('client_country')) {
+                $query->where('client_country', $request->client_country);
+            }
+            if ($request->filled('reg_date')) {
+                $query->whereDate('reg_date', $request->reg_date);
+            }
+            
+            $xmClients = $query->get();
+            
+            Log::info('XM clients count from database: ' . $xmClients->count());
+            
+            // Format XM client data
+            $formattedXmClients = $xmClients->map(function ($client) {
+                $volumeLots = (float) ($client->volume_lots ?? 0);
+                $rewardUsd = (float) ($client->reward_usd ?? 0);
+                
+                // Calculate status based on activity
+                $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
+                
+                // KYC estimation based on activity level
+                $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
+                
+                return [
+                    'partner_account' => $client->partner_account ?? '-',
+                    'client_uid' => $client->client_uid ?? '-',
+                    'client_account' => $client->client_account ?? $client->client_id ?? $client->client_uid ?? '-',
+                    'client_name' => $client->client_name ?? $client->client_id ?? $client->client_uid ?? null,
+                    'client_email' => $client->client_email ?? null,
+                    'client_id' => $client->client_id ?? $client->client_uid ?? null,
+                    'reg_date' => $client->reg_date,
+                    'client_country' => $client->client_country ?? '-',
+                    'volume_lots' => $volumeLots,
+                    'volume_mln_usd' => (float) ($client->volume_mln_usd ?? 0),
+                    'reward_usd' => $rewardUsd,
+                    'client_status' => $clientStatus,
+                    'kyc_passed' => $kycPassed,
+                    'ftd_received' => ($volumeLots > 0 || $rewardUsd > 0),
+                    'ftt_made' => ($volumeLots > 0),
+                    'source' => 'XM Database',
+                    'data_source' => 'XM'
+                ];
+            });
+            
+            $all = $all->concat($formattedXmClients);
+            $debugInfo['xm_database'] = $formattedXmClients->count();
+            Log::info('XM database clients count: ' . $formattedXmClients->count());
+            
+            // Debug: Log sample data
+            if ($formattedXmClients->count() > 0) {
+                Log::info('Sample XM client:', $formattedXmClients->first());
+            }
+        } catch (\Throwable $e) {
+            Log::error('Error fetching XM data: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            $debugInfo['xm_database'] = 0;
+        }
+
+        // 3.1. Get additional data from XM API directly
+        try {
+            Log::info('=== Fetching XM API data directly ===');
+            
+            $xmApiClients = collect();
+            
+            try {
+                // Try to get data from XM API
+                $xmController = app(\App\Http\Controllers\Admin\XMReportController::class);
+                $xmResponse = $xmController->getTraderList(request());
+                
+                if ($xmResponse->getStatusCode() === 200) {
+                    $xmData = json_decode($xmResponse->getContent(), true);
+                    
+                    if (is_array($xmData) && !isset($xmData['error'])) {
+                        $xmApiClients = collect($xmData);
+                        Log::info('Successfully fetched data from XM API', [
+                            'count' => $xmApiClients->count()
+                        ]);
+                    } else {
+                        Log::warning('XM API returned error or invalid data', [
+                            'response' => $xmData
+                        ]);
+                    }
+                } else {
+                    Log::warning('XM API request failed', [
+                        'status' => $xmResponse->getStatusCode(),
+                        'response' => $xmResponse->getContent()
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to fetch from XM API', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+            
+            // Format XM API client data for consistency
+            $formattedXmApiClients = $xmApiClients->map(function ($client) {
+                $signUpDate = $client['signUpDate'] ?? null;
+                $activationDate = $client['activationDate'] ?? null;
+                
+                return [
+                    'partner_account' => $client['campaign'] ?? 'XM',
+                    'client_uid' => $client['traderId'] ?? $client['clientId'] ?? null,
+                    'client_account' => $client['traderId'] ?? $client['clientId'] ?? null,
+                    'client_name' => $client['traderId'] ?? $client['clientId'] ?? null,
+                    'client_email' => null, // XM API doesn't provide email
+                    'client_id' => $client['clientId'] ?? $client['traderId'] ?? null,
+                    'reg_date' => $signUpDate,
+                    'client_country' => $client['country'] ?? 'ไม่ระบุ',
+                    'volume_lots' => 0, // XM API doesn't provide volume data in this endpoint
+                    'volume_mln_usd' => 0,
+                    'reward_usd' => 0,
+                    'client_status' => $client['valid'] ? 'ACTIVE' : 'INACTIVE',
+                    'kyc_passed' => $client['valid'] ? true : null,
+                    'ftd_received' => $client['valid'],
+                    'ftt_made' => $client['valid'],
+                    'source' => 'XM API',
+                    'data_source' => 'XM API',
+                    'account_type' => $client['accountType'] ?? 'ไม่ระบุ',
+                    'trading_platform' => $client['tradingPlatform'] ?? 'ไม่ระบุ',
+                    'archived' => $client['archived'] ?? false
+                ];
+            });
+            
+            $all = $all->concat($formattedXmApiClients);
+            $debugInfo['xm_api'] = $formattedXmApiClients->count();
+            Log::info('XM API clients count: ' . $formattedXmApiClients->count());
+            
+            // Debug: Log sample data
+            if ($formattedXmApiClients->count() > 0) {
+                Log::info('Sample XM API client:', $formattedXmApiClients->first());
+            }
+        } catch (\Throwable $e) {
+            Log::error('Error fetching XM API data: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            $debugInfo['xm_api'] = 0;
+        }
+
+        // 4. Get additional data from Partner accounts (may include XM data)
+        try {
+            Log::info('=== Fetching Partner accounts data ===');
+            
+            // Get clients with partner_account_name = 'partner' (may include XM data)
+            $query = DB::table('clients')
+                ->whereRaw("JSON_EXTRACT(raw_data, '$.partner_account_name') = 'partner'")
+                ->orWhereRaw("JSON_EXTRACT(raw_data, '$.partner_account_name') = 'Partner'");
+            
+            // Apply additional filters if provided
+            if ($request->filled('partner_account')) {
+                $query->where('partner_account', 'like', '%' . $request->partner_account . '%');
+            }
+            if ($request->filled('client_uid')) {
+                $query->where('client_uid', 'like', '%' . $request->client_uid . '%');
+            }
+            if ($request->filled('client_country')) {
+                $query->where('client_country', $request->client_country);
+            }
+            if ($request->filled('reg_date')) {
+                $query->whereDate('reg_date', $request->reg_date);
+            }
+            
+            $partnerClients = $query->get();
+            
+            Log::info('Partner clients count from database: ' . $partnerClients->count());
+            
+            // Format Partner client data
+            $formattedPartnerClients = $partnerClients->map(function ($client) {
+                $volumeLots = (float) ($client->volume_lots ?? 0);
+                $rewardUsd = (float) ($client->reward_usd ?? 0);
+                
+                // Calculate status based on activity
+                $clientStatus = ($volumeLots > 0 || $rewardUsd > 0) ? 'ACTIVE' : 'INACTIVE';
+                
+                // KYC estimation based on activity level
+                $kycPassed = ($volumeLots > 1.0 || $rewardUsd > 10.0) ? true : null;
+                
+                // Try to determine if this is XM data based on raw_data
+                $rawData = $client->raw_data ?? [];
+                $isXmData = false;
+                if (is_array($rawData)) {
+                    // Check if this might be XM data based on certain patterns
+                    $isXmData = isset($rawData['client_account_type']) && 
+                                in_array($rawData['client_account_type'], ['Standard', 'Micro', 'Ultra Low']);
+                }
+                
+                return [
+                    'partner_account' => $client->partner_account ?? '-',
+                    'client_uid' => $client->client_uid ?? '-',
+                    'client_account' => $client->client_account ?? $client->client_id ?? $client->client_uid ?? '-',
+                    'client_name' => $client->client_name ?? $client->client_id ?? $client->client_uid ?? null,
+                    'client_email' => $client->client_email ?? null,
+                    'client_id' => $client->client_id ?? $client->client_uid ?? null,
+                    'reg_date' => $client->reg_date,
+                    'client_country' => $client->client_country ?? '-',
+                    'volume_lots' => $volumeLots,
+                    'volume_mln_usd' => (float) ($client->volume_mln_usd ?? 0),
+                    'reward_usd' => $rewardUsd,
+                    'client_status' => $clientStatus,
+                    'kyc_passed' => $kycPassed,
+                    'ftd_received' => ($volumeLots > 0 || $rewardUsd > 0),
+                    'ftt_made' => ($volumeLots > 0),
+                    'source' => 'Partner Database',
+                    'data_source' => $isXmData ? 'XM (Partner)' : 'Partner'
+                ];
+            });
+            
+            $all = $all->concat($formattedPartnerClients);
+            $debugInfo['partner_database'] = $formattedPartnerClients->count();
+            Log::info('Partner database clients count: ' . $formattedPartnerClients->count());
+            
+            // Debug: Log sample data
+            if ($formattedPartnerClients->count() > 0) {
+                Log::info('Sample Partner client:', $formattedPartnerClients->first());
+            }
+        } catch (\Throwable $e) {
+            Log::error('Error fetching Partner data: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            $debugInfo['partner_database'] = 0;
         }
 
         Log::info('Total clients before normalization: ' . $all->count());
