@@ -482,3 +482,4 @@ class DebugController extends Controller
         }
     }
 }
+

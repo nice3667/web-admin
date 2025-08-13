@@ -19,6 +19,24 @@ class HandleInertiaAdminRequests extends Middleware
     protected $rootView = 'admin';
 
     /**
+     * Handle an incoming request.
+     */
+    public function handle(Request $request, \Closure $next)
+    {
+        // Check if this route should return JSON instead of Inertia
+        if ($this->shouldReturnJson($request)) {
+            // Remove Inertia headers for JSON routes
+            $request->headers->remove('X-Inertia');
+            $request->headers->remove('X-Inertia-Version');
+            $request->headers->remove('X-Inertia-Current-URL');
+            $request->headers->remove('X-Inertia-Partial-Data');
+            $request->headers->remove('X-Inertia-Partial-Only');
+        }
+
+        return parent::handle($request, $next);
+    }
+
+    /**
      * Determine the current asset version.
      */
     public function version(Request $request): string|null
@@ -33,6 +51,11 @@ class HandleInertiaAdminRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // Check if this route should return JSON instead of Inertia
+        if ($this->shouldReturnJson($request)) {
+            return [];
+        }
+
         $menu = Menu::where('machine_name', 'admin')->first();
         $menuItems = $menu ? Menu::getMenuTree('admin', true) : [];
 
@@ -48,6 +71,21 @@ class HandleInertiaAdminRequests extends Middleware
                 'breadcrumbs' => $this->getBreadcrumbs($request),
             ],
         ]);
+    }
+
+    /**
+     * Check if the current route should return JSON instead of Inertia
+     */
+    protected function shouldReturnJson(Request $request): bool
+    {
+        $jsonRoutes = [
+            'admin.all-customers',
+            'admin.api.reports1.client-account1',
+            'admin.api.reports2.client-account2',
+        ];
+
+        $routeName = Route::currentRouteName();
+        return in_array($routeName, $jsonRoutes);
     }
 
     protected function getBreadcrumbs(Request $request)

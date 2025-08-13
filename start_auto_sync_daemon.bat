@@ -55,3 +55,4 @@ echo - Log all activities to Laravel logs
 echo - Auto-restart on errors
 echo.
 pause
+

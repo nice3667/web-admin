@@ -46,3 +46,4 @@ echo 2. Or run start_auto_sync_daemon.bat to start daemon mode
 echo 3. Or run start_queue_worker.bat to start queue processing
 echo.
 pause
+

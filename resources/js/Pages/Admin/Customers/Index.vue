@@ -164,6 +164,7 @@
               <option value="all">ทั้งหมด</option>
               <option value="ham">Ham</option>
               <option value="janischa">Janischa</option>
+              <option value="xm">XM</option>
             </select>
           </div>
           <div class="col-span-1">
@@ -503,6 +504,53 @@
                   stroke-linejoin="round"
                   stroke-width="2"
                   d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div
+          class="p-4 overflow-hidden transition-all duration-300 transform border shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-xl lg:rounded-2xl lg:p-6 border-white/20 dark:border-slate-700/20 hover:scale-105 hover:rotate-1"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex-1 min-w-0">
+              <p
+                class="text-xs font-semibold text-gray-600 truncate sm:text-sm dark:text-gray-400"
+              >
+                XM Customers
+                <span
+                  v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                  class="text-blue-600 dark:text-blue-400"
+                >
+                  (Filtered)
+                </span>
+              </p>
+              <p
+                class="mt-1 text-xl font-extrabold text-transparent lg:mt-2 sm:text-2xl lg:text-3xl bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 bg-clip-text"
+              >
+                {{ formatNumber(filteredStats.xm_customers || 0) }}
+              </p>
+              <p
+                v-if="searchAccount.trim() || selectedOwner !== 'all'"
+                class="mt-1 text-xs text-orange-600 dark:text-orange-400"
+              >
+                XM Platform
+              </p>
+            </div>
+            <div
+              class="flex-shrink-0 p-3 transition-transform duration-300 transform lg:p-4 bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-xl lg:rounded-2xl rotate-3 hover:rotate-6"
+            >
+              <svg
+                class="w-6 h-6 text-white lg:w-8 lg:h-8"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
                 ></path>
               </svg>
             </div>
@@ -1377,10 +1425,25 @@ const filteredCustomers = computed(() => {
 
   // กรองตาม Owner
   if (ownerFilter !== "all") {
-    filtered = filtered.filter((customer) => {
-      const ownerInfo = getOwnerInfo(customer);
-      return ownerInfo.type === ownerFilter;
-    });
+    if (ownerFilter === "xm") {
+      // กรองเฉพาะ XM customers
+      filtered = filtered.filter((customer) => {
+        return (
+          customer.partner_account === "XM" ||
+          customer.partner_account === "xm" ||
+          customer.raw_data?.source === "XM API" ||
+          customer.data_source === "XM" ||
+          customer.data_source === "XM API" ||
+          (customer.raw_data && customer.raw_data.source === "XM API")
+        );
+      });
+    } else {
+      // กรองตาม Owner อื่นๆ
+      filtered = filtered.filter((customer) => {
+        const ownerInfo = getOwnerInfo(customer);
+        return ownerInfo.type === ownerFilter;
+      });
+    }
   }
 
   // กรองตามการค้นหา (ครอบคลุมทุกฟิลด์)
@@ -1522,6 +1585,15 @@ const filteredStats = computed(() => {
     ).length,
     total_reward_usd: isNaN(totalReward) ? 0 : totalReward,
     total_rebate_usd: isNaN(totalRebate) ? 0 : totalRebate,
+    xm_customers: customersToShow.filter(
+      (c) =>
+        c.partner_account === "XM" ||
+        c.partner_account === "xm" ||
+        c.raw_data?.source === "XM API" ||
+        c.data_source === "XM" ||
+        c.data_source === "XM API" ||
+        (c.raw_data && c.raw_data.source === "XM API")
+    ).length,
   };
 });
 
