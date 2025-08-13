@@ -509,7 +509,7 @@
             </div>
           </div>
         </div>
-        <div
+        <!-- <div
           class="p-4 overflow-hidden transition-all duration-300 transform border shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-xl lg:rounded-2xl lg:p-6 border-white/20 dark:border-slate-700/20 hover:scale-105 hover:rotate-1"
         >
           <div class="flex items-center justify-between">
@@ -555,7 +555,7 @@
               </svg>
             </div>
           </div>
-        </div>
+        </div> -->
         <!-- <div
           class="p-4 overflow-hidden transition-all duration-300 transform border shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-xl lg:rounded-2xl lg:p-6 border-white/20 dark:border-slate-700/20 hover:scale-105 hover:rotate-1"
         >
